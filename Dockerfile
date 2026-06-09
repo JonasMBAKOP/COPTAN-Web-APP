@@ -32,7 +32,7 @@ COPY . .
 
 # Installer dépendances PHP
 RUN cp .env.example .env || true
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN composer install --no-dev --optimize-autoloader --no-interaction -vvv
 
 # Permissions Laravel
 RUN chmod -R 775 storage bootstrap/cache
