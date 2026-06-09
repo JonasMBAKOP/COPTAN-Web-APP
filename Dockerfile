@@ -23,6 +23,16 @@ RUN docker-php-ext-install \
     bcmath \
     xml \
     zip
+RUN apt-get update && apt-get install -y \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev
+
+RUN docker-php-ext-configure gd \
+    --with-freetype \
+    --with-jpeg
+
+RUN docker-php-ext-install gd
 
 # Installer Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
