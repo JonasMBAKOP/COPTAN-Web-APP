@@ -1,0 +1,323 @@
+@extends('layouts.app')
+
+@section('title', 'Compte — ' . $enrollment->student->full_name)
+@section('page-title', 'Compte Financier')
+@section('page-subtitle'){{ $enrollment->student->full_name }}@endsection
+
+@section('breadcrumb')
+    <a href="{{ route('finances.index') }}" class="hover:text-gray-700">
+        Finances
+    </a>
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              stroke-width="2" d="M9 5l7 7-7 7"/>
+    </svg>
+    <span style="color:#1A3A6B;" class="font-medium">
+        {{ $enrollment->student->full_name }}
+    </span>
+@endsection
+
+@section('content')
+
+{{-- ── EN-TÊTE ÉLÈVE ────────────────────────────────────────────────────── --}}
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5
+            flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="flex items-center gap-4">
+        @if($enrollment->student->photo)
+        <img src="{{ $enrollment->student->photo_url }}"
+             class="w-14 h-14 rounded-full object-cover ring-2 ring-gray-100
+                    flex-shrink-0">
+        @else
+        <div class="w-14 h-14 rounded-full flex items-center justify-center
+                    text-white font-black text-xl flex-shrink-0"
+             style="background-color:#1A3A6B;">
+            {{ strtoupper(substr($enrollment->student->last_name, 0, 1))
+               . strtoupper(substr($enrollment->student->first_name, 0, 1)) }}
+        </div>
+        @endif
+        <div>
+            <p class="font-black text-lg" style="color:#1A3A6B;">
+                {{ $enrollment->student->full_name }}
+            </p>
+            <p class="text-sm text-gray-500">
+                {{ $enrollment->student->matricule }}
+                · {{ $enrollment->classGroup->full_name }}
+                · {{ $enrollment->academicYear->label }}
+            </p>
+        </div>
+    </div>
+
+    <div class="flex items-center gap-4">
+        <div class="text-center px-4">
+            <p class="text-xs text-gray-400">Total dû</p>
+            <p class="font-bold" style="color:#1A3A6B;">
+                {{ number_format($totalDue) }} FCFA
+            </p>
+        </div>
+        <div class="text-center px-4 border-l border-gray-200">
+            <p class="text-xs text-gray-400">Payé</p>
+            <p class="font-bold text-green-600">
+                {{ number_format($totalPaid) }} FCFA
+            </p>
+        </div>
+        <div class="text-center px-4 border-l border-gray-200">
+            <p class="text-xs text-gray-400">Restant</p>
+            <p class="font-bold {{ $totalRemaining > 0
+                ? 'text-red-500' : 'text-green-600' }}">
+                {{ number_format($totalRemaining) }} FCFA
+            </p>
+        </div>
+    </div>
+</div>
+
+@if(!$feeStructure)
+<div class="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-5">
+    <p class="text-sm text-amber-700 font-medium">
+        ⚠ Aucune structure de frais n'est configurée pour cette classe.
+    </p>
+    @can('configure-fees')
+    <a href="{{ route('finances.fees', $enrollment->classGroup) }}"
+       class="inline-block mt-2 text-sm font-medium hover:underline"
+       style="color:#E87722;">
+        → Configurer les frais de {{ $enrollment->classGroup->full_name }}
+    </a>
+    @endcan
+</div>
+@else
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+    {{-- ── Tranches + Formulaire paiement ─────────────────────────────── --}}
+    <div class="lg:col-span-2 space-y-4">
+
+        @foreach($installments as $item)
+        @php
+            $inst     = $item['installment'];
+            $paid     = $item['paid'];
+            $remaining= $item['remaining'];
+            $status   = $item['status'];
+            $pct      = $inst->amount > 0
+                ? min(round(($paid / $inst->amount) * 100), 100) : 0;
+
+            $statusConf = [
+                'paid'    => ['bg' => '#D1FAE5', 'text' => '#065F46',
+                              'label' => '✓ Soldée'],
+                'partial' => ['bg' => '#FEF3C7', 'text' => '#92400E',
+                              'label' => '◑ Partielle'],
+                'unpaid'  => ['bg' => '#FEE2E2', 'text' => '#991B1B',
+                              'label' => '✗ Non payée'],
+            ];
+            $sc = $statusConf[$status];
+        @endphp
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5
+                    {{ $status === 'paid' ? 'border-l-4 border-green-400' : '' }}">
+            <div class="flex items-start justify-between gap-3 mb-4">
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h3 class="font-semibold text-gray-800">
+                            {{ $inst->label }}
+                        </h3>
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                              style="background-color:{{ $sc['bg'] }};
+                                     color:{{ $sc['text'] }};">
+                            {{ $sc['label'] }}
+                        </span>
+                    </div>
+                    @if($inst->due_date_start && $inst->due_date_end)
+                    <p class="text-xs text-gray-400 mt-0.5">
+                        Période : {{ $inst->due_date_start->format('d/m/Y') }}
+                        → {{ $inst->due_date_end->format('d/m/Y') }}
+                    </p>
+                    @endif
+                </div>
+                <div class="text-right flex-shrink-0">
+                    <p class="text-sm text-gray-400">Montant</p>
+                    <p class="font-bold text-lg" style="color:#1A3A6B;">
+                        {{ number_format($inst->amount) }}
+                        <span class="text-xs font-normal text-gray-400">FCFA</span>
+                    </p>
+                </div>
+            </div>
+
+            {{-- Barre de progression --}}
+            <div class="mb-3">
+                <div class="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>Payé : {{ number_format($paid) }} FCFA</span>
+                    <span>Reste : {{ number_format($remaining) }} FCFA</span>
+                </div>
+                <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full transition-all"
+                         style="width:{{ $pct }}%;
+                                background-color:{{ $status === 'paid'
+                                    ? '#1A5C2A' : ($status === 'partial'
+                                    ? '#C8A415' : '#EF4444') }}">
+                    </div>
+                </div>
+            </div>
+
+            {{-- Formulaire paiement rapide (si pas soldée) --}}
+            @if($status !== 'paid')
+            @can('manage-finances')
+            <form method="POST"
+                  action="{{ route('finances.pay', $enrollment) }}"
+                  class="flex flex-wrap items-end gap-3 pt-3
+                         border-t border-gray-100">
+                @csrf
+                <input type="hidden" name="fee_installment_id"
+                       value="{{ $inst->id }}">
+
+                <div class="flex-1 min-w-36">
+                    <label class="block text-xs text-gray-500 mb-1">
+                        Montant (FCFA)
+                    </label>
+                    <input type="number" name="amount_paid"
+                           value="{{ $remaining }}"
+                           min="0" step="500" max="{{ $remaining }}"
+                           class="w-full px-3 py-2 border border-gray-200
+                                  rounded-lg text-sm font-mono focus:outline-none
+                                  focus:ring-2 focus:ring-blue-100">
+                </div>
+
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">Mode</label>
+                    <select name="payment_method"
+                            class="px-3 py-2 border border-gray-200 rounded-lg
+                                   text-sm focus:outline-none bg-white">
+                        <option value="cash">Espèces</option>
+                        <option value="orange_money">Orange Money</option>
+                        <option value="mtn_momo">MTN MoMo</option>
+                        <option value="bank_transfer">Virement</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">Date</label>
+                    <input type="date" name="payment_date"
+                           value="{{ date('Y-m-d') }}"
+                           class="px-3 py-2 border border-gray-200 rounded-lg
+                                  text-sm focus:outline-none">
+                </div>
+
+                <button type="submit"
+                        class="px-4 py-2 rounded-lg text-white text-sm
+                               font-semibold whitespace-nowrap"
+                        style="background-color:#1A5C2A;">
+                    Enregistrer
+                </button>
+            </form>
+            @endcan
+            @endif
+        </div>
+        @endforeach
+
+    </div>
+
+    {{-- ── Historique des paiements ─────────────────────────────────── --}}
+    <div class="space-y-4">
+
+        {{-- Résumé --}}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <h3 class="text-sm font-semibold uppercase tracking-wider
+                       text-gray-400 mb-4 pb-2 border-b border-gray-100">
+                Résumé
+            </h3>
+            @php
+                $globalPct = $totalDue > 0
+                    ? min(round(($totalPaid / $totalDue) * 100), 100)
+                    : 0;
+            @endphp
+            <div class="space-y-3">
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Total dû</span>
+                    <span class="font-semibold" style="color:#1A3A6B;">
+                        {{ number_format($totalDue) }} FCFA
+                    </span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Total payé</span>
+                    <span class="font-semibold text-green-600">
+                        {{ number_format($totalPaid) }} FCFA
+                    </span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Restant</span>
+                    <span class="font-semibold
+                                 {{ $totalRemaining > 0
+                                     ? 'text-red-500' : 'text-green-600' }}">
+                        {{ number_format($totalRemaining) }} FCFA
+                    </span>
+                </div>
+                <div>
+                    <div class="flex justify-between text-xs text-gray-400 mb-1">
+                        <span>Progression</span>
+                        <span>{{ $globalPct }}%</span>
+                    </div>
+                    <div class="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full"
+                             style="width:{{ $globalPct }}%;
+                                    background-color:{{ $globalPct >= 100
+                                        ? '#1A5C2A' : ($globalPct >= 50
+                                        ? '#C8A415' : '#EF4444') }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Historique --}}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="px-4 py-3 border-b border-gray-100">
+                <h3 class="text-sm font-semibold uppercase tracking-wider
+                           text-gray-400">
+                    Historique ({{ $payments->count() }})
+                </h3>
+            </div>
+
+            @if($payments->isEmpty())
+            <p class="px-4 py-6 text-sm text-gray-400 italic text-center">
+                Aucun paiement enregistré.
+            </p>
+            @else
+            <div class="divide-y divide-gray-50 max-h-72 overflow-y-auto">
+                @foreach($payments as $p)
+                <div class="px-4 py-3">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-green-600">
+                                +{{ number_format($p->amount_paid) }} FCFA
+                            </p>
+                            <p class="text-xs text-gray-500">
+                                {{ $p->feeInstallment?->label }}
+                            </p>
+                            <p class="text-xs text-gray-400">
+                                {{ $p->payment_method_label }}
+                                @if($p->reference)
+                                · {{ $p->reference }}
+                                @endif
+                            </p>
+                        </div>
+                        <div class="text-right flex-shrink-0">
+                            <p class="text-xs text-gray-500">
+                                {{ $p->payment_date->format('d/m/Y') }}
+                            </p>
+                            <a href="{{ route('finances.receipt', $p) }}"
+                               target="_blank"
+                               class="text-xs hover:underline"
+                               style="color:#1A3A6B;">
+                                #{{ $p->receipt_number }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+            @endif
+        </div>
+
+    </div>
+
+</div>
+@endif
+
+@endsection
