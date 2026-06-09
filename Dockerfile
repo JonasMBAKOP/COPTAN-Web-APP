@@ -34,6 +34,8 @@ RUN docker-php-ext-configure gd \
 
 RUN docker-php-ext-install gd
 
+ENV APP_KEY=base64:jJFGCB4C/QEDnbsc5mVbnMdNjfhMtx1gVFGZoJOJvc0=
+
 # Installer Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
