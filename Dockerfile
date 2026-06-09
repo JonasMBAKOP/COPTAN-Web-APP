@@ -31,6 +31,7 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 COPY . .
 
 # Installer dépendances PHP
+RUN cp .env.example .env || true
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Permissions Laravel
