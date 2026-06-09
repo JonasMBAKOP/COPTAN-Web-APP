@@ -2,17 +2,39 @@ FROM php:8.2-cli
 
 WORKDIR /app
 
+# Installer dépendances système
 RUN apt-get update && apt-get install -y \
     unzip \
+    git \
+    curl \
     libzip-dev \
-    zip \
-    && docker-php-ext-install pdo pdo_mysql zip
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip
 
-COPY . .
+# Installer extensions PHP nécessaires à Laravel
+RUN docker-php-ext-install \
+    pdo \
+    pdo_mysql \
+    mbstring \
+    exif \
+    pcntl \
+    bcmath \
+    xml \
+    zip
 
+# Installer Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-RUN composer install --no-dev --optimize-autoloader
+# Copier le projet
+COPY . .
+
+# Installer dépendances PHP
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+# Permissions Laravel
+RUN chmod -R 775 storage bootstrap/cache
 
 EXPOSE 10000
 
