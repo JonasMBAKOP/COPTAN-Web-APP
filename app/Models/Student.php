@@ -16,6 +16,7 @@ class Student extends Model
         'gender',
         'date_of_birth',
         'place_of_birth',
+        'birth_certificate_number',
         'nationality',
         'photo',
         'father_name',

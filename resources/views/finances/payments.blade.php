@@ -2,9 +2,47 @@
 
 @section('title', 'Paiements')
 @section('page-title', 'Tous les Paiements')
-@section('page-subtitle', 'Historique complet des paiements')
+@section('page-subtitle', 'Du plus récent au plus ancien')
 
 @section('content')
+
+<div x-data="paymentsManager()">
+
+{{-- ── BARRE ACTION FLOTTANTE ──────────────────────────────────────────── --}}
+<div x-show="selected.size > 0" x-transition
+     class="fixed top-20 left-1/2 -translate-x-1/2 z-50
+            flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl
+            border border-blue-200"
+     style="background-color:#0B2545;">
+    <span class="text-white text-sm font-bold">
+        <span x-text="selected.size"></span>
+        reçu(s) sélectionné(s)
+    </span>
+    <button @click="printSelected()"
+            class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm
+                   font-bold transition-all hover:shadow-md"
+            style="background-color:#FFD080; color:#0B2545;">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor"
+             viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2
+                     2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0
+                     00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2
+                     2v4h10z"/>
+        </svg>
+        Imprimer les reçus sélectionnés
+        <span class="text-xs opacity-70">(2/page A4)</span>
+    </button>
+    <button @click="clearSelection()"
+            class="p-1.5 rounded-lg text-white hover:bg-white/20">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor"
+             viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+    </button>
+</div>
 
 {{-- ── FILTRES ───────────────────────────────────────────────────────────── --}}
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-5">
@@ -78,18 +116,38 @@
     </form>
 </div>
 
-{{-- Total filtré --}}
-<div class="flex items-center justify-between mb-4">
-    <p class="text-sm text-gray-500">
-        <strong class="text-gray-800">{{ $payments->total() }}</strong>
-        paiement(s)
-    </p>
-    <p class="text-sm font-semibold text-green-600">
-        Total : {{ number_format($payments->sum('amount_paid')) }} FCFA
-    </p>
+{{-- ── BARRE RÉSUMÉ ─────────────────────────────────────────────────────── --}}
+<div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
+    <div class="flex items-center gap-3">
+        <p class="text-sm text-gray-500">
+            <strong class="text-gray-800">{{ $payments->total() }}</strong>
+            paiement(s)
+        </p>
+        <span class="text-gray-300">|</span>
+        <p class="text-sm font-semibold text-green-600">
+            Total : {{ number_format($payments->sum('amount_paid')) }} FCFA
+        </p>
+    </div>
+
+    {{-- Tout sélectionner / désélectionner --}}
+    @if($payments->isNotEmpty())
+    <div class="flex items-center gap-2">
+        <button @click="selectAll()"
+                class="text-xs font-semibold px-3 py-1.5 rounded-lg
+                       border border-gray-200 hover:bg-gray-50 transition-colors"
+                style="color:#0B2545;">
+            Tout sélectionner
+        </button>
+        <button @click="clearSelection()"
+                class="text-xs font-medium px-3 py-1.5 rounded-lg
+                       border border-gray-200 hover:bg-gray-50 text-gray-500">
+            Tout désélectionner
+        </button>
+    </div>
+    @endif
 </div>
 
-{{-- Table --}}
+{{-- ── TABLE ────────────────────────────────────────────────────────────── --}}
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100
             overflow-hidden">
     @if($payments->isEmpty())
@@ -102,7 +160,15 @@
             <thead>
                 <tr style="background-color:#F8FAFC;"
                     class="border-b border-gray-100">
-                    <th class="text-left px-5 py-3.5 text-xs font-semibold
+                    {{-- Colonne checkbox --}}
+                    <th class="px-4 py-3.5 w-10">
+                        <input type="checkbox"
+                               @change="toggleAllVisible($event.target.checked)"
+                               class="w-4 h-4 rounded cursor-pointer"
+                               style="accent-color:#0B2545;"
+                               title="Sélectionner/désélectionner la page">
+                    </th>
+                    <th class="text-left px-4 py-3.5 text-xs font-semibold
                                text-gray-400 uppercase tracking-wider">
                         Élève
                     </th>
@@ -130,7 +196,7 @@
                                hidden lg:table-cell">
                         N° Reçu
                     </th>
-                    <th class="text-right px-5 py-3.5 text-xs font-semibold
+                    <th class="text-right px-4 py-3.5 text-xs font-semibold
                                text-gray-400 uppercase tracking-wider">
                         Actions
                     </th>
@@ -138,12 +204,23 @@
             </thead>
             <tbody class="divide-y divide-gray-50">
                 @foreach($payments as $p)
-                <tr class="hover:bg-gray-50/50 transition-colors">
-                    <td class="px-5 py-3.5">
+                <tr class="hover:bg-gray-50/50 transition-colors"
+                    :class="selected.has('{{ $p->id }}')
+                        ? 'bg-blue-50/40' : ''">
+                    {{-- Checkbox --}}
+                    <td class="px-4 py-3.5 text-center">
+                        <input type="checkbox"
+                               value="{{ $p->id }}"
+                               :checked="selected.has('{{ $p->id }}')"
+                               @change="toggle('{{ $p->id }}', $event.target.checked)"
+                               class="payment-checkbox w-4 h-4 rounded cursor-pointer"
+                               style="accent-color:#0B2545;">
+                    </td>
+                    <td class="px-4 py-3.5">
                         <a href="{{ route('finances.student',
                                          $p->studentEnrollment) }}"
                            class="hover:underline">
-                            <p class="text-sm font-medium text-gray-800">
+                            <p class="text-sm font-semibold text-gray-800">
                                 {{ $p->studentEnrollment?->student?->full_name }}
                             </p>
                             <p class="text-xs text-gray-400">
@@ -151,45 +228,42 @@
                             </p>
                         </a>
                     </td>
-                    <td class="px-4 py-3.5 text-sm text-gray-600
+                    <td class="px-4 py-3.5 text-sm text-gray-700 font-medium
                                hidden sm:table-cell">
                         {{ $p->feeInstallment?->label }}
                     </td>
                     <td class="px-4 py-3.5 text-right">
-                        <span class="font-semibold text-green-600">
+                        <span class="font-bold text-green-700 text-sm">
                             {{ number_format($p->amount_paid) }}
                         </span>
                         <span class="text-xs text-gray-400 ml-0.5">FCFA</span>
                     </td>
-                    <td class="px-4 py-3.5 text-sm text-gray-600
-                               hidden md:table-cell">
+                    <td class="px-4 py-3.5 text-sm text-gray-600 hidden md:table-cell">
                         {{ $p->payment_method_label }}
                     </td>
-                    <td class="px-4 py-3.5 text-sm text-gray-600
-                               hidden lg:table-cell">
+                    <td class="px-4 py-3.5 text-sm text-gray-600 hidden lg:table-cell">
                         {{ $p->payment_date->format('d/m/Y') }}
                     </td>
                     <td class="px-4 py-3.5 hidden lg:table-cell">
-                        <span class="font-mono text-xs"
-                              style="color:#1A3A6B;">
+                        <span class="font-mono text-xs font-bold"
+                              style="color:#0B2545;">
                             {{ $p->receipt_number }}
                         </span>
                     </td>
-                    <td class="px-5 py-3.5 text-right">
+                    <td class="px-4 py-3.5 text-right">
                         <a href="{{ route('finances.receipt', $p) }}"
                            target="_blank"
                            class="p-1.5 rounded-lg text-gray-400
-                                  hover:text-blue-600 hover:bg-blue-50
+                                  hover:text-blue-700 hover:bg-blue-50
                                   transition-colors inline-flex"
-                           title="Voir le reçu">
+                           title="Voir le reçu individuel">
                             <svg class="w-4 h-4" fill="none"
                                  stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round"
                                       stroke-linejoin="round" stroke-width="2"
                                       d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2
                                          2 0 012-2h5.586a1 1 0 01.707.293l5.414
-                                         5.414a1 1 0 01.293.707V19a2 2 0 01-2
-                                         2z"/>
+                                         5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                             </svg>
                         </a>
                     </td>
@@ -206,5 +280,57 @@
     @endif
     @endif
 </div>
+
+</div>{{-- end x-data --}}
+
+<script>
+// IDs de la page courante
+const pageIds = @json($payments->pluck('id')->map(fn($id) => (string)$id));
+
+function paymentsManager() {
+    return {
+        selected: new Set(),
+
+        toggle(id, checked) {
+            if (checked) this.selected.add(id);
+            else         this.selected.delete(id);
+        },
+
+        toggleAllVisible(checked) {
+            pageIds.forEach(id => {
+                if (checked) this.selected.add(id);
+                else         this.selected.delete(id);
+            });
+            // Forcer la mise à jour des checkboxes
+            document.querySelectorAll('.payment-checkbox').forEach(cb => {
+                cb.checked = checked;
+            });
+        },
+
+        selectAll() {
+            pageIds.forEach(id => this.selected.add(id));
+            document.querySelectorAll('.payment-checkbox').forEach(cb => {
+                cb.checked = true;
+            });
+        },
+
+        clearSelection() {
+            this.selected.clear();
+            document.querySelectorAll('.payment-checkbox').forEach(cb => {
+                cb.checked = false;
+            });
+        },
+
+        printSelected() {
+            if (this.selected.size === 0) return;
+            const ids = Array.from(this.selected).join(',');
+            window.open(
+                `{{ route('finances.receipts.batch') }}?ids=${ids}`,
+                '_blank'
+            );
+        }
+    }
+}
+</script>
 
 @endsection

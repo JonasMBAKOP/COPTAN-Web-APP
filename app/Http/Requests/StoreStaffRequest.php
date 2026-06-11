@@ -36,16 +36,14 @@ class StoreStaffRequest extends FormRequest
             'diploma'       => ['nullable', 'string', 'max:255'],
             'start_date'    => ['nullable', 'date'],
             'contract_type' => ['required',
-                                'in:permanent,temporary,part_time,volunteer'],
+                                'in:permanent,vacataire,stagiaire'],
             'is_active'     => ['nullable', 'boolean'],
             'user_id'       => ['nullable', 'exists:users,id'],
 
             // Postes (checkboxes simples)
             'positions'          => ['required', 'array', 'min:1'],
-            // 'positions.*.name'   => ['required', 'string'],
             'positions.*'        => ['string'],
-            // 'positions.*.primary'=> ['nullable', 'boolean'],
-            'primary_position'   => ['nullable', 'string'],
+            'primary_position'   => ['required', 'string', 'in:enseignant,directeur,fondateur,censeur,econome,surveillant_general,secretaire'],
 
             // Nouveau compte
             'user_option'       => ['nullable', 'in:existing,create'],

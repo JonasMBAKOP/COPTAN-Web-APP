@@ -176,9 +176,8 @@
                                        bg-white">
                             @foreach([
                                 'permanent' => 'Permanent',
-                                'temporary' => 'Temporaire / CDD',
-                                'part_time' => 'Temps partiel',
-                                'volunteer' => 'Bénévole',
+                                'vacataire' => 'Vacataire',
+                                'stagiaire' => 'Stagiaire',
                             ] as $val => $lbl)
                             <option value="{{ $val }}"
                                     {{ old('contract_type') === $val
@@ -192,80 +191,7 @@
                 </div>
             </div>
 
-            {{-- Postes --}}
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <div class="flex items-center justify-between mb-4 pb-2
-                            border-b border-gray-100">
-                    <h3 class="text-sm font-semibold uppercase tracking-wider
-                               text-gray-400">
-                        Poste(s) <span class="text-red-500">*</span>
-                    </h3>
-                    <button type="button" @click="addPosition()"
-                            class="flex items-center gap-1 text-xs font-medium
-                                   hover:underline"
-                            style="color:#1A5C2A;">
-                        <svg class="w-3.5 h-3.5" fill="none"
-                             stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                  stroke-width="2" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        Ajouter un poste
-                    </button>
-                </div>
 
-                @error('positions')
-                <p class="mb-3 text-xs text-red-500">{{ $message }}</p>
-                @enderror
-
-                <div class="space-y-3">
-                    <template x-for="(pos, i) in positions" :key="i">
-                        <div class="flex items-center gap-3 p-3 border
-                                    border-gray-200 rounded-xl bg-gray-50">
-                            <div class="flex-1">
-                                <select :name="`positions[${i}][name]`"
-                                        x-model="pos.name"
-                                        class="w-full px-3 py-2 border
-                                               border-gray-200 rounded-lg
-                                               text-sm focus:outline-none
-                                               bg-white">
-                                    <option value="">Sélectionner...</option>
-                                    @foreach([
-                                        'enseignant'          => 'Enseignant(e)',
-                                        'directeur'           => 'Directeur / Principal',
-                                        'fondateur'           => 'Fondateur / Fondatrice',
-                                        'censeur'             => 'Censeur / Préfet des études',
-                                        'econome'             => 'Économe',
-                                        'surveillant_general' => 'Surveillant(e) Général(e)',
-                                        'secretaire'          => 'Secrétaire',
-                                    ] as $val => $lbl)
-                                    <option value="{{ $val }}">{{ $lbl }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <label class="flex items-center gap-2 text-sm
-                                           text-gray-600 whitespace-nowrap">
-                                <input type="checkbox"
-                                       :name="`positions[${i}][primary]`"
-                                       value="1"
-                                       :checked="pos.primary"
-                                       @change="setPrimary(i)"
-                                       style="accent-color:#1A3A6B;">
-                                Principal
-                            </label>
-                            <button type="button" @click="removePosition(i)"
-                                    x-show="positions.length > 1"
-                                    class="p-1 text-gray-400 hover:text-red-500">
-                                <svg class="w-4 h-4" fill="none"
-                                     stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round"
-                                          stroke-linejoin="round" stroke-width="2"
-                                          d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </template>
-                </div>
-            </div>
 
             {{-- Liaison compte utilisateur --}}
             {{-- <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">

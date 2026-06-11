@@ -93,15 +93,31 @@
             {{-- icon="academic-cap" --}}
             label="Élèves"
             href="{{ route('students.index') }}"
-            :active="request()->routeIs('students.*')" />
+            :active="request()->routeIs('students.*') && !request()->routeIs('students.documents.*') 
+                  && !request()->routeIs('students.create')
+                  && !request()->routeIs('students.enroll')" />
 
         @can('manage-enrollments')
         <x-sidebar-item
             icon="user-plus"
             label="Inscriptions"
-            href="#"
-            :active="request()->routeIs('enrollments.*')" />
+            href="{{ route ('students.create') }}"
+            :active="request()->routeIs('students.create', 'students.enroll')" />
         @endcan
+        @endcan
+
+        {{-- ── DOCUMENTS (hors finances) ─────────────────────────── --}}
+        @can('view-students')
+        <p class="px-3 pt-4 pb-1 text-white/40 text-xs font-semibold
+                  uppercase tracking-wider">
+            Documents
+        </p>
+
+        <x-sidebar-item
+            icon="document"
+            label="Impressions élèves"
+            href="{{ route('students.documents.index') }}"
+            :active="request()->routeIs('students.documents.*')" />
         @endcan
 
         {{-- ── PERSONNEL ─────────────────────────────────────────── --}}

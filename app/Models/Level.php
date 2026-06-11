@@ -9,6 +9,7 @@ class Level extends Model
     protected $fillable = [
         'section_id',
         'name',
+        'cycle',
         'order_index',
         'is_exam_class',
     ];

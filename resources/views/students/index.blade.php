@@ -34,12 +34,24 @@
                 Importer
             </button>
 
-            <button class="inline-flex items-center gap-2 px-4 py-2 border border-[#1A3A6B] text-[#1A3A6B] bg-white text-sm font-semibold rounded-lg hover:bg-gray-50 shadow-sm transition-all">
+            @if($listPrintParams)
+            <a href="{{ route('students.documents.lists', $listPrintParams) }}"
+               target="_blank"
+               class="inline-flex items-center gap-2 px-4 py-2 border border-[#1A3A6B] text-[#1A3A6B] bg-white text-sm font-semibold rounded-lg hover:bg-gray-50 shadow-sm transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                </svg>
+                Imprimer la liste
+            </a>
+            @endif
+
+            {{-- <button class="inline-flex items-center gap-2 px-4 py-2 border border-[#1A3A6B] text-[#1A3A6B] bg-white text-sm font-semibold rounded-lg hover:bg-gray-50 shadow-sm transition-all">
                 <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                 </svg>
                 Exporter
-            </button>
+            </button> --}}
         </div>
     </div>
 
@@ -140,16 +152,17 @@
                 <a href="{{ route('students.index', ['year_id' => $selectedYear?->id]) }}"
                    class="inline-flex items-center justify-center p-2.5 border border-gray-200 rounded-lg bg-white text-gray-500 hover:bg-gray-50 transition-all shadow-sm"
                    title="Réinitialiser les filtres">
-                    <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4. h-4." fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
+                    {{-- x --}}
                 </a>
                 @endif
-                <button type="button" class="inline-flex items-center justify-center p-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 transition-all shadow-sm">
+                {{-- <button type="button" class="inline-flex items-center justify-center p-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 transition-all shadow-sm">
                     <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
                     </svg>
-                </button>
+                </button> --}}
             </div>
 
         </form>

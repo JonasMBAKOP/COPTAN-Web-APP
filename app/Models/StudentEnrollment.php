@@ -18,6 +18,7 @@ class StudentEnrollment extends Model
         'enrollment_date',
         'is_repeating',
         'previous_class_group_id',
+        'previous_class_label',
         'origin_school',
         'status',
         'transfer_date',

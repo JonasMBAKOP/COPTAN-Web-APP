@@ -32,6 +32,7 @@ class StoreStudentRequest extends FormRequest
             'gender'                => ['required', 'in:M,F'],
             'date_of_birth'         => ['required', 'date', 'before:today'],
             'place_of_birth'        => ['nullable', 'string', 'max:150'],
+            'birth_certificate_number' => ['nullable', 'string', 'max:50'],
             'nationality'           => ['nullable', 'string', 'max:100'],
             'photo'                 => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
             'address'               => ['nullable', 'string'],
@@ -51,6 +52,7 @@ class StoreStudentRequest extends FormRequest
             'enrollment_date'       => ['required', 'date'],
             'is_repeating'          => ['boolean'],
             'previous_class_group_id' => ['nullable', 'exists:class_groups,id'],
+            'previous_class_label'    => ['nullable', 'string', 'max:150'],
             'origin_school'         => ['nullable', 'string', 'max:200'],
         ];
     }

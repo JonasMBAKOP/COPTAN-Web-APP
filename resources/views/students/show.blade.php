@@ -104,19 +104,46 @@
 
         {{-- Boutons d'action --}}
         <div class="flex items-center gap-2 flex-wrap flex-shrink-0">
-            {{-- Imprimer --}}
-            <button onclick="window.print()"
-                    class="flex items-center gap-2 px-4 py-2 rounded-lg
-                           border border-gray-200 text-sm font-medium
-                           text-gray-600 hover:bg-gray-50 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                     viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
-                </svg>
-                Imprimer fiche
-            </button>
+            {{-- Documents à imprimer --}}
+            <div class="relative" x-data="{ openDocs: false }">
+                <button type="button" @click="openDocs = !openDocs"
+                        class="flex items-center gap-2 px-4 py-2 rounded-lg
+                               border border-gray-200 text-sm font-medium
+                               text-gray-600 hover:bg-gray-50 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                    </svg>
+                    Documents
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+                <div x-show="openDocs" @click.outside="openDocs = false" x-cloak
+                     class="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20">
+                    @php $yearParam = $activeYear ? '?year_id=' . $activeYear->id : ''; @endphp
+                    <a href="{{ route('students.documents.single', [$student, 'fiche']) }}{{ $yearParam }}"
+                       target="_blank"
+                       class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                        Fiche de renseignement
+                    </a>
+                    <a href="{{ route('students.documents.single', [$student, 'certificat']) }}{{ $yearParam }}"
+                       target="_blank"
+                       class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                        Certificat de scolarité
+                    </a>
+                    <a href="{{ route('students.documents.single', [$student, 'carte']) }}{{ $yearParam }}"
+                       target="_blank"
+                       class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                        Carte d'identité scolaire
+                    </a>
+                    <a href="{{ route('students.documents.single', [$student, 'livret']) }}{{ $yearParam }}"
+                       target="_blank"
+                       class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                        Livret scolaire
+                    </a>
+                </div>
+            </div>
 
             {{-- Bulletin (module 4.8) --}}
             <button disabled
@@ -307,6 +334,12 @@
                             <p class="text-xs text-gray-400 mb-1">Nationalité</p>
                             <p class="text-sm font-semibold text-gray-800">
                                 {{ $student->nationality ?? '—' }}
+                            </p>
+                        </div>
+                        <div class="col-span-2">
+                            <p class="text-xs text-gray-400 mb-1">N° acte de naissance</p>
+                            <p class="text-sm font-semibold text-gray-800 font-mono">
+                                {{ $student->birth_certificate_number ?? '—' }}
                             </p>
                         </div>
                     </div>

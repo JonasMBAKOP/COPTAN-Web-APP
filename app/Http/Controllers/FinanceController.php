@@ -334,6 +334,7 @@ class FinanceController extends Controller
         }
 
         $payments = $query->orderByDesc('payment_date')
+                          ->orderByDesc('created_at') //Ajout
                           ->paginate(20)
                           ->withQueryString();
 
@@ -348,26 +349,147 @@ class FinanceController extends Controller
         return view('finances.payments', compact(
             'payments', 'years', 'classes',
             'selectedYearId', 'totalFiltered'
-        ));
+        )); // Retirer 'totalFiltered' plutard
     }
 
-    // ── REÇU ──────────────────────────────────────────────────────────────
+    // // ── REÇU ──────────────────────────────────────────────────────────────
+    // public function receipt(StudentPayment $payment)
+    // {
+    //     $payment->load([
+    //         'studentEnrollment.student',
+    //         'studentEnrollment.classGroup.level.section',
+    //         'studentEnrollment.academicYear',
+    //         'feeInstallment.feeStructure',
+    //         'recordedBy',
+    //     ]);
+
+    //     $school = \App\Models\SchoolSetting::instance();
+
+    //     return view('finances.receipt',
+    //         compact('payment', 'school'));
+    // }
+
+    // ── REÇU PAIEMENT UNIQUE ──────────────────────────────────────────────
     public function receipt(StudentPayment $payment)
     {
         $payment->load([
             'studentEnrollment.student',
             'studentEnrollment.classGroup.level.section',
             'studentEnrollment.academicYear',
-            'feeInstallment.feeStructure',
+            'studentEnrollment.classGroup.feeStructures.installments',
+            'feeInstallment',
             'recordedBy',
         ]);
 
-        $school = \App\Models\SchoolSetting::instance();
+        $school      = \App\Models\SchoolSetting::instance();
+        $phones      = \App\Models\SchoolPhone::orderByDesc('is_primary')->orderBy('id')->get();
+        $enrollment  = $payment->studentEnrollment;
+
+        $feeStructure   = $enrollment->classGroup->feeStructures->first();
+        $totalDue       = $feeStructure?->installments->sum('amount') ?? 0;
+        $totalPaid      = StudentPayment::where(
+                            'student_enrollment_id', $enrollment->id
+                        )->sum('amount_paid');
+        $totalRemaining = max(0, $totalDue - $totalPaid);
 
         return view('finances.receipt',
-            compact('payment', 'school'));
+            compact('payment', 'school', 'phones',
+                    'totalDue', 'totalPaid', 'totalRemaining'));
     }
 
+    // ── REÇU GLOBAL (tous les paiements d'un élève) ───────────────────────
+    public function globalReceipt(StudentEnrollment $enrollment)
+    {
+        $enrollment->load([
+            'student',
+            'classGroup.level.section',
+            'academicYear',
+            'classGroup.feeStructures.installments',
+        ]);
+
+        // Paiements du plus récent au plus ancien
+        $payments = StudentPayment::where('student_enrollment_id', $enrollment->id)
+            ->with(['feeInstallment', 'recordedBy'])
+            ->orderByDesc('payment_date')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $feeStructure = $enrollment->classGroup->feeStructures->first();
+
+        // Résumé par tranche
+        $installmentSummary = collect();
+        if ($feeStructure) {
+            foreach ($feeStructure->installments
+                        ->sortBy('installment_number') as $inst) {
+                $paid = $payments
+                    ->where('fee_installment_id', $inst->id)
+                    ->sum('amount_paid');
+
+                $installmentSummary->push([
+                    'label'     => $inst->label,
+                    'amount'    => $inst->amount,
+                    'paid'      => $paid,
+                    'remaining' => max(0, $inst->amount - $paid),
+                    'due_date'  => $inst->due_date_end,
+                ]);
+            }
+        }
+
+        $totalDue       = $feeStructure?->total_amount ?? 0;
+        $totalPaid      = $payments->sum('amount_paid');
+        $totalRemaining = max(0, $totalDue - $totalPaid);
+        $school         = \App\Models\SchoolSetting::instance();
+        $phones         = \App\Models\SchoolPhone::orderByDesc('is_primary')->orderBy('id')->get();
+
+        return view('finances.receipt-global', compact(
+            'enrollment', 'payments', 'feeStructure',
+            'installmentSummary', 'totalDue', 'totalPaid',
+            'totalRemaining', 'school', 'phones'
+        ));
+    }
+
+    // ── IMPRESSION GROUPÉE (2 reçus / page A4 paysage) ───────────────────
+    public function batchReceipts(Request $request)
+    {
+        $ids = array_filter(explode(',', $request->input('ids', '')));
+
+        if (empty($ids)) {
+            return back()->with('error', 'Aucun paiement sélectionné.');
+        }
+
+        $payments = StudentPayment::whereIn('id', $ids)
+            ->with([
+                'studentEnrollment.student',
+                'studentEnrollment.classGroup.level.section',
+                'studentEnrollment.academicYear',
+                'studentEnrollment.classGroup.feeStructures.installments',
+                'feeInstallment',
+                'recordedBy',
+            ])
+            ->orderByDesc('payment_date')
+            ->get();
+
+        $school = \App\Models\SchoolSetting::instance();
+        $phones = \App\Models\SchoolPhone::orderByDesc('is_primary')->orderBy('id')->get();
+
+        $receiptsData = $payments->map(function($payment) {
+            $enrollment   = $payment->studentEnrollment;
+            $feeStructure = $enrollment->classGroup->feeStructures->first();
+            $totalDue     = $feeStructure?->installments->sum('amount') ?? 0;
+            $totalPaid    = StudentPayment::where(
+                                'student_enrollment_id', $enrollment->id
+                            )->sum('amount_paid');
+            $totalRemaining = max(0, $totalDue - $totalPaid);
+            return compact('payment', 'totalDue', 'totalPaid', 'totalRemaining');
+        });
+
+        return view('finances.receipt-batch',
+            compact('receiptsData', 'school', 'phones'));
+    }
+
+    // ── LISTE PAIEMENTS (tri du plus récent au plus ancien) ───────────────
+    
+    
     // ── LISTE CLASSES POUR CONFIGURATION DES FRAIS ───────────────────────
     public function feesList(Request $request)
     {

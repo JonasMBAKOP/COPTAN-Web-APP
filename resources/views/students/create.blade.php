@@ -151,14 +151,33 @@
                         {{-- Numéro Matricule --}}
                         <div class="sm:col-span-2">
                             <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Numéro Matricule</label>
-                            <div class="flex items-center gap-3 bg-gray-50 px-3 py-2.5 rounded-lg border border-gray-200">
-                                <span class="font-mono text-sm font-bold text-[#1A3A6B] tracking-wider" x-text="matricule"></span>
-                                <input type="hidden" name="matricule" :value="matricule">
-                                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-800 border border-orange-200">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
-                                    Généré automatiquement
-                                </span>
+                            <div class="flex items-center gap-2">
+                                <button type="button" 
+                                        @click="matriculeMode = matriculeMode === 'auto' ? 'manual' : 'auto'"
+                                        :class="matriculeMode === 'auto' ? 'border-[#9c4005] bg-orange-50' : 'border-gray-200 bg-white'"
+                                        class="px-3 py-2 border rounded-lg text-xs font-semibold whitespace-nowrap transition-all">
+                                    <span x-show="matriculeMode === 'auto'">🔄 Généré</span>
+                                    <span x-show="matriculeMode === 'manual'">✋ Saisir</span>
+                                </button>
+                                <template x-if="matriculeMode === 'auto'">
+                                    <div class="flex-1 flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
+                                        <span class="font-mono text-sm font-bold text-[#1A3A6B] tracking-wider" x-text="matricule"></span>
+                                        <input type="hidden" name="matricule" :value="matricule">
+                                    </div>
+                                </template>
+                                <template x-if="matriculeMode === 'manual'">
+                                    <input type="text" name="matricule" x-model="matricule" placeholder="Ex: CP-2026-0001"
+                                           class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B]">
+                                </template>
                             </div>
+                        </div>
+
+                        {{-- Numéro Acte de Naissance --}}
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Numéro de l'acte de naissance</label>
+                            <input type="text" name="birth_certificate_number" x-model="birthCertificateNumber" placeholder="Ex: 1234567890"
+                                   class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B]">
+                            <p class="text-xs text-gray-400 mt-1">Optionnel</p>
                         </div>
 
                     </div>
@@ -219,7 +238,7 @@
                     {{-- Section --}}
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Section <span class="text-red-500">*</span></label>
-                        <select x-model="selectedSection" @change="selectedLevel = ''; selectedClass = ''"
+                        <select x-model="selectedSection" @change="selectedCycle = ''; selectedClass = ''; previousClassLabel = ''"
                                 class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B]">
                             <option value="">Sélectionner la section...</option>
                             <template x-for="sec in sections" :key="sec.id">
@@ -229,27 +248,29 @@
                         <span class="text-xs text-red-500 mt-1 block" x-text="errors.selectedSection"></span>
                     </div>
 
-                    {{-- Niveau --}}
+                    {{-- Cycle --}}
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Niveau <span class="text-red-500">*</span></label>
-                        <select x-model="selectedLevel" @change="selectedClass = ''" :disabled="!selectedSection"
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Cycle <span class="text-red-500">*</span></label>
+                        <select x-model="selectedCycle" @change="selectedClass = ''; previousClassLabel = ''" :disabled="!selectedSection"
                                 class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B] disabled:bg-gray-100 disabled:text-gray-400">
-                            <option value="">Sélectionner le niveau...</option>
-                            <template x-for="lvl in filteredLevels" :key="lvl.id">
-                                <option :value="lvl.id" x-text="lvl.name"></option>
-                            </template>
+                            <option value="">Sélectionner le cycle...</option>
+                            <option value="1er">1er Cycle</option>
+                            <option value="2nd">2nd Cycle</option>
                         </select>
-                        <span class="text-xs text-red-500 mt-1 block" x-text="errors.selectedLevel"></span>
+                        <span class="text-xs text-red-500 mt-1 block" x-text="errors.selectedCycle"></span>
                     </div>
 
-                    {{-- Classe --}}
+                    {{-- Classe (section + cycle) --}}
                     <div class="sm:col-span-2">
                         <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Classe <span class="text-red-500">*</span></label>
-                        <select name="class_group_id" x-model="selectedClass" :disabled="!selectedLevel"
+                        <select name="class_group_id" x-model="selectedClass"
+                                @change="updatePreviousClassLabel()"
+                                :disabled="!selectedSection || !selectedCycle"
                                 class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B] disabled:bg-gray-100 disabled:text-gray-400">
                             <option value="">Sélectionner une classe...</option>
                             <template x-for="cls in filteredClasses" :key="cls.id">
-                                <option :value="cls.id" x-text="cls.full_name + (cls.max_students ? ` (${cls.students_count}/${cls.max_students} élèves)` : '')"></option>
+                                {{-- <option :value="cls.id" x-text="cls.full_name + (cls.max_students ? ` (${cls.students_count}/${cls.max_students} élèves)` : '')"></option> --}}
+                                <option :value="cls.id" x-text="cls.full_name"></option>
                             </template>
                         </select>
                         <span class="text-xs text-red-500 mt-1 block" x-text="errors.selectedClass"></span>
@@ -263,18 +284,24 @@
                         <span class="text-xs text-red-500 mt-1 block" x-text="errors.enrollmentDate"></span>
                     </div>
 
-                    {{-- Situation (Nouveau vs Redoublant) --}}
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Situation</label>
-                        <div class="flex gap-4">
+                    {{-- Situation (Nouveau vs Redoublant vs Promu) --}}
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Situation <span class="text-red-500">*</span></label>
+                        <div class="flex gap-3">
                             <label class="flex items-center gap-2 px-4 py-2.5 border rounded-lg cursor-pointer flex-1 text-sm bg-white hover:bg-gray-50 transition-all"
-                                   :class="isRepeating === '0' ? 'border-[#9c4005] bg-orange-50/20 text-[#9c4005] font-semibold' : 'border-gray-200'">
-                                <input type="radio" name="is_repeating" value="0" x-model="isRepeating" class="text-[#9c4005] focus:ring-[#9c4005]">
+                                   :class="situation === 'nouveau' ? 'border-[#9c4005] bg-orange-50/20 text-[#9c4005] font-semibold' : 'border-gray-200'">
+                                <input type="radio" name="is_repeating" value="0"
+                                       :checked="situation === 'nouveau'"
+                                       @change="situation = 'nouveau'; updatePreviousClassLabel()"
+                                       class="text-[#9c4005] focus:ring-[#9c4005]">
                                 Nouveau / Promu
                             </label>
                             <label class="flex items-center gap-2 px-4 py-2.5 border rounded-lg cursor-pointer flex-1 text-sm bg-white hover:bg-gray-50 transition-all"
-                                   :class="isRepeating === '1' ? 'border-[#9c4005] bg-orange-50/20 text-[#9c4005] font-semibold' : 'border-gray-200'">
-                                <input type="radio" name="is_repeating" value="1" x-model="isRepeating" class="text-[#9c4005] focus:ring-[#9c4005]">
+                                   :class="situation === 'redoublant' ? 'border-[#9c4005] bg-orange-50/20 text-[#9c4005] font-semibold' : 'border-gray-200'">
+                                <input type="radio" name="is_repeating" value="1"
+                                       :checked="situation === 'redoublant'"
+                                       @change="situation = 'redoublant'; updatePreviousClassLabel()"
+                                       class="text-[#9c4005] focus:ring-[#9c4005]">
                                 Redoublant
                             </label>
                         </div>
@@ -287,17 +314,27 @@
                                class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B]">
                     </div>
 
-                    {{-- Classe précédente --}}
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Classe précédente (si redoublant)</label>
-                        <select name="previous_class_group_id" x-model="previousClassId"
-                                class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B]">
-                            <option value="">Aucune / Inconnue</option>
-                            @foreach($allClasses as $cls)
-                            <option value="{{ $cls->id }}">{{ $cls->full_name }} ({{ $cls->academicYear->label }})</option>
-                            @endforeach
-                        </select>
-                    </div>
+                    {{-- Classe précédente (auto selon la classe et la situation) --}}
+                    <template x-if="situation === 'nouveau'">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Classe précédente</label>
+                            <input type="text" readonly x-model="previousClassLabel"
+                                   placeholder="Sélectionnez d'abord une classe"
+                                   class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-700">
+                            <input type="hidden" name="previous_class_label" :value="previousClassLabel">
+                            <p class="text-xs text-gray-400 mt-1">Déterminée automatiquement selon la classe d'inscription.</p>
+                        </div>
+                    </template>
+                    <template x-if="situation === 'redoublant'">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Classe précédente</label>
+                            <input type="text" readonly x-model="previousClassLabel"
+                                   placeholder="Identique à la classe sélectionnée"
+                                   class="w-full px-3 py-2.5 border border-amber-200 rounded-lg text-sm bg-amber-50 text-amber-900">
+                            <input type="hidden" name="previous_class_label" :value="previousClassLabel">
+                            <p class="text-xs text-amber-700 mt-1">Pour un redoublant, la classe précédente est la même que la classe actuelle.</p>
+                        </div>
+                    </template>
 
                 </div>
             </div>
@@ -403,6 +440,9 @@
 
                             <dt class="text-gray-400">Nationalité :</dt>
                             <dd class="text-gray-800 font-semibold" x-text="nationality"></dd>
+
+                            <dt class="text-gray-400">N° acte de naissance :</dt>
+                            <dd class="text-gray-800 font-semibold" x-text="birthCertificateNumber || '—'"></dd>
                         </dl>
                     </div>
 
@@ -419,8 +459,9 @@
                             <dt class="text-gray-400">Section :</dt>
                             <dd class="text-gray-800 font-semibold" x-text="getSectionName()"></dd>
 
-                            <dt class="text-gray-400">Niveau :</dt>
-                            <dd class="text-gray-800 font-semibold" x-text="getLevelName()"></dd>
+                            <dt class="text-gray-400">Cycle :</dt>
+                            <dd class="text-gray-800 font-semibold"
+                                x-text="selectedCycle ? (selectedCycle === '1er' ? '1er Cycle' : '2nd Cycle') : '—'"></dd>
 
                             <dt class="text-gray-400">Classe affectée :</dt>
                             <dd class="text-gray-800 font-bold text-sm text-[#9c4005]" x-text="getClassName()"></dd>
@@ -431,9 +472,12 @@
                             <dt class="text-gray-400">Situation :</dt>
                             <dd class="text-gray-800 font-semibold">
                                 <span class="px-2 py-0.5 rounded text-[10px] font-bold"
-                                      :class="isRepeating === '1' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'"
-                                      x-text="isRepeating === '1' ? 'Redoublant(e)' : 'Nouveau/Promu(e)'"></span>
+                                      :class="situation === 'redoublant' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'"
+                                      x-text="situation === 'redoublant' ? 'Redoublant(e)' : 'Nouveau / Promu(e)'"></span>
                             </dd>
+
+                            <dt class="text-gray-400">Classe précédente :</dt>
+                            <dd class="text-gray-800 font-semibold" x-text="previousClassLabel || '—'"></dd>
 
                             <dt class="text-gray-400">École d'origine :</dt>
                             <dd class="text-gray-800 font-semibold" x-text="originSchool || '—'"></dd>
@@ -529,27 +573,29 @@
             step: 1,
             photoPreview: null,
             
-            // États des formulaires
+            // États des formulaires - Étape 1
             gender: '{{ old('gender', '') }}',
             nationality: '{{ old('nationality', 'Camerounaise') }}',
             matricule: '{{ $suggestedMatricule }}',
+            matriculeMode: '{{ old('matricule') ? 'manual' : 'auto' }}',
+            birthCertificateNumber: '{{ old('birth_certificate_number', '') }}',
             lastName: '{{ old('last_name', '') }}',
             firstName: '{{ old('first_name', '') }}',
             dateOfBirth: '{{ old('date_of_birth', '') }}',
             placeOfBirth: '{{ old('place_of_birth', '') }}',
             
-            // Scolarité
+            // Scolarité - Étape 2
             sections: _sectionsData,
             classes: _classesData,
             selectedSection: '{{ old('section_id', '') }}',
-            selectedLevel: '{{ old('level_id', '') }}',
+            selectedCycle: '{{ old('cycle', '') }}',
             selectedClass: '{{ old('class_group_id', $preSelectedClass?->id ?? '') }}',
             enrollmentDate: '{{ old('enrollment_date', date('Y-m-d')) }}',
-            isRepeating: '{{ old('is_repeating', '0') }}',
+            situation: '{{ old('is_repeating') == 1 ? 'redoublant' : 'nouveau' }}',
             originSchool: '{{ old('origin_school', '') }}',
-            previousClassId: '{{ old('previous_class_group_id', '') }}',
+            previousClassLabel: '{{ old('previous_class_label', '') }}',
 
-            // Parents
+            // Parents - Étape 3
             fatherName: '{{ old('father_name', '') }}',
             fatherPhone: '{{ old('father_phone', '') }}',
             motherName: '{{ old('mother_name', '') }}',
@@ -559,32 +605,96 @@
             guardianRelationship: '{{ old('guardian_relationship', '') }}',
             address: '{{ old('address', '') }}',
 
-            // Gestion erreurs
-            errors: {},
+            // Gestion erreurs (charger les erreurs Laravel et convertir en camelCase)
+            errors: {
+@php
+$errorMap = [
+    'first_name' => 'firstName',
+    'last_name' => 'lastName',
+    'date_of_birth' => 'dateOfBirth',
+    'place_of_birth' => 'placeOfBirth',
+    'birth_certificate_number' => 'birthCertificateNumber',
+    'section_id' => 'selectedSection',
+    'cycle' => 'selectedCycle',
+    'class_group_id' => 'selectedClass',
+    'previous_class_label' => 'previousClassLabel',
+    'enrollment_date' => 'enrollmentDate',
+];
+foreach($errors->toArray() as $field => $messages) {
+    $key = $errorMap[$field] ?? $field;
+    $message = $messages[0] ?? '';
+    echo "$key: '$message',\n";
+}
+@endphp
+            },
 
             // Alpine init
             init() {
-                // Si on a une pré-sélection (ex: redirection vers classe)
                 if (this.selectedClass) {
                     const foundClass = this.classes.find(c => String(c.id) === String(this.selectedClass));
                     if (foundClass) {
                         this.selectedSection = foundClass.section_id;
-                        this.selectedLevel = foundClass.level_id;
+                        this.selectedCycle = foundClass.cycle;
                     }
                 }
+                this.updatePreviousClassLabel();
             },
 
-            // Levels calculés dynamiquement
-            get filteredLevels() {
-                if (!this.selectedSection) return [];
-                const sec = this.sections.find(s => String(s.id) === String(this.selectedSection));
-                return sec ? sec.levels : [];
-            },
-
-            // Classes calculées dynamiquement
             get filteredClasses() {
-                if (!this.selectedLevel) return [];
-                return this.classes.filter(c => String(c.level_id) === String(this.selectedLevel));
+                if (!this.selectedSection || !this.selectedCycle) return [];
+                return this.classes.filter(c =>
+                    String(c.section_id) === String(this.selectedSection)
+                    && c.cycle === this.selectedCycle
+                );
+            },
+
+            resolvePreviousClassLabel(cls) {
+                if (!cls?.level_name) return '';
+
+                const level = cls.level_name;
+                const sectionCode = cls.section_code;
+
+                const defaults = {
+                    '6ème': 'CM2',
+                    '5ème': '6ème',
+                    '4ème': '5ème',
+                    '3ème': '4ème',
+                    '1ère Année': 'CM2',
+                    '2ème Année': '1ère Année',
+                    '3ème Année': '2ème Année',
+                    '4ème Année': '3ème Année',
+                    '1ère': '2nde',
+                    'Terminale': '1ère',
+                    'Form 1': 'Class 6',
+                    'Form 2': 'Form 1',
+                    'Form 3': 'Form 2',
+                    'Form 4': 'Form 3',
+                    'Form 5': 'Form 4',
+                    'Lower Sixth': 'Form 5',
+                    'Upper Sixth': 'Lower Sixth',
+                };
+
+                if (level === '2nde') {
+                    return sectionCode === 'EST' ? '4ème Année' : '3ème';
+                }
+
+                return defaults[level] || '';
+            },
+
+            updatePreviousClassLabel() {
+                const cls = this.classes.find(c => String(c.id) === String(this.selectedClass));
+
+                if (!cls) {
+                    this.previousClassLabel = '';
+                    return;
+                }
+
+                if (this.situation === 'redoublant') {
+                    this.previousClassLabel = cls.full_name;
+                    return;
+                }
+
+                this.previousClassLabel = this.resolvePreviousClassLabel(cls);
             },
 
             // Uploader Photo
@@ -608,9 +718,11 @@
                     if (!this.nationality.trim()) this.errors.nationality = "La nationalité est requise.";
                 } else if (s === 2) {
                     if (!this.selectedSection) this.errors.selectedSection = "La section est requise.";
-                    if (!this.selectedLevel) this.errors.selectedLevel = "Le niveau est requis.";
+                    if (!this.selectedCycle) this.errors.selectedCycle = "Le cycle est requis.";
                     if (!this.selectedClass) this.errors.selectedClass = "La classe est requise.";
                     if (!this.enrollmentDate) this.errors.enrollmentDate = "La date d'inscription est requise.";
+                    if (!this.situation) this.errors.situation = "La situation est requise.";
+                    this.updatePreviousClassLabel();
                 }
                 return Object.keys(this.errors).length === 0;
             },
@@ -628,15 +740,8 @@
                 return s ? s.name : '—';
             },
 
-            getLevelName() {
-                const lvls = this.filteredLevels;
-                const l = lvls.find(x => String(x.id) === String(this.selectedLevel));
-                return l ? l.name : '—';
-            },
-
             getClassName() {
-                const cls = this.filteredClasses;
-                const c = cls.find(x => String(x.id) === String(this.selectedClass));
+                const c = this.classes.find(x => String(x.id) === String(this.selectedClass));
                 return c ? c.full_name : '—';
             },
 

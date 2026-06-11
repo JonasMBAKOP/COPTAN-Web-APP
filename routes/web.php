@@ -10,6 +10,7 @@ use App\Http\Controllers\ClassManagementController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\StudentDocumentController;
 use App\Http\Controllers\FinanceController;
 
 
@@ -352,7 +353,22 @@ Route::middleware(['auth', 'permission:view-students'])
     ->prefix('students')
     ->name('students.')
     ->group(function () {
+        // Documents & impressions (avant wildcards)
+        Route::prefix('documents')->name('documents.')->group(function () {
+            Route::get('/', [StudentDocumentController::class, 'index'])->name('index');
+            Route::get('/cartes', [StudentDocumentController::class, 'bulkCards'])->name('cards');
+            Route::get('/certificats', [StudentDocumentController::class, 'bulkCertificates'])->name('certificates');
+            Route::get('/fiches', [StudentDocumentController::class, 'bulkInformationSheets'])->name('information-sheets');
+            Route::get('/livrets', [StudentDocumentController::class, 'bulkBooklets'])->name('booklets');
+            Route::get('/listes', [StudentDocumentController::class, 'bulkLists'])->name('lists');
+            Route::get('/rapport-effectifs', [StudentDocumentController::class, 'enrollmentTotalsReport'])->name('enrollment-totals-report');
+        });
+
         Route::get('/', [StudentController::class, 'index'])->name('index');
+
+        Route::get('/{student}/documents/{type}', [StudentDocumentController::class, 'single'])
+            ->where('type', 'fiche|certificat|carte|livret')
+            ->name('documents.single');
 
         Route::middleware('permission:manage-students')->group(function () {
             // Inscriptions (avant wildcards)
@@ -398,14 +414,15 @@ Route::middleware(['auth', 'permission:view-finances'])
              ->name('index');
         Route::get('/payments', [FinanceController::class, 'payments'])
              ->name('payments');
-        Route::get('/receipts/{payment}',
-            [FinanceController::class, 'receipt'])
+        Route::get('/receipts/batch', [FinanceController::class, 'batchReceipts'])
+            ->name('receipts.batch');
+        Route::get('/receipts/{payment}', [FinanceController::class, 'receipt'])
             ->name('receipt');
-        Route::get('/students/{enrollment}',
-            [FinanceController::class, 'studentAccount'])
+        Route::get('/students/{enrollment}/receipt', [FinanceController::class, 'globalReceipt'])
+            ->name('student.receipt');
+        Route::get('/students/{enrollment}', [FinanceController::class, 'studentAccount'])
             ->name('student');
-        Route::get('/classes/{classGroup}/students',
-            [FinanceController::class, 'classStudents'])
+        Route::get('/classes/{classGroup}/students', [FinanceController::class, 'classStudents'])
             ->name('class-students');
         Route::get('/fees-list', [FinanceController::class, 'feesList'])
             ->name('fees-list');

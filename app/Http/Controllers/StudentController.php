@@ -12,6 +12,7 @@ use App\Models\Section;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
 use App\Services\EnrollmentService;
+use App\Services\StudentDocumentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -19,7 +20,8 @@ use Illuminate\Support\Facades\Storage;
 class StudentController extends Controller
 {
     public function __construct(
-        private readonly EnrollmentService $enrollments
+        private readonly EnrollmentService $enrollments,
+        private readonly StudentDocumentService $documents
     ) {}
     // ── LISTE ─────────────────────────────────────────────────────────────
     public function index(Request $request)
@@ -132,10 +134,17 @@ class StudentController extends Controller
             ? $this->enrollments->pendingRenewalCount($activeYear)
             : 0;
 
+        $listPrintParams = $this->documents->listPrintParamsFromIndexFilters(
+            $selectedYear,
+            $request->input('class_id'),
+            $request->input('section_id'),
+            $renewalFilter
+        );
+
         return view('students.index', compact(
             'students', 'years', 'sections', 'classes',
             'selectedYear', 'stats', 'activeYear', 'isYearEditable',
-            'renewalFilter', 'pendingRenewal'
+            'renewalFilter', 'pendingRenewal', 'listPrintParams'
         ));
     }
 
@@ -151,7 +160,7 @@ class StudentController extends Controller
                 ->find($request->class_id)
             : null;
 
-        // Sections avec leurs niveaux
+        // Sections avec leurs cycles et classes
         $sectionsJson = Section::with(['levels' => fn($q) =>
             $q->orderBy('order_index')
         ])->orderBy('id')->get()->map(function($s) {
@@ -159,13 +168,14 @@ class StudentController extends Controller
                 'id'     => $s->id,
                 'name'   => $s->name,
                 'levels' => $s->levels->map(fn($l) => [
-                    'id'   => $l->id,
-                    'name' => $l->name,
+                    'id'    => $l->id,
+                    'name'  => $l->name,
+                    'cycle' => $l->cycle,
                 ])->values()->toArray(),
             ];
         })->values()->toArray();
 
-        // Classes de l'année active avec stats
+        // Classes de l'année active avec stats et cycle
         $classesJson = [];
         if ($activeYear) {
             $classes = ClassGroup::where('academic_year_id', $activeYear->id)
@@ -173,11 +183,18 @@ class StudentController extends Controller
                 ->get();
 
             foreach ($classes as $c) {
+                $cycle = $c->level?->cycle
+                    ?? (($c->level?->order_index ?? 0) <= 4 ? '1er' : '2nd');
+
                 $classesJson[] = [
                     'id'            => $c->id,
                     'full_name'     => $c->full_name,
                     'level_id'      => $c->level_id,
+                    'level_name'    => $c->level?->name,
+                    'cycle'         => $cycle,
                     'section_id'    => $c->level?->section_id,
+                    'section_code'  => $c->level?->section?->code,
+                    'section_name'  => $c->level?->section?->name,
                     'max_students'  => $c->max_students,
                     'students_count'=> $c->studentEnrollments()
                                         ->where('status', 'active')
@@ -262,7 +279,10 @@ class StudentController extends Controller
                     'class_group_id'          => $request->class_group_id,
                     'enrollment_date'         => $request->enrollment_date,
                     'is_repeating'            => $request->boolean('is_repeating'),
-                    'previous_class_group_id' => $request->previous_class_group_id,
+                    'previous_class_group_id' => $request->boolean('is_repeating')
+                        ? $request->class_group_id
+                        : $request->previous_class_group_id,
+                    'previous_class_label'    => $request->previous_class_label,
                     'origin_school'           => $request->origin_school,
                     'status'                  => StudentEnrollment::STATUS_ACTIVE,
                 ]);

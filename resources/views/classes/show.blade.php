@@ -77,17 +77,17 @@
 
                 {{-- Action Modifier à droite --}}
                 @can('manage-classes')
-                @if(!$classGroup->academicYear->isClosed())
-                <div class="flex-shrink-0">
-                    <a href="{{ route('classes.edit', $classGroup) }}"
-                       class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/20 hover:bg-white/10 active:scale-95 transition-all text-sm font-bold text-white">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                        </svg>
-                        Modifier la classe
-                    </a>
-                </div>
-                @endif
+                    @if(!$classGroup->academicYear->isClosed())
+                        <div class="flex-shrink-0">
+                            <a href="{{ route('classes.edit', $classGroup) }}"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/20 hover:bg-white/10 active:scale-95 transition-all text-sm font-bold text-white">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                </svg>
+                                Modifier la classe
+                            </a>
+                        </div>
+                    @endif
                 @endcan
             </div>
         </div>
