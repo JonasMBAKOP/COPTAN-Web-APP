@@ -50,20 +50,20 @@ return new class extends Migration
                     ]);
             });
 
-        Schema::table('class_groups', function (Blueprint $table) {
-            $table->dropUnique(['academic_year_id', 'level_id', 'name']);
-            $table->unique(
-                ['academic_year_id', 'level_id', 'series', 'sub_group'],
-                'class_groups_year_level_series_sub_group_unique'
-            );
-        });
+        // Schema::table('class_groups', function (Blueprint $table) {
+        //     $table->dropUnique(['academic_year_id', 'level_id', 'name']);
+        //     $table->unique(
+        //         ['academic_year_id', 'level_id', 'series', 'sub_group'],
+        //         'class_groups_year_level_series_sub_group_unique'
+        //     );
+        // });
     }
 
-    // public function down(): void
-    // {
-    //     Schema::table('class_groups', function (Blueprint $table) {
-    //         $table->dropUnique('class_groups_year_level_series_sub_group_unique');
-    //         $table->unique(['academic_year_id', 'level_id', 'name']);
-    //     });
-    // }
+    public function down(): void
+    {
+        Schema::table('class_groups', function (Blueprint $table) {
+            $table->dropUnique('class_groups_year_level_series_sub_group_unique');
+            $table->unique(['academic_year_id', 'level_id', 'name']);
+        });
+    }
 };
