@@ -59,11 +59,11 @@ return new class extends Migration
         });
     }
 
-    public function down(): void
-    {
-        Schema::table('class_groups', function (Blueprint $table) {
-            $table->dropUnique('class_groups_year_level_series_sub_group_unique');
-            $table->unique(['academic_year_id', 'level_id', 'name']);
-        });
-    }
+    // public function down(): void
+    // {
+    //     Schema::table('class_groups', function (Blueprint $table) {
+    //         $table->dropUnique('class_groups_year_level_series_sub_group_unique');
+    //         $table->unique(['academic_year_id', 'level_id', 'name']);
+    //     });
+    // }
 };
