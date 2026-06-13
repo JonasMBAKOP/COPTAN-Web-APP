@@ -42,6 +42,7 @@
     </a>
 </div>
 
+@if(auth()->user()->hasAnyRole(['super-admin', 'directeur', 'fondateur']))
 {{-- ── STATISTIQUES ─────────────────────────────────────────────────────── --}}
 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
 
@@ -99,6 +100,7 @@
     </div>
 
 </div>
+@endif
 
 {{-- ── CLASSES — ÉTAT FINANCIER ────────────────────────────────────────── --}}
 @if($classes->isEmpty())

@@ -639,4 +639,252 @@ class FinanceController extends Controller
             'debtors', 'globalStats'
         ));
     }
+
+    // ── TABLEAU DE BORD DE GESTION GLOBALE ───────────────────────────────
+    public function global(Request $request)
+    {
+        $activeYear     = AcademicYear::active();
+        $selectedYearId = $request->input('year_id', $activeYear?->id);
+        $selectedYear   = $selectedYearId
+            ? AcademicYear::find($selectedYearId)
+            : null;
+
+        $years = AcademicYear::orderByDesc('start_date')->get();
+
+        // ── Effectif total des élèves actifs pour l'année sélectionnée
+        $totalEnrolled = 0;
+        if ($selectedYear) {
+            $totalEnrolled = StudentEnrollment::where('academic_year_id', $selectedYear->id)
+                ->where('status', 'active')
+                ->count();
+        }
+
+        // ── Stats par classe
+        $classeStats = collect();
+        if ($selectedYear) {
+            $classes = ClassGroup::where('academic_year_id', $selectedYear->id)
+                ->with([
+                    'level.section',
+                    'feeStructures.installments',
+                ])
+                ->withCount([
+                    'studentEnrollments as enrolled_count' => fn($q) =>
+                        $q->where('status', 'active'),
+                ])
+                ->get();
+
+            foreach ($classes as $class) {
+                $fee       = $class->feeStructures->first();
+                $feeTotal  = $fee?->installments->sum('amount') ?? 0;
+                $expected  = $feeTotal * $class->enrolled_count;
+                $collected = \App\Models\StudentPayment::whereHas(
+                    'studentEnrollment', fn($q) =>
+                        $q->where('class_group_id', $class->id)
+                        ->where('status', 'active')
+                )->sum('amount_paid');
+
+                $classeStats->push([
+                    'class'     => $class,
+                    'expected'  => $expected,
+                    'collected' => $collected,
+                    'remaining' => max(0, $expected - $collected),
+                    'rate'      => $expected > 0
+                        ? round(($collected / $expected) * 100) : 0,
+                ]);
+            }
+        }
+
+        // ── Stats par mode de paiement
+        $paymentMethods = \App\Models\StudentPayment::selectRaw(
+            'payment_method, SUM(amount_paid) as total, COUNT(*) as count'
+        )
+        ->when($selectedYear, fn($q) =>
+            $q->whereHas('studentEnrollment', fn($q2) =>
+                $q2->where('academic_year_id', $selectedYear->id)
+            )
+        )
+        ->groupBy('payment_method')
+        ->get();
+
+        // ── Stats par tranche
+        $installmentStatsRaw = FeeInstallment::selectRaw(
+            'fee_installments.id,
+            fee_installments.label,
+            fee_installments.installment_number,
+            fee_installments.amount,
+            fee_installments.due_date_end,
+            SUM(student_payments.amount_paid) as collected,
+            COUNT(DISTINCT student_payments.student_enrollment_id) as payers'
+        )
+        ->leftJoin('student_payments',
+            'student_payments.fee_installment_id', '=', 'fee_installments.id')
+        ->leftJoin('fee_structures',
+            'fee_structures.id', '=', 'fee_installments.fee_structure_id')
+        ->when($selectedYear, fn($q) =>
+            $q->where('fee_structures.academic_year_id', $selectedYear->id)
+        )
+        ->groupBy('fee_installments.id',
+                'fee_installments.label',
+                'fee_installments.installment_number',
+                'fee_installments.amount',
+                'fee_installments.due_date_end')
+        ->orderBy('fee_installments.installment_number')
+        ->get();
+
+        $installmentStats = $installmentStatsRaw->map(function($is) use ($totalEnrolled) {
+            $rate = $totalEnrolled > 0 ? round(($is->payers / $totalEnrolled) * 100) : 0;
+            
+            $dueDate = '';
+            if ($is->due_date_end) {
+                try {
+                    $dueDate = \Carbon\Carbon::parse($is->due_date_end)->translatedFormat('d F');
+                } catch (\Exception $e) {
+                    $dueDate = $is->due_date_end;
+                }
+            } else {
+                $dueDate = match($is->installment_number) {
+                    1 => '15 Septembre',
+                    2 => '15 Décembre',
+                    3 => '15 Mars',
+                    default => 'Non définie',
+                };
+            }
+            
+            return (object) [
+                'id' => $is->id,
+                'label' => $is->label,
+                'installment_number' => $is->installment_number,
+                'amount' => $is->amount,
+                'collected' => $is->collected ?? 0,
+                'payers' => $is->payers ?? 0,
+                'rate' => $rate,
+                'due_date' => $dueDate,
+            ];
+        });
+
+        // ── Élèves avec solde impayé (Débiteurs)
+        $debtors = \App\Models\StudentEnrollment::where('status', 'active')
+            ->when($selectedYear, fn($q) =>
+                $q->where('academic_year_id', $selectedYear->id)
+            )
+            ->with([
+                'student',
+                'classGroup.level.section',
+                'classGroup.feeStructures.installments',
+            ])
+            ->get()
+            ->map(function($e) {
+                $fee      = $e->classGroup->feeStructures->first();
+                $due      = $fee?->installments->sum('amount') ?? 0;
+                $paid     = \App\Models\StudentPayment::where(
+                    'student_enrollment_id', $e->id
+                )->sum('amount_paid');
+                $remaining = max(0, $due - $paid);
+                return ['enrollment' => $e, 'due' => $due,
+                        'paid' => $paid, 'remaining' => $remaining];
+            })
+            ->filter(fn($e) => $e['remaining'] > 0)
+            ->sortByDesc('remaining')
+            ->values();
+
+        // ── Totaux globaux
+        $globalStats = [
+            'expected'  => $classeStats->sum('expected'),
+            'collected' => $classeStats->sum('collected'),
+            'remaining' => $classeStats->sum('remaining'),
+            'rate'      => $classeStats->sum('expected') > 0
+                ? round(($classeStats->sum('collected')
+                    / $classeStats->sum('expected')) * 100)
+                : 0,
+            'debtors'   => $debtors->count(),
+        ];
+
+        // ── Calcul du taux d'élèves à jour
+        $debtorsCount = $debtors->count();
+        $paidInFullCount = max(0, $totalEnrolled - $debtorsCount);
+        $paidInFullRate = $totalEnrolled > 0 ? round(($paidInFullCount / $totalEnrolled) * 100) : 0;
+
+        // ── Stats par section
+        $sectionStats = collect();
+        $sections = Section::all();
+        foreach ($sections as $sec) {
+            $sectionStats->put($sec->id, [
+                'section' => $sec,
+                'expected' => 0,
+                'collected' => 0,
+            ]);
+        }
+        foreach ($classeStats as $row) {
+            $secId = $row['class']->level->section_id;
+            if ($sectionStats->has($secId)) {
+                $current = $sectionStats->get($secId);
+                $current['expected'] += $row['expected'];
+                $current['collected'] += $row['collected'];
+                $sectionStats->put($secId, $current);
+            }
+        }
+        $sectionStats = $sectionStats->map(function($item) {
+            $expected = $item['expected'];
+            $collected = $item['collected'];
+            $remaining = max(0, $expected - $collected);
+            $rate = $expected > 0 ? round(($collected / $expected) * 100) : 0;
+            return (object) array_merge($item, [
+                'remaining' => $remaining,
+                'rate' => $rate,
+            ]);
+        });
+
+        // ── Encaissements du jour
+        $todayPaymentsCount = StudentPayment::whereDate('payment_date', today())->count();
+        $todayPaymentsAmount = StudentPayment::whereDate('payment_date', today())->sum('amount_paid');
+        $lastPaymentTime = StudentPayment::orderByDesc('created_at')->first()?->created_at?->format('H:i') ?? '--:--';
+
+        // ── Paiements récents
+        $recentPayments = StudentPayment::with([
+            'studentEnrollment.student',
+            'studentEnrollment.classGroup.level.section',
+            'feeInstallment',
+        ])
+        ->when($selectedYear, fn($q) =>
+            $q->whereHas('studentEnrollment', fn($q2) =>
+                $q2->where('academic_year_id', $selectedYear->id)
+            )
+        )
+        ->orderByDesc('created_at')
+        ->take(5)
+        ->get();
+
+        // ── Évolution mensuelle (Septembre à Juin)
+        $monthlyData = collect();
+        $monthsOrder = [
+            9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Déc',
+            1 => 'Jan', 2 => 'Fév', 3 => 'Mar', 4 => 'Avr',
+            5 => 'Mai', 6 => 'Juin'
+        ];
+        
+        $rawMonthly = StudentPayment::selectRaw('MONTH(payment_date) as month, SUM(amount_paid) as total')
+            ->when($selectedYear, fn($q) =>
+                $q->whereHas('studentEnrollment', fn($q2) =>
+                    $q2->where('academic_year_id', $selectedYear->id)
+                )
+            )
+            ->groupBy('month')
+            ->get()
+            ->keyBy('month');
+            
+        foreach ($monthsOrder as $mNum => $mLabel) {
+            $monthlyData->push((object) [
+                'label' => $mLabel,
+                'total' => $rawMonthly->has($mNum) ? (float) $rawMonthly->get($mNum)->total : 0,
+            ]);
+        }
+
+        return view('finances.global', compact(
+            'selectedYear', 'years', 'classeStats', 'totalEnrolled',
+            'paymentMethods', 'installmentStats', 'debtors', 'globalStats',
+            'paidInFullRate', 'sectionStats', 'todayPaymentsCount',
+            'todayPaymentsAmount', 'lastPaymentTime', 'recentPayments',
+            'monthlyData'
+        ));
+    }
 }

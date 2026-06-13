@@ -197,6 +197,14 @@
                 Finances
             </p>
 
+            @if(auth()->user()->hasAnyRole(['super-admin', 'directeur', 'fondateur']))
+            <x-sidebar-item
+                icon="chart-bar"
+                label="Gestion Globale"
+                href="{{ route('finances.global') }}"
+                :active="request()->routeIs('finances.global')" />
+            @endif
+
             <x-sidebar-item
                 icon="currency-dollar"
                 label="Finances"

@@ -415,6 +415,9 @@ Route::middleware(['auth', 'permission:view-finances'])
     ->group(function () {
         Route::get('/', [FinanceController::class, 'index'])
              ->name('index');
+        Route::get('/global', [FinanceController::class, 'global'])
+             ->middleware(['role:super-admin,directeur,fondateur'])
+             ->name('global');
         Route::get('/payments', [FinanceController::class, 'payments'])
              ->name('payments');
         Route::get('/receipts/batch', [FinanceController::class, 'batchReceipts'])
