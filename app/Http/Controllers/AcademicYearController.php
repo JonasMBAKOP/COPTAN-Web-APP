@@ -103,7 +103,9 @@ class AcademicYearController extends Controller
     // ── ANNÉES SCOLAIRES — CRÉATION ────────────────────────────────────────
     public function create()
     {
-        $previousYears = AcademicYear::orderByDesc('start_date')->get();
+        $previousYears = AcademicYear::withCount('classGroups')
+            ->orderByDesc('start_date')
+            ->get();
 
         // Suggestion automatique du libellé
         $suggestedLabel = $this->suggestNextLabel();
@@ -116,31 +118,35 @@ class AcademicYearController extends Controller
     public function store(StoreAcademicYearRequest $request)
     {
         // Créer l'année scolaire
-        $year = AcademicYear::create([
-            'label'      => $request->label,
-            'start_date' => $request->start_date,
-            'end_date'   => $request->end_date,
-            'is_active'  => false,
-        ]);
+        $year = DB::transaction(function () use ($request) {
+            $year = AcademicYear::create([
+                'label'      => $request->label,
+                'start_date' => $request->start_date,
+                'end_date'   => $request->end_date,
+                'is_active'  => false,
+            ]);
 
         // Auto-générer les 3 trimestres et 6 séquences
-        $this->generateCalendar($year, $request);
+            $this->generateCalendar($year, $request);
 
         // Copie depuis une année précédente
-        if ($request->filled('copy_from')) {
-            $sourceYear = AcademicYear::find($request->copy_from);
+            if ($request->filled('copy_from')) {
+                $sourceYear = AcademicYear::find($request->copy_from);
 
-            if ($request->boolean('copy_classes') && $sourceYear) {
-                $this->copyClassesFrom($year, $sourceYear,
-                    $request->boolean('copy_subjects'),
-                    $request->boolean('copy_fees'));
+                if ($sourceYear && $request->boolean('copy_classes', true)) {
+                    $this->copyClassesFrom($year, $sourceYear,
+                        $request->boolean('copy_subjects'),
+                        $request->boolean('copy_fees'));
+                }
             }
-        }
 
-        AuditLog::log('created', $year, [], $year->toArray());
+            AuditLog::log('created', $year, [], $year->toArray());
+
+            return $year;
+        });
 
         return redirect()
-            ->route('academic-years.show', $year)
+            ->route('academic-years.index')
             ->with('success',
                 "Année scolaire {$year->label} créée avec succès.");
     }
@@ -207,6 +213,7 @@ class AcademicYearController extends Controller
                                       'regex:/^\d{4}-\d{4}$/'],
             'start_date'          => ['required', 'date'],
             'end_date'            => ['required', 'date', 'after:start_date'],
+            'sequences.*.label'   => ['required', 'string', 'max:50'],
             'sequences.*.start'   => ['nullable', 'date'],
             'sequences.*.end'     => ['nullable', 'date'],
         ], [
@@ -233,6 +240,7 @@ class AcademicYearController extends Controller
             }
 
             $sequence->update([
+                'label'      => $dates['label'],
                 'start_date' => $dates['start'] ?: null,
                 'end_date'   => $dates['end']   ?: null,
             ]);
@@ -254,7 +262,7 @@ class AcademicYearController extends Controller
     // ── ACTIVATION ────────────────────────────────────────────────────────
     public function activate(AcademicYear $academicYear)
     {
-        if ($academicYear->isClosed()) {
+        if (false && $academicYear->isClosed()) {
             return back()->with('error',
                 'Impossible d\'activer une année clôturée.');
         }
@@ -265,11 +273,14 @@ class AcademicYearController extends Controller
         }
 
         $finalizedCount = 0;
+        $reactivatedCount = 0;
 
-        DB::transaction(function () use ($academicYear, &$finalizedCount) {
+        DB::transaction(function () use ($academicYear, &$finalizedCount, &$reactivatedCount) {
             $previouslyActive = AcademicYear::active();
 
             $academicYear->activate();
+            $reactivatedCount = $this->enrollments
+                ->reactivateYearEnrollments($academicYear);
 
             if ($previouslyActive && $previouslyActive->id !== $academicYear->id) {
                 $finalizedCount = $this->enrollments
@@ -285,6 +296,10 @@ class AcademicYearController extends Controller
         if ($finalizedCount > 0) {
             $message .= " {$finalizedCount} inscription(s) de l'année précédente "
                 . "ont été clôturées — renouvelez les élèves pour la nouvelle année.";
+        }
+
+        if ($reactivatedCount > 0) {
+            $message .= " {$reactivatedCount} inscription(s) de cette annee ont ete reactivees.";
         }
 
         return back()->with('success', $message);
@@ -305,6 +320,9 @@ class AcademicYearController extends Controller
                 ->finalizeYearEnrollments($academicYear);
 
             $academicYear->update(['is_active' => false]);
+
+            $reactivatedCount = $this->enrollments
+                ->reactivateYearEnrollments($academicYear);
         });
 
         AuditLog::log('closed', $academicYear);
@@ -406,18 +424,7 @@ class AcademicYearController extends Controller
             3 => 'Trimestre 3',
         ];
 
-        $sequenceLabels = [
-            1 => 'Séquence 1', 2 => 'Séquence 2',
-            3 => 'Séquence 3', 4 => 'Séquence 4',
-            5 => 'Séquence 5', 6 => 'Séquence 6',
-        ];
-
-        // Séquences par trimestre : T1 → S1,S2 | T2 → S3,S4 | T3 → S5,S6
-        $seqByTrimester = [
-            1 => [1, 2],
-            2 => [3, 4],
-            3 => [5, 6],
-        ];
+        $sequenceConfig = $this->defaultSequenceConfig();
 
         foreach ($trimesters as $num => $label) {
             // // $trimData = $request->input("trimesters.{$num}", []);
@@ -430,14 +437,14 @@ class AcademicYearController extends Controller
                 'end_date'         => null,
             ]);
 
-            foreach ($seqByTrimester[$num] as $seqNum) {
+            foreach ($sequenceConfig[$num] as $seqNum => $defaultLabel) {
                 $seqData = $request->input("sequences.{$seqNum}", []);
 
                 Sequence::create([
                     'academic_year_id' => $year->id,
                     'trimester_id'     => $trimester->id,
                     'number'           => $seqNum,
-                    'label'            => $sequenceLabels[$seqNum],
+                    'label'            => $seqData['label'] ?? $defaultLabel,
                     'start_date' => $seqData['start_date'] ?? null,
                     'end_date'   => $seqData['end_date']   ?? null,
                     'is_grades_locked' => false,
@@ -450,6 +457,27 @@ class AcademicYearController extends Controller
     }
 
     // Copie les classes d'une année vers une autre
+    private function defaultSequenceConfig(): array
+    {
+        return [
+            1 => [
+                1 => 'CC1',
+                2 => 'DS1',
+                3 => 'DS2',
+            ],
+            2 => [
+                4 => 'CC2',
+                5 => 'DS3',
+                6 => 'DS4',
+            ],
+            3 => [
+                7 => 'CC3',
+                8 => 'DS5',
+                9 => 'DS6',
+            ],
+        ];
+    }
+
     private function copyClassesFrom(
         AcademicYear $target,
         AcademicYear $source,
@@ -457,19 +485,25 @@ class AcademicYearController extends Controller
         bool $copyFees): void
     {
         $sourceClasses = ClassGroup::where('academic_year_id', $source->id)
-                                   ->with(['classSubjects'])
+                                   ->with(['classSubjects', 'level'])
                                    ->get();
-        // $sourceClasses = ClassGroup::where('academic_year_id', $source->id)
-        //                            ->with('classSubjects.feeStructures')
-        //                            ->get();
 
         foreach ($sourceClasses as $sourceClass) {
-            $newClass = ClassGroup::create([
-                'academic_year_id'  => $target->id,
-                'level_id'          => $sourceClass->level_id,
-                'name'              => $sourceClass->name,
-                'sub_group'         => $sourceClass->sub_group,
-                'series'            => $sourceClass->series,
+            $series = trim((string) $sourceClass->series);
+            $subGroup = trim((string) $sourceClass->sub_group);
+            $name = $sourceClass->name ?: ClassGroup::composeName(
+                $sourceClass->level?->name ?? '',
+                $series,
+                $subGroup
+            );
+
+            $newClass = ClassGroup::updateOrCreate([
+                'academic_year_id' => $target->id,
+                'level_id'         => $sourceClass->level_id,
+                'series'           => $series,
+                'sub_group'        => $subGroup,
+            ], [
+                'name'              => $name,
                 'max_students'      => $sourceClass->max_students,
                 'titular_staff_id'  => $sourceClass->titular_staff_id,
                 'room'              => $sourceClass->room,
@@ -477,36 +511,41 @@ class AcademicYearController extends Controller
 
             if ($copySubjects) {
                 foreach ($sourceClass->classSubjects as $cs) {
-                    $newCs = ClassSubject::create([
+                    $newCs = ClassSubject::updateOrCreate([
                         'class_group_id' => $newClass->id,
                         'subject_id'     => $cs->subject_id,
+                    ], [
                         'coefficient'    => $cs->coefficient,
                         'hours_per_week' => $cs->hours_per_week,
                         'is_active'      => $cs->is_active,
                     ]);
+                }
+            }
 
-                    if ($copyFees) {
-                        $sourceFee = FeeStructure::where([
-                            'academic_year_id' => $source->id,
-                            'class_group_id'   => $sourceClass->id,
-                        ])->with('installments')->first();
+            if ($copyFees) {
+                $sourceFee = FeeStructure::where([
+                    'academic_year_id' => $source->id,
+                    'class_group_id'   => $sourceClass->id,
+                ])->with('installments')->first();
 
-                        if ($sourceFee) {
-                            $newFee = FeeStructure::create([
-                                'academic_year_id' => $target->id,
-                                'class_group_id'   => $newClass->id,
-                                'total_amount'     => $sourceFee->total_amount,
-                            ]);
+                if ($sourceFee) {
+                    $newFee = FeeStructure::updateOrCreate([
+                        'academic_year_id' => $target->id,
+                        'class_group_id'   => $newClass->id,
+                    ], [
+                        'total_amount'     => $sourceFee->total_amount,
+                    ]);
 
-                            foreach ($sourceFee->installments as $inst) {
-                                FeeInstallment::create([
-                                    'fee_structure_id'   => $newFee->id,
-                                    'installment_number' => $inst->installment_number,
-                                    'label'              => $inst->label,
-                                    'amount'             => $inst->amount,
-                                ]);
-                            }
-                        }
+                    foreach ($sourceFee->installments as $inst) {
+                        FeeInstallment::updateOrCreate([
+                            'fee_structure_id'   => $newFee->id,
+                            'installment_number' => $inst->installment_number,
+                        ], [
+                            'label'              => $inst->label,
+                            'amount'             => $inst->amount,
+                            'due_date_start'     => $inst->due_date_start,
+                            'due_date_end'       => $inst->due_date_end,
+                        ]);
                     }
                 }
             }

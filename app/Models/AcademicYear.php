@@ -66,6 +66,6 @@ class AcademicYear extends Model
     // Vérifie si l'année est clôturée (non modifiable)
     public function isClosed(): bool
     {
-        return !$this->is_active && $this->end_date->isPast();
+        return !$this->is_active && $this->end_date?->isPast();
     }
 }

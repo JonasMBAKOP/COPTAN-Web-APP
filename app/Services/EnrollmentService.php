@@ -59,6 +59,13 @@ class EnrollmentService
             ->update(['status' => StudentEnrollment::STATUS_INACTIVE]);
     }
 
+    public function reactivateYearEnrollments(AcademicYear $year): int
+    {
+        return StudentEnrollment::where('academic_year_id', $year->id)
+            ->where('status', StudentEnrollment::STATUS_INACTIVE)
+            ->update(['status' => StudentEnrollment::STATUS_ACTIVE]);
+    }
+
     public function hasActiveEnrollment(Student $student, int $yearId): bool
     {
         return StudentEnrollment::where([

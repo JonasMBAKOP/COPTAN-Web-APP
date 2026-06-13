@@ -89,12 +89,23 @@ class ClassManagementController extends Controller
     // ── ENREGISTREMENT ────────────────────────────────────────────────────
     public function store(StoreClassGroupRequest $request)
     {
-        // Vérifier unicité du nom dans la même année/niveau
-        $exists = ClassGroup::where([
-            'academic_year_id' => $request->academic_year_id,
-            'level_id'         => $request->level_id,
-            'name'             => $request->name,
-        ])->exists();
+        // Verifier unicite annee + niveau + serie + sous-groupe.
+        $data = $request->validated();
+        $level = Level::findOrFail($data['level_id']);
+        $data['series'] = $this->normalizeOptionalClassPart($data['series'] ?? '');
+        $data['sub_group'] = $this->normalizeOptionalClassPart($data['sub_group'] ?? '');
+        $data['name'] = ClassGroup::composeName(
+            $level->name,
+            $data['series'],
+            $data['sub_group']
+        );
+
+        $exists = $this->classCombinationExists(
+            (int) $data['academic_year_id'],
+            (int) $data['level_id'],
+            $data['series'],
+            $data['sub_group']
+        );
 
         if ($exists) {
             return back()
@@ -104,7 +115,7 @@ class ClassManagementController extends Controller
                     . 'pour cette année scolaire.');
         }
 
-        $classGroup = ClassGroup::create($request->validated());
+        $classGroup = ClassGroup::create($data);
 
         AuditLog::log('created', $classGroup, [], $classGroup->toArray());
 
@@ -177,14 +188,24 @@ class ClassManagementController extends Controller
                 'Année clôturée — modification impossible.');
         }
 
-        // Vérifier unicité si le nom/niveau a changé
-        $exists = ClassGroup::where([
-            'academic_year_id' => $classGroup->academic_year_id,
-            'level_id'         => $request->level_id,
-            'name'             => $request->name,
-        ])
-        ->where('id', '!=', $classGroup->id)
-        ->exists();
+        // Verifier unicite annee + niveau + serie + sous-groupe.
+        $data = $request->validated();
+        $level = Level::findOrFail($data['level_id']);
+        $data['series'] = $this->normalizeOptionalClassPart($data['series'] ?? '');
+        $data['sub_group'] = $this->normalizeOptionalClassPart($data['sub_group'] ?? '');
+        $data['name'] = ClassGroup::composeName(
+            $level->name,
+            $data['series'],
+            $data['sub_group']
+        );
+
+        $exists = $this->classCombinationExists(
+            (int) $classGroup->academic_year_id,
+            (int) $data['level_id'],
+            $data['series'],
+            $data['sub_group'],
+            $classGroup->id
+        );
 
         if ($exists) {
             return back()->withInput()
@@ -193,7 +214,7 @@ class ClassManagementController extends Controller
         }
 
         $old = $classGroup->toArray();
-        $classGroup->update($request->validated());
+        $classGroup->update($data);
         AuditLog::log('updated', $classGroup, $old, $classGroup->toArray());
 
         return redirect()
@@ -292,6 +313,26 @@ class ClassManagementController extends Controller
 
         return back()->with('success',
             "Niveau « {$name} » supprimé.");
+    }
+
+    private function normalizeOptionalClassPart(?string $value): string
+    {
+        return trim((string) $value);
+    }
+
+    private function classCombinationExists(
+        int $academicYearId,
+        int $levelId,
+        string $series,
+        string $subGroup,
+        ?int $exceptId = null
+    ): bool {
+        return ClassGroup::where('academic_year_id', $academicYearId)
+            ->where('level_id', $levelId)
+            ->where('series', $series)
+            ->where('sub_group', $subGroup)
+            ->when($exceptId, fn ($query) => $query->where('id', '!=', $exceptId))
+            ->exists();
     }
 
     // ── MISE À JOUR D'UNE SECTION ─────────────────────────────────────────

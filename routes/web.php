@@ -57,9 +57,12 @@ Route::middleware(['auth', 'role:econome,super-admin'])
     ->prefix('econome')
     ->name('econome.')
     ->group(function () {
-        Route::get('/dashboard', function () {
-            return view('dashboards.econome');
-        })->name('dashboard');
+        // Route::get('/dashboard', function () {
+        //     return view('dashboards.econome');
+        // })->name('dashboard');
+        Route::get('/dashboard',
+            [\App\Http\Controllers\DashboardController::class, 'econome'])
+            ->name('dashboard');
     });
 
 // ── ENSEIGNANT ────────────────────────────────────────────────────────────────

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class ClassGroup extends Model
 {
@@ -24,7 +25,6 @@ class ClassGroup extends Model
         ];
     }
 
-    // ── Relations ──────────────────────────────────────────────────────────
     public function academicYear()
     {
         return $this->belongsTo(AcademicYear::class);
@@ -65,17 +65,28 @@ class ClassGroup extends Model
         return $this->hasMany(FeeStructure::class);
     }
 
-    // ── Méthodes utilitaires ───────────────────────────────────────────────
-    // Nom complet de la classe (ex: "3ème B — Série C")
-    public function getFullNameAttribute(): string
+    public static function composeName(string $levelName, ?string $series = null, ?string $subGroup = null): string
     {
-        $name = $this->name;
-        if ($this->sub_group) $name .= ' ' . $this->sub_group;
-        if ($this->series)    $name .= ' — ' . $this->series;
-        return $name;
+        return Str::squish(implode(' ', array_filter([
+            $levelName,
+            $series,
+            $subGroup,
+        ], fn ($part) => filled($part))));
     }
 
-    // Nombre d'élèves inscrits
+    public function getFullNameAttribute(): string
+    {
+        if ($this->relationLoaded('level') && $this->level) {
+            return self::composeName(
+                $this->level->name,
+                $this->series,
+                $this->sub_group
+            );
+        }
+
+        return $this->name;
+    }
+
     public function getStudentsCountAttribute(): int
     {
         return $this->studentEnrollments()

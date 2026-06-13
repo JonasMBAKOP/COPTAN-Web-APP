@@ -29,7 +29,7 @@
     <form method="POST" action="{{ route('classes.store') }}">
         @csrf
         <input type="hidden" name="academic_year_id" value="{{ $activeYear->id }}">
-        <input type="hidden" name="name" :value="levelName">
+        <input type="hidden" name="name" :value="previewName">
         {{-- On met max_students à une valeur par défaut fixe côté serveur --}}
         <input type="hidden" name="max_students" value="60">
 
@@ -237,9 +237,7 @@ function classForm(sections, initialSection, initialLevel) {
         get previewName() {
             let n = this.levelName;
             if (!n) return '';
-            if (this.subGroup.trim()) n += ' ' + this.subGroup.trim();
-            if (this.series.trim())   n += ' — ' + this.series.trim();
-            return n;
+            return [n, this.series.trim(), this.subGroup.trim()].filter(Boolean).join(' ');
         }
     }
 }

@@ -216,9 +216,7 @@ function classEditForm(sections, sectionId, levelId, subGroup, series) {
         get previewName() {
             let n = this.levelName;
             if (!n) return '';
-            if (this.subGroup.trim()) n += ' ' + this.subGroup.trim();
-            if (this.series.trim())   n += ' — ' + this.series.trim();
-            return n;
+            return [n, this.series.trim(), this.subGroup.trim()].filter(Boolean).join(' ');
         }
     }
 }

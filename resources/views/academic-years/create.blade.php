@@ -103,9 +103,9 @@
                 <div class="space-y-4">
                     @php
                         $trimestres = [
-                            1 => ['label' => 'Trimestre 1', 'seqs' => [1, 2]],
-                            2 => ['label' => 'Trimestre 2', 'seqs' => [3, 4]],
-                            3 => ['label' => 'Trimestre 3', 'seqs' => [5, 6]],
+                            1 => ['label' => 'Trimestre 1', 'seqs' => [1 => 'CC1', 2 => 'DS1', 3 => 'DS2']],
+                            2 => ['label' => 'Trimestre 2', 'seqs' => [4 => 'CC2', 5 => 'DS3', 6 => 'DS4']],
+                            3 => ['label' => 'Trimestre 3', 'seqs' => [7 => 'CC3', 8 => 'DS5', 9 => 'DS6']],
                         ];
                     @endphp
 
@@ -143,19 +143,33 @@
 
                         {{-- Séquences du trimestre --}}
                         <div class="divide-y divide-gray-50">
-                            @foreach($trimestre['seqs'] as $sNum)
-                            <div class="px-4 py-3 flex items-center gap-4 bg-white">
+                            @foreach($trimestre['seqs'] as $sNum => $sLabel)
+                            <div class="px-4 py-3 grid grid-cols-1 md:grid-cols-[auto_1fr_auto] gap-3 md:items-center bg-white">
                                 <div class="w-6 h-6 rounded-full flex items-center
                                             justify-center text-xs font-medium
-                                            flex-shrink-0 ml-4"
+                                            flex-shrink-0 md:ml-4"
                                      style="background-color: #EBF3FB;
                                             color: #1A3A6B;">
                                     {{ $sNum }}
                                 </div>
-                                <span class="text-sm text-gray-600">
+                                <span class="hidden">
                                     Séquence {{ $sNum }}
                                 </span>
-                                <div class="flex items-center gap-2 ml-auto">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                                        Nom de l'evaluation
+                                    </label>
+                                    <input type="text"
+                                           name="sequences[{{ $sNum }}][label]"
+                                           value="{{ old("sequences.{$sNum}.label", $sLabel) }}"
+                                           class="w-full md:max-w-[220px] px-3 py-2 border rounded-lg text-sm font-semibold focus:outline-none
+                                                  @error("sequences.{$sNum}.label") border-red-400 @else border-gray-200 @enderror"
+                                           style="color: #1A3A6B;">
+                                    @error("sequences.{$sNum}.label")
+                                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div class="flex items-center gap-2 md:ml-auto">
                                     <input type="date"
                                            name="sequences[{{ $sNum }}][start_date]"
                                            value="{{ old("sequences.{$sNum}.start_date") }}"
@@ -300,7 +314,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round"
                                   stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
-                        6 séquences créées automatiquement
+                        9 évaluations créées automatiquement
                     </div>
                     <div class="flex items-center gap-2 text-gray-500">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor"

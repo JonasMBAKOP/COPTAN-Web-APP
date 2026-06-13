@@ -7,6 +7,14 @@ use Illuminate\Support\Facades\Auth;
 
 class UpdateClassGroupRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'series'    => trim((string) $this->input('series', '')),
+            'sub_group' => trim((string) $this->input('sub_group', '')),
+        ]);
+    }
+
     public function authorize(): bool
     {
         /** @var \App\Models\User|null $user */
@@ -18,7 +26,7 @@ class UpdateClassGroupRequest extends FormRequest
     {
         return [
             'level_id'         => ['required', 'exists:levels,id'],
-            'name'             => ['required', 'string', 'max:50'],
+            'name'             => ['sometimes', 'string', 'max:50'],
             'sub_group'        => ['nullable', 'string', 'max:10'],
             'series'           => ['nullable', 'string', 'max:20'],
             'max_students'     => ['required', 'integer', 'min:1', 'max:200'],
