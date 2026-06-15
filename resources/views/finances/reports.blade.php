@@ -230,10 +230,10 @@
         </p>
     </div>
 
-    {{-- Mobile Money --}}
+    {{-- Paiements Mobile (Mobile Money / Orange Money) --}}
     <div class="r-card bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-            Mobile Money
+            Paiements Mobile
         </p>
         @php $mm = $allPayments->whereIn('payment_method',['orange_money','mtn_momo'])->sum('amount_paid'); @endphp
         <p class="text-2xl font-black" style="color:#7C3AED;">
