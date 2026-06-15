@@ -434,6 +434,13 @@ Route::middleware(['auth', 'permission:view-finances'])
             ->name('fees-list');
         Route::get('/reports', [FinanceController::class, 'reports'])
             ->name('reports');
+        Route::get('/reports/export', [FinanceController::class, 'exportReport'])
+            ->name('reports.export');
+
+        Route::middleware('role:directeur,super-admin')->group(function () {
+            Route::get('/global', [FinanceController::class, 'global'])
+                ->name('global');
+        });
 
         Route::middleware('permission:manage-finances')->group(function () {
             Route::get('/fees/{classGroup}',

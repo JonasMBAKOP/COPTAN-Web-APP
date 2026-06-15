@@ -68,12 +68,14 @@
             {{-- :active="request()->routeIs('class-groups.*')" /> --}}
             :active="request()->routeIs('classes.*')" />
 
+        @can('manage-subjects')
         <x-sidebar-item
             icon="book"
             label="Matières"
             href="{{ route('subjects.index') }}"
             :active="request()->routeIs('subjects.*')" />
-
+        @endcan
+        
         <x-sidebar-item
             icon="clock"
             label="Emploi du temps"
@@ -213,6 +215,14 @@
                 Finances
             </p>
 
+            @if(auth()->user()->hasAnyRole(['directeur', 'super-admin']))
+            <x-sidebar-item
+                icon="currency-dollar"
+                label="Gestion Globale"
+                href="{{ route('finances.global') }}"
+                :active="request()->routeIs('finances.global')" />
+            @endif
+                
             <x-sidebar-item
                 icon="currency-dollar"
                 label="Finances"

@@ -108,7 +108,7 @@
             <span class="text-sm font-semibold text-gray-400 ml-1">FCFA</span>
         </p>
         <p class="text-xs text-gray-400 mt-1">
-            Frais de l'année scolaire
+            Collecte : {{ number_format($totalCollected) }} FCFA · {{ $collectionRate }}%
         </p>
     </div>
 
@@ -247,7 +247,7 @@
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
 
     {{-- ── Collecte mensuelle ──────────────────────────────────────────── --}}
-    <div class="anim-5 lg:col-span-2 bg-white rounded-2xl shadow-sm
+    <div class="hidden anim-5 lg:col-span-2 bg-white rounded-2xl shadow-sm
                 border border-gray-100 p-5">
 
         <div class="flex items-center justify-between mb-5">

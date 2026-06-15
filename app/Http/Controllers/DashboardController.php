@@ -345,6 +345,16 @@ class DashboardController extends Controller
             $totalStudents += $class->enrolled ?? 0;
         }
 
+        $totalCollected = $activeYear
+            ? (int) StudentPayment::whereHas('studentEnrollment', fn($q) =>
+                $q->where('academic_year_id', $activeYear->id)
+            )->sum('amount_paid')
+            : 0;
+
+        $collectionRate = $totalExpected > 0
+            ? round(($totalCollected / $totalExpected) * 100)
+            : 0;
+
         // ── PAIEMENTS PAR CET UTILISATEUR ─────────────────────────────────
         $todayPayments = StudentPayment::where('recorded_by', $userId)
             ->whereDate('payment_date', today())->get();
@@ -435,7 +445,7 @@ class DashboardController extends Controller
 
         return view('dashboards.econome', compact(
             'activeYear',
-            'totalExpected',
+            'totalExpected', 'totalCollected', 'collectionRate',
             'todayAmount', 'todayCount', 'weekAmount',
             'recentPayments',
             'chartData',

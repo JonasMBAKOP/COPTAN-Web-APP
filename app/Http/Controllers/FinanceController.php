@@ -692,7 +692,10 @@ class FinanceController extends Controller
                 : now()->year;
 
             // Pour une année scolaire qui chevauche 2 années civiles
-            $paymentsQuery->whereRaw('MONTH(payment_date) = ? ', [$month]);
+            $paymentYear = $this->paymentCalendarYearForMonth($selectedYear, (int) $month);
+            $paymentsQuery
+                ->whereYear('payment_date', $paymentYear)
+                ->whereMonth('payment_date', (int) $month);
         }
 
         $allPayments = $paymentsQuery->orderByDesc('payment_date')->get();
@@ -747,6 +750,18 @@ class FinanceController extends Controller
         ));
     }
 
+    private function paymentCalendarYearForMonth(?AcademicYear $academicYear, int $month): int
+    {
+        if (! $academicYear) {
+            return now()->year;
+        }
+
+        $startYear = (int) $academicYear->start_date->format('Y');
+        $endYear = (int) $academicYear->end_date->format('Y');
+
+        return $month >= 9 ? $startYear : $endYear;
+    }
+
     private function buildYearlyEvolution($payments): array
     {
         $months = ['Jan','Fév','Mar','Avr','Mai','Juin',
@@ -774,10 +789,11 @@ class FinanceController extends Controller
         $reportData = $this->buildReportData($request);
         $school     = \App\Models\SchoolSetting::instance();
         $phones     = \App\Models\SchoolPhone::orderByDesc('is_primary')->get();
+        $agreements  = \App\Models\SchoolAgreement::orderBy('id')->get();
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView(
             'finances.reports-pdf',
-            array_merge($reportData, compact('school', 'phones'))
+            array_merge($reportData, compact('school', 'phones', 'agreements'))
         )->setPaper('a4', 'landscape');
 
         $filename = 'rapport-'
@@ -827,7 +843,10 @@ class FinanceController extends Controller
         }
 
         if ($type === 'mensuel') {
-            $paymentsQuery->whereRaw('MONTH(payment_date) = ?', [$month]);
+            $paymentYear = $this->paymentCalendarYearForMonth($selectedYear, (int) $month);
+            $paymentsQuery
+                ->whereYear('payment_date', $paymentYear)
+                ->whereMonth('payment_date', (int) $month);
         }
 
         $allPayments    = $paymentsQuery->orderByDesc('payment_date')->get();
