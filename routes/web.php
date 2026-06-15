@@ -479,15 +479,15 @@ Route::middleware(['auth', 'permission:view-grades'])
                 ->name('detail');
         });
         
-        Route::middleware('permission:manage-grades')->group(function () {
-            // Sauvegarder les notes
-            Route::post('/save', [GradeController::class, 'save'])
-                ->name('save');
-            
-            // Verrouiller/Déverrouiller les notes d'une séquence
-            Route::patch('/{classGroup}/lock/{sequence}', [GradeController::class, 'toggleLock'])
-                ->name('lock');
-        });
+        // Sauvegarder les notes (nécessite enter-grades pour les enseignants, ou être admin)
+        Route::post('/save', [GradeController::class, 'save'])
+            ->middleware('permission:enter-grades')
+            ->name('save');
+        
+        // Verrouiller/Déverrouiller les notes (admin uniquement - vérifié dans le contrôleur)
+        Route::patch('/{classGroup}/lock/{sequence}', [GradeController::class, 'toggleLock'])
+            ->middleware('permission:view-grades')
+            ->name('lock');
     });
 
 // ── ABSENCES ──────────────────────────────────────────────────────────────────

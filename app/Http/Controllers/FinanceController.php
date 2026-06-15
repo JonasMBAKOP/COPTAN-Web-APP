@@ -518,126 +518,358 @@ class FinanceController extends Controller
             compact('classes', 'years', 'selectedYear', 'activeYear'));
     }
 
-    // ── RAPPORTS FINANCIERS ───────────────────────────────────────────────
+    // // ── RAPPORTS FINANCIERS ───────────────────────────────────────────────
+    // public function reports(Request $request)
+    // {
+    //     $activeYear     = AcademicYear::active();
+    //     $selectedYearId = $request->input('year_id', $activeYear?->id);
+    //     $selectedYear   = $selectedYearId
+    //         ? AcademicYear::find($selectedYearId)
+    //         : null;
+
+    //     $years = AcademicYear::orderByDesc('start_date')->get();
+
+    //     // ── Stats par classe
+    //     $classeStats = collect();
+    //     if ($selectedYear) {
+    //         $classes = ClassGroup::where('academic_year_id', $selectedYear->id)
+    //             ->with([
+    //                 'level.section',
+    //                 'feeStructures.installments',
+    //             ])
+    //             ->withCount([
+    //                 'studentEnrollments as enrolled_count' => fn($q) =>
+    //                     $q->where('status', 'active'),
+    //             ])
+    //             ->get();
+
+    //         foreach ($classes as $class) {
+    //             $fee       = $class->feeStructures->first();
+    //             $feeTotal  = $fee?->installments->sum('amount') ?? 0;
+    //             $expected  = $feeTotal * $class->enrolled_count;
+    //             $collected = \App\Models\StudentPayment::whereHas(
+    //                 'studentEnrollment', fn($q) =>
+    //                     $q->where('class_group_id', $class->id)
+    //                     ->where('status', 'active')
+    //             )->sum('amount_paid');
+
+    //             $classeStats->push([
+    //                 'class'     => $class,
+    //                 'expected'  => $expected,
+    //                 'collected' => $collected,
+    //                 'remaining' => max(0, $expected - $collected),
+    //                 'rate'      => $expected > 0
+    //                     ? round(($collected / $expected) * 100) : 0,
+    //             ]);
+    //         }
+    //     }
+
+    //     // ── Stats par mode de paiement
+    //     $paymentMethods = \App\Models\StudentPayment::selectRaw(
+    //         'payment_method, SUM(amount_paid) as total, COUNT(*) as count'
+    //     )
+    //     ->when($selectedYear, fn($q) =>
+    //         $q->whereHas('studentEnrollment', fn($q2) =>
+    //             $q2->where('academic_year_id', $selectedYear->id)
+    //         )
+    //     )
+    //     ->groupBy('payment_method')
+    //     ->get();
+
+    //     // ── Stats par tranche
+    //     $installmentStats = FeeInstallment::selectRaw(
+    //         'fee_installments.label,
+    //         fee_installments.amount,
+    //         SUM(student_payments.amount_paid) as collected,
+    //         COUNT(DISTINCT student_payments.student_enrollment_id) as payers'
+    //     )
+    //     ->leftJoin('student_payments',
+    //         'student_payments.fee_installment_id', '=', 'fee_installments.id')
+    //     ->leftJoin('fee_structures',
+    //         'fee_structures.id', '=', 'fee_installments.fee_structure_id')
+    //     ->when($selectedYear, fn($q) =>
+    //         $q->where('fee_structures.academic_year_id', $selectedYear->id)
+    //     )
+    //     ->groupBy('fee_installments.id',
+    //             'fee_installments.label',
+    //             'fee_installments.amount')
+    //     ->orderBy('fee_installments.installment_number')
+    //     ->get();
+
+    //     // ── Élèves avec solde impayé
+    //     $debtors = \App\Models\StudentEnrollment::where('status', 'active')
+    //         ->when($selectedYear, fn($q) =>
+    //             $q->where('academic_year_id', $selectedYear->id)
+    //         )
+    //         ->with([
+    //             'student',
+    //             'classGroup.level.section',
+    //             'classGroup.feeStructures.installments',
+    //         ])
+    //         ->get()
+    //         ->map(function($e) {
+    //             $fee      = $e->classGroup->feeStructures->first();
+    //             $due      = $fee?->installments->sum('amount') ?? 0;
+    //             $paid     = \App\Models\StudentPayment::where(
+    //                 'student_enrollment_id', $e->id
+    //             )->sum('amount_paid');
+    //             $remaining = max(0, $due - $paid);
+    //             return ['enrollment' => $e, 'due' => $due,
+    //                     'paid' => $paid, 'remaining' => $remaining];
+    //         })
+    //         ->filter(fn($e) => $e['remaining'] > 0)
+    //         ->sortByDesc('remaining')
+    //         ->values();
+
+    //     // ── Totaux globaux
+    //     $globalStats = [
+    //         'expected'  => $classeStats->sum('expected'),
+    //         'collected' => $classeStats->sum('collected'),
+    //         'remaining' => $classeStats->sum('remaining'),
+    //         'rate'      => $classeStats->sum('expected') > 0
+    //             ? round(($classeStats->sum('collected')
+    //                 / $classeStats->sum('expected')) * 100)
+    //             : 0,
+    //         'debtors'   => $debtors->count(),
+    //     ];
+
+    //     return view('finances.reports', compact(
+    //         'selectedYear', 'years', 'classeStats',
+    //         'paymentMethods', 'installmentStats',
+    //         'debtors', 'globalStats'
+    //     ));
+    // }
+
+    // ── RAPPORTS FINANCIERS ───────────────────────────────────────────────────
     public function reports(Request $request)
     {
-        $activeYear     = AcademicYear::active();
-        $selectedYearId = $request->input('year_id', $activeYear?->id);
-        $selectedYear   = $selectedYearId
-            ? AcademicYear::find($selectedYearId)
-            : null;
+        /** @var \App\Models\User $user */
+        $user      = Auth::user();
+        $activeYear = AcademicYear::active();
+        $years     = AcademicYear::orderByDesc('start_date')->get();
+        $isAdmin   = $user->hasAnyRole(['super-admin', 'directeur', 'fondateur']);
 
-        $years = AcademicYear::orderByDesc('start_date')->get();
+        // ── Filtres ─────────────────────────────────────────────────────────
+        $type       = $request->input('type', 'mensuel'); // mensuel | annuel
+        $yearId     = $request->input('year_id', $activeYear?->id);
+        $month      = $request->input('month', now()->month);
+        $whoFilter  = $isAdmin
+            ? $request->input('who', 'global') // global | me | econome
+            : 'me'; // économe voit seulement ses propres données
 
-        // ── Stats par classe
-        $classeStats = collect();
+        $selectedYear = $yearId ? AcademicYear::find($yearId) : $activeYear;
+
+        // ── Construire la requête de base ───────────────────────────────────
+        $paymentsQuery = StudentPayment::with([
+            'studentEnrollment.student',
+            'studentEnrollment.classGroup.level.section',
+            'feeInstallment',
+            'recordedBy',
+        ]);
+
+        // Filtrer par année scolaire
         if ($selectedYear) {
-            $classes = ClassGroup::where('academic_year_id', $selectedYear->id)
-                ->with([
-                    'level.section',
-                    'feeStructures.installments',
-                ])
-                ->withCount([
-                    'studentEnrollments as enrolled_count' => fn($q) =>
-                        $q->where('status', 'active'),
-                ])
-                ->get();
-
-            foreach ($classes as $class) {
-                $fee       = $class->feeStructures->first();
-                $feeTotal  = $fee?->installments->sum('amount') ?? 0;
-                $expected  = $feeTotal * $class->enrolled_count;
-                $collected = \App\Models\StudentPayment::whereHas(
-                    'studentEnrollment', fn($q) =>
-                        $q->where('class_group_id', $class->id)
-                        ->where('status', 'active')
-                )->sum('amount_paid');
-
-                $classeStats->push([
-                    'class'     => $class,
-                    'expected'  => $expected,
-                    'collected' => $collected,
-                    'remaining' => max(0, $expected - $collected),
-                    'rate'      => $expected > 0
-                        ? round(($collected / $expected) * 100) : 0,
-                ]);
-            }
+            $paymentsQuery->whereHas('studentEnrollment', fn($q) =>
+                $q->where('academic_year_id', $selectedYear->id)
+            );
         }
 
-        // ── Stats par mode de paiement
-        $paymentMethods = \App\Models\StudentPayment::selectRaw(
-            'payment_method, SUM(amount_paid) as total, COUNT(*) as count'
-        )
-        ->when($selectedYear, fn($q) =>
-            $q->whereHas('studentEnrollment', fn($q2) =>
-                $q2->where('academic_year_id', $selectedYear->id)
-            )
-        )
-        ->groupBy('payment_method')
-        ->get();
+        // Filtrer par responsable
+        if ($whoFilter === 'me') {
+            $paymentsQuery->where('recorded_by', $user->id);
+        } elseif ($whoFilter === 'econome') {
+            // Trouver le(s) compte(s) économe
+            $economeIds = \Spatie\Permission\Models\Role::findByName('econome')
+                ->users->pluck('id');
+            $paymentsQuery->whereIn('recorded_by', $economeIds);
+        }
+        // 'global' = pas de filtre sur recorded_by
 
-        // ── Stats par tranche
-        $installmentStats = FeeInstallment::selectRaw(
-            'fee_installments.label,
-            fee_installments.amount,
-            SUM(student_payments.amount_paid) as collected,
-            COUNT(DISTINCT student_payments.student_enrollment_id) as payers'
-        )
-        ->leftJoin('student_payments',
-            'student_payments.fee_installment_id', '=', 'fee_installments.id')
-        ->leftJoin('fee_structures',
-            'fee_structures.id', '=', 'fee_installments.fee_structure_id')
-        ->when($selectedYear, fn($q) =>
-            $q->where('fee_structures.academic_year_id', $selectedYear->id)
-        )
-        ->groupBy('fee_installments.id',
-                'fee_installments.label',
-                'fee_installments.amount')
-        ->orderBy('fee_installments.installment_number')
-        ->get();
+        // Filtrer par période
+        if ($type === 'mensuel') {
+            $yearNum = $selectedYear
+                ? (int)$selectedYear->start_date->format('Y')
+                : now()->year;
 
-        // ── Élèves avec solde impayé
-        $debtors = \App\Models\StudentEnrollment::where('status', 'active')
-            ->when($selectedYear, fn($q) =>
-                $q->where('academic_year_id', $selectedYear->id)
-            )
-            ->with([
-                'student',
-                'classGroup.level.section',
-                'classGroup.feeStructures.installments',
-            ])
-            ->get()
-            ->map(function($e) {
-                $fee      = $e->classGroup->feeStructures->first();
-                $due      = $fee?->installments->sum('amount') ?? 0;
-                $paid     = \App\Models\StudentPayment::where(
-                    'student_enrollment_id', $e->id
-                )->sum('amount_paid');
-                $remaining = max(0, $due - $paid);
-                return ['enrollment' => $e, 'due' => $due,
-                        'paid' => $paid, 'remaining' => $remaining];
-            })
-            ->filter(fn($e) => $e['remaining'] > 0)
-            ->sortByDesc('remaining')
-            ->values();
+            // Pour une année scolaire qui chevauche 2 années civiles
+            $paymentsQuery->whereRaw('MONTH(payment_date) = ? ', [$month]);
+        }
 
-        // ── Totaux globaux
-        $globalStats = [
-            'expected'  => $classeStats->sum('expected'),
-            'collected' => $classeStats->sum('collected'),
-            'remaining' => $classeStats->sum('remaining'),
-            'rate'      => $classeStats->sum('expected') > 0
-                ? round(($classeStats->sum('collected')
-                    / $classeStats->sum('expected')) * 100)
-                : 0,
-            'debtors'   => $debtors->count(),
-        ];
+        $allPayments = $paymentsQuery->orderByDesc('payment_date')->get();
+
+        // ── Stats globales ────────────────────────────────────────────────
+        $totalCollected = (int)$allPayments->sum('amount_paid');
+
+        // Par tranche
+        $byInstallment = $allPayments->groupBy('feeInstallment.label')
+            ->map(fn($g) => [
+                'label'  => $g->first()?->feeInstallment?->label ?? 'Non catégorisé',
+                'total'  => (int)$g->sum('amount_paid'),
+                'count'  => $g->count(),
+            ])->values();
+
+        // Par mode de paiement
+        $byMethod = $allPayments->groupBy('payment_method')
+            ->map(fn($g) => [
+                'method' => $g->first()?->payment_method,
+                'label'  => $g->first()?->payment_method_label ?? '—',
+                'total'  => (int)$g->sum('amount_paid'),
+                'count'  => $g->count(),
+            ])->sortByDesc('total')->values();
+
+        // Par section
+        $bySection = $allPayments->groupBy(
+            fn($p) => $p->studentEnrollment?->classGroup?->level?->section?->name ?? 'Inconnue'
+        )->map(fn($g, $name) => [
+            'name'  => $name,
+            'total' => (int)$g->sum('amount_paid'),
+            'count' => $g->count(),
+        ])->sortByDesc('total')->values();
+
+        // Évolution (pour graphique mensuel ou mensuel de l'année)
+        if ($type === 'annuel' && $selectedYear) {
+            $evolution = $this->buildYearlyEvolution($allPayments);
+        } else {
+            $evolution = [];
+        }
+
+        // ── Économes disponibles (pour directeur) ─────────────────────────
+        $economes = $isAdmin
+            ? \App\Models\User::role('econome')->orderBy('name')->get()
+            : collect();
 
         return view('finances.reports', compact(
-            'selectedYear', 'years', 'classeStats',
-            'paymentMethods', 'installmentStats',
-            'debtors', 'globalStats'
+            'user', 'isAdmin', 'selectedYear', 'years',
+            'type', 'month', 'whoFilter',
+            'allPayments', 'totalCollected',
+            'byInstallment', 'byMethod', 'bySection', 'evolution',
+            'economes'
         ));
+    }
+
+    private function buildYearlyEvolution($payments): array
+    {
+        $months = ['Jan','Fév','Mar','Avr','Mai','Juin',
+                'Juil','Aoû','Sep','Oct','Nov','Déc'];
+
+        $grouped = $payments->groupBy(fn($p) => $p->payment_date->month);
+        $result  = [];
+
+        for ($m = 1; $m <= 12; $m++) {
+            $g = $grouped->get($m, collect());
+            $result[] = [
+                'label' => $months[$m - 1],
+                'total' => (int)$g->sum('amount_paid'),
+                'count' => $g->count(),
+            ];
+        }
+
+        return $result;
+    }
+
+    // ── EXPORT PDF ────────────────────────────────────────────────────────────
+    public function exportReport(Request $request)
+    {
+        // Réutiliser la même logique de reports()
+        $reportData = $this->buildReportData($request);
+        $school     = \App\Models\SchoolSetting::instance();
+        $phones     = \App\Models\SchoolPhone::orderByDesc('is_primary')->get();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView(
+            'finances.reports-pdf',
+            array_merge($reportData, compact('school', 'phones'))
+        )->setPaper('a4', 'landscape');
+
+        $filename = 'rapport-'
+            . $reportData['type'] . '-'
+            . ($reportData['type'] === 'mensuel'
+                ? now()->setMonth($reportData['month'])->format('M-Y')
+                : $reportData['selectedYear']?->label)
+            . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    private function buildReportData(Request $request): array
+    {
+        /** @var \App\Models\User $user */
+        $user       = Auth::user();
+        $activeYear = AcademicYear::active();
+        $years      = AcademicYear::orderByDesc('start_date')->get();
+        $isAdmin    = $user->hasAnyRole(['super-admin','directeur','fondateur']);
+
+        $type      = $request->input('type', 'mensuel');
+        $yearId    = $request->input('year_id', $activeYear?->id);
+        $month     = (int)$request->input('month', now()->month);
+        $whoFilter = $isAdmin ? $request->input('who', 'global') : 'me';
+
+        $selectedYear = $yearId ? AcademicYear::find($yearId) : $activeYear;
+
+        $paymentsQuery = StudentPayment::with([
+            'studentEnrollment.student',
+            'studentEnrollment.classGroup.level.section',
+            'feeInstallment',
+            'recordedBy',
+        ]);
+
+        if ($selectedYear) {
+            $paymentsQuery->whereHas('studentEnrollment', fn($q) =>
+                $q->where('academic_year_id', $selectedYear->id)
+            );
+        }
+
+        if ($whoFilter === 'me') {
+            $paymentsQuery->where('recorded_by', $user->id);
+        } elseif ($whoFilter === 'econome') {
+            $economeIds = \Spatie\Permission\Models\Role::findByName('econome')
+                ->users->pluck('id');
+            $paymentsQuery->whereIn('recorded_by', $economeIds);
+        }
+
+        if ($type === 'mensuel') {
+            $paymentsQuery->whereRaw('MONTH(payment_date) = ?', [$month]);
+        }
+
+        $allPayments    = $paymentsQuery->orderByDesc('payment_date')->get();
+        $totalCollected = (int)$allPayments->sum('amount_paid');
+
+        $byInstallment = $allPayments->groupBy('feeInstallment.label')
+            ->map(fn($g) => [
+                'label' => $g->first()?->feeInstallment?->label ?? '—',
+                'total' => (int)$g->sum('amount_paid'),
+                'count' => $g->count(),
+            ])->values();
+
+        $byMethod = $allPayments->groupBy('payment_method')
+            ->map(fn($g) => [
+                'label' => $g->first()?->payment_method_label ?? '—',
+                'total' => (int)$g->sum('amount_paid'),
+                'count' => $g->count(),
+            ])->sortByDesc('total')->values();
+
+        $bySection = $allPayments->groupBy(
+            fn($p) => $p->studentEnrollment?->classGroup?->level?->section?->name ?? '—'
+        )->map(fn($g, $name) => [
+            'name'  => $name,
+            'total' => (int)$g->sum('amount_paid'),
+            'count' => $g->count(),
+        ])->sortByDesc('total')->values();
+
+        $evolution = ($type === 'annuel' && $selectedYear)
+            ? $this->buildYearlyEvolution($allPayments)
+            : [];
+
+        $economes = $isAdmin
+            ? \App\Models\User::role('econome')->orderBy('name')->get()
+            : collect();
+
+        return compact(
+            'user', 'isAdmin', 'selectedYear', 'years',
+            'type', 'month', 'whoFilter',
+            'allPayments', 'totalCollected',
+            'byInstallment', 'byMethod', 'bySection', 'evolution',
+            'economes'
+        );
     }
 
     // ── TABLEAU DE BORD DE GESTION GLOBALE ───────────────────────────────

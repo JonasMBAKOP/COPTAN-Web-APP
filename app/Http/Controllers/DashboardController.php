@@ -197,24 +197,165 @@ class DashboardController extends Controller
     //         'paymentByMethod'
     //     ));
     // }
+    // public function econome()
+    // {
+    //     $activeYear = AcademicYear::active();
+    //     $userId     = Auth::id();
+
+    //     // ── FRAIS ATTENDUS (tous élèves, toutes classes) ───────────────────
+    //     $classes = $activeYear
+    //         ? ClassGroup::where('academic_year_id', $activeYear->id)
+    //             ->with(['feeStructures.installments'])
+    //             ->withCount(['studentEnrollments as enrolled' => fn($q) =>
+    //                 $q->where('status', 'active')
+    //             ])
+    //             ->get()
+    //         : collect();
+
+    //     $totalExpected = 0;
+    //     foreach ($classes as $class) {
+    //         $fee           = $class->feeStructures->first();
+    //         $feeTotal      = $fee?->installments->sum('amount') ?? 0;
+    //         $totalExpected += $feeTotal * $class->enrolled;
+    //     }
+
+    //     // ── PAIEMENTS PAR CETTE ÉCONOME UNIQUEMENT ─────────────────────────
+    //     $todayPayments = StudentPayment::where('recorded_by', $userId)
+    //         ->whereDate('payment_date', today())->get();
+    //     $todayAmount   = $todayPayments->sum('amount_paid');
+    //     $todayCount    = $todayPayments->count();
+
+    //     $weekAmount = StudentPayment::where('recorded_by', $userId)
+    //         ->whereBetween('payment_date', [
+    //             now()->startOfWeek(), now()->endOfWeek()
+    //         ])->sum('amount_paid');
+
+    //     // Derniers paiements enregistrés par elle
+    //     $recentPayments = StudentPayment::where('recorded_by', $userId)
+    //         ->with([
+    //             'studentEnrollment.student',
+    //             'studentEnrollment.classGroup',
+    //             'feeInstallment',
+    //         ])
+    //         ->orderByDesc('payment_date')
+    //         ->orderByDesc('created_at')
+    //         ->take(5)->get();
+
+    //     // ── COLLECTE MENSUELLE (par elle, 6 derniers mois) ─────────────────
+    //     $monthlyRaw = StudentPayment::where('recorded_by', $userId)
+    //         ->selectRaw(
+    //             'YEAR(payment_date) as year,
+    //             MONTH(payment_date) as month,
+    //             SUM(amount_paid) as total,
+    //             COUNT(*) as count'
+    //         )
+    //         ->where('payment_date', '>=', now()->subMonths(5)->startOfMonth())
+    //         ->groupBy('year', 'month')
+    //         ->orderBy('year')->orderBy('month')
+    //         ->get();
+
+    //     $monthLabels = ['Jan','Fév','Mar','Avr','Mai','Juin',
+    //                     'Juil','Aoû','Sep','Oct','Nov','Déc'];
+    //     $chartData   = [];
+
+    //     for ($i = 5; $i >= 0; $i--) {
+    //         $date  = now()->subMonths($i);
+    //         $y     = (int) $date->format('Y');
+    //         $m     = (int) $date->format('m');
+    //         $found = $monthlyRaw->first(
+    //             fn($r) => $r->year == $y && $r->month == $m
+    //         );
+    //         $chartData[] = [
+    //             'label' => $monthLabels[$m - 1],
+    //             'total' => $found ? (float) $found->total : 0,
+    //             'count' => $found ? (int)   $found->count : 0,
+    //         ];
+    //     }
+
+    //     // ── INSCRIPTIONS ───────────────────────────────────────────────────
+    //     $totalEnrolled = $activeYear
+    //         ? StudentEnrollment::where('academic_year_id', $activeYear->id)
+    //             ->where('status', 'active')->count()
+    //         : 0;
+
+    //     $newEnrollmentsWeek = $activeYear
+    //         ? StudentEnrollment::where('academic_year_id', $activeYear->id)
+    //             ->whereBetween('created_at', [
+    //                 now()->startOfWeek(), now()->endOfWeek()
+    //             ])->count()
+    //         : 0;
+
+    //     // Réinscriptions en attente = anciens élèves pas encore inscrits cette année
+    //     $pendingReEnrollments = 0;
+    //     if ($activeYear) {
+    //         $prevYear = AcademicYear::where('is_active', false)
+    //             ->where('id', '<', $activeYear->id)
+    //             ->orderByDesc('id')->first();
+
+    //         if ($prevYear) {
+    //             $prevIds    = StudentEnrollment::where('academic_year_id', $prevYear->id)
+    //                 ->where('status', 'active')->pluck('student_id');
+    //             $currentIds = StudentEnrollment::where('academic_year_id', $activeYear->id)
+    //                 ->pluck('student_id');
+    //             $pendingReEnrollments = $prevIds->diff($currentIds)->count();
+    //         }
+    //     }
+
+    //     // Inscriptions récentes
+    //     $recentEnrollments = $activeYear
+    //         ? StudentEnrollment::where('academic_year_id', $activeYear->id)
+    //             ->with(['student', 'classGroup.level.section'])
+    //             ->orderByDesc('created_at')
+    //             ->take(6)->get()
+    //         : collect();
+
+    //     return view('dashboards.econome', compact(
+    //         'activeYear',
+    //         'totalExpected',
+    //         'todayAmount', 'todayCount', 'weekAmount',
+    //         'recentPayments',
+    //         'chartData',
+    //         'totalEnrolled', 'newEnrollmentsWeek', 'pendingReEnrollments',
+    //         'recentEnrollments'
+    //     ));
+    // }
     public function econome()
     {
         $activeYear = AcademicYear::active();
         $userId     = Auth::id();
 
-        // ── PAIEMENTS PAR CETTE ÉCONOME UNIQUEMENT ─────────────────────────
+        // ── FRAIS ATTENDUS ─────────────────────────────────────────────────
+        $classes = $activeYear
+            ? ClassGroup::where('academic_year_id', $activeYear->id)
+                ->with(['feeStructures.installments'])
+                ->withCount([
+                    'studentEnrollments as enrolled' => fn($q) =>
+                        $q->where('status', 'active'),
+                ])
+                ->get()
+            : collect();
 
+        $totalExpected = 0;
+        $totalStudents = 0;
+
+        foreach ($classes as $class) {
+            $fee           = $class->feeStructures->first();
+            $feeTotal      = $fee?->installments->sum('amount') ?? 0;
+            $totalExpected += $feeTotal * ($class->enrolled ?? 0);
+            $totalStudents += $class->enrolled ?? 0;
+        }
+
+        // ── PAIEMENTS PAR CET UTILISATEUR ─────────────────────────────────
         $todayPayments = StudentPayment::where('recorded_by', $userId)
             ->whereDate('payment_date', today())->get();
-        $todayAmount   = $todayPayments->sum('amount_paid');
+        $todayAmount   = (int)$todayPayments->sum('amount_paid');
         $todayCount    = $todayPayments->count();
 
-        $weekAmount = StudentPayment::where('recorded_by', $userId)
+        $weekAmount = (int)StudentPayment::where('recorded_by', $userId)
             ->whereBetween('payment_date', [
                 now()->startOfWeek(), now()->endOfWeek()
             ])->sum('amount_paid');
 
-        // Derniers paiements enregistrés par elle
         $recentPayments = StudentPayment::where('recorded_by', $userId)
             ->with([
                 'studentEnrollment.student',
@@ -225,39 +366,38 @@ class DashboardController extends Controller
             ->orderByDesc('created_at')
             ->take(5)->get();
 
-        // ── COLLECTE MENSUELLE (par elle, 6 derniers mois) ─────────────────
-        $monthlyRaw = StudentPayment::where('recorded_by', $userId)
-            ->selectRaw(
-                'YEAR(payment_date) as year,
-                MONTH(payment_date) as month,
-                SUM(amount_paid) as total,
-                COUNT(*) as count'
-            )
-            ->where('payment_date', '>=', now()->subMonths(5)->startOfMonth())
-            ->groupBy('year', 'month')
-            ->orderBy('year')->orderBy('month')
-            ->get();
-
+        // ── COLLECTE MENSUELLE (6 mois, par cet utilisateur) ──────────────
         $monthLabels = ['Jan','Fév','Mar','Avr','Mai','Juin',
                         'Juil','Aoû','Sep','Oct','Nov','Déc'];
-        $chartData   = [];
 
+        $monthlyRaw = StudentPayment::where('recorded_by', $userId)
+            ->selectRaw(
+                'YEAR(payment_date)  AS yr,
+                MONTH(payment_date) AS mo,
+                SUM(amount_paid)    AS total,
+                COUNT(*)            AS cnt'
+            )
+            ->where('payment_date', '>=', now()->subMonths(5)->startOfMonth())
+            ->groupBy('yr', 'mo')
+            ->orderBy('yr')->orderBy('mo')
+            ->get();
+
+        $chartData = [];
         for ($i = 5; $i >= 0; $i--) {
             $date  = now()->subMonths($i);
-            $y     = (int) $date->format('Y');
-            $m     = (int) $date->format('m');
-            $found = $monthlyRaw->first(
-                fn($r) => $r->year == $y && $r->month == $m
-            );
+            $y     = (int)$date->format('Y');
+            $m     = (int)$date->format('m');
+            $found = $monthlyRaw->first(fn($r) => $r->yr == $y && $r->mo == $m);
             $chartData[] = [
                 'label' => $monthLabels[$m - 1],
-                'total' => $found ? (float) $found->total : 0,
-                'count' => $found ? (int)   $found->count : 0,
+                'year'  => $y,
+                'month' => $m,
+                'total' => $found ? (float)$found->total : 0,
+                'count' => $found ? (int)  $found->cnt   : 0,
             ];
         }
 
         // ── INSCRIPTIONS ───────────────────────────────────────────────────
-
         $totalEnrolled = $activeYear
             ? StudentEnrollment::where('academic_year_id', $activeYear->id)
                 ->where('status', 'active')->count()
@@ -270,7 +410,7 @@ class DashboardController extends Controller
                 ])->count()
             : 0;
 
-        // Réinscriptions en attente = anciens élèves pas encore inscrits cette année
+        // ── RÉINSCRIPTIONS EN ATTENTE ──────────────────────────────────────
         $pendingReEnrollments = 0;
         if ($activeYear) {
             $prevYear = AcademicYear::where('is_active', false)
@@ -286,21 +426,22 @@ class DashboardController extends Controller
             }
         }
 
-        // Inscriptions récentes
+        // ── INSCRIPTIONS RÉCENTES ──────────────────────────────────────────
         $recentEnrollments = $activeYear
             ? StudentEnrollment::where('academic_year_id', $activeYear->id)
                 ->with(['student', 'classGroup.level.section'])
-                ->orderByDesc('created_at')
-                ->take(6)->get()
+                ->orderByDesc('created_at')->take(6)->get()
             : collect();
 
         return view('dashboards.econome', compact(
             'activeYear',
+            'totalExpected',
             'todayAmount', 'todayCount', 'weekAmount',
             'recentPayments',
             'chartData',
             'totalEnrolled', 'newEnrollmentsWeek', 'pendingReEnrollments',
-            'recentEnrollments'
+            'recentEnrollments',
+            'totalStudents'
         ));
     }
 }
