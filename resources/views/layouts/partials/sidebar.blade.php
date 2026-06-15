@@ -143,12 +143,28 @@
             Évaluations
         </p>
 
+        @can('manage-academic-years')
+        <x-sidebar-item
+            icon="eye"
+            label="Vue Globale"
+            href="{{ route('grades.index')}}"
+            :active="request()->routeIs('grades.index')" />
+        @endcan
+
+        @canany(['view-grades', 'enter-grades'])
+        <x-sidebar-item
+            icon="search"
+            label="Consultation Notes"
+            href="{{ route('grades.notes')}}"
+            :active="request()->routeIs('grades.notes')" />
+        @endcanany
+
         @can('enter-grades')
         <x-sidebar-item
             icon="pencil"
             label="Saisie des notes"
-            href="#"
-            :active="request()->routeIs('grades.enter*')" />
+            href="{{ route('grades.entry.form')}}"
+            :active="request()->routeIs('grades.entry*')" />
         @endcan
 
         @can('validate-grades')
@@ -196,14 +212,6 @@
                     uppercase tracking-wider">
                 Finances
             </p>
-
-            @if(auth()->user()->hasAnyRole(['super-admin', 'directeur', 'fondateur']))
-            <x-sidebar-item
-                icon="chart-bar"
-                label="Gestion Globale"
-                href="{{ route('finances.global') }}"
-                :active="request()->routeIs('finances.global')" />
-            @endif
 
             <x-sidebar-item
                 icon="currency-dollar"

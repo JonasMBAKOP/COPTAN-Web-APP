@@ -12,6 +12,9 @@ use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\StudentDocumentController;
 use App\Http\Controllers\FinanceController;
+use App\Http\Controllers\GradeController;
+use App\Http\Controllers\AbsenceController;
+use App\Http\Controllers\DisciplineController;
 
 
 // ── PAGE D'ACCUEIL → Redirection vers login ──────────────────────────────────
@@ -415,9 +418,6 @@ Route::middleware(['auth', 'permission:view-finances'])
     ->group(function () {
         Route::get('/', [FinanceController::class, 'index'])
              ->name('index');
-        Route::get('/global', [FinanceController::class, 'global'])
-             ->middleware(['role:super-admin,directeur,fondateur'])
-             ->name('global');
         Route::get('/payments', [FinanceController::class, 'payments'])
              ->name('payments');
         Route::get('/receipts/batch', [FinanceController::class, 'batchReceipts'])
@@ -445,6 +445,78 @@ Route::middleware(['auth', 'permission:view-finances'])
             Route::post('/students/{enrollment}/pay',
                 [FinanceController::class, 'recordPayment'])
                 ->name('pay');
+        });
+    });
+
+
+// ── NOTES & SAISIE DES NOTES ─────────────────────────────────────────────────
+Route::middleware(['auth', 'permission:view-grades'])
+    ->prefix('grades')
+    ->name('grades.')
+    ->group(function () {
+        // Vue globale des notes
+        Route::get('/', [GradeController::class, 'index'])
+            ->name('index');
+        
+        // Page de consultation des notes (enseignant)
+        Route::get('/notes', [GradeController::class, 'notes'])
+            ->name('notes');
+        
+        // Page de saisie des notes
+        Route::get('/entry', [GradeController::class, 'entry'])
+            ->name('entry.form');
+        
+        // APIs en cascade pour les filtres
+        Route::get('/api/subjects', [GradeController::class, 'apiSubjects'])
+            ->name('api.subjects');
+        Route::get('/api/classes', [GradeController::class, 'apiClasses'])
+            ->name('api.classes');
+        
+        // Détail des notes (accessible directeur, censeur, super-admin avec permission manage-academic-years)
+        Route::middleware('permission:view-grades')->group(function () {
+            Route::get('/{classGroup}/detail/{sequence}', [GradeController::class, 'detail'])
+                ->middleware('permission:manage-academic-years')
+                ->name('detail');
+        });
+        
+        Route::middleware('permission:manage-grades')->group(function () {
+            // Sauvegarder les notes
+            Route::post('/save', [GradeController::class, 'save'])
+                ->name('save');
+            
+            // Verrouiller/Déverrouiller les notes d'une séquence
+            Route::patch('/{classGroup}/lock/{sequence}', [GradeController::class, 'toggleLock'])
+                ->name('lock');
+        });
+    });
+
+// ── ABSENCES ──────────────────────────────────────────────────────────────────
+Route::middleware(['auth', 'permission:view-absences'])
+    ->prefix('absences')
+    ->name('absences.')
+    ->group(function () {
+        Route::get('/', [AbsenceController::class, 'index'])
+            ->name('index');
+        Route::get('/class/{classGroup}', [AbsenceController::class, 'classAbsences'])
+            ->name('class');
+        
+        Route::middleware('permission:manage-absences')->group(function () {
+            Route::post('/record', [AbsenceController::class, 'record'])
+                ->name('record');
+        });
+    });
+
+// ── DISCIPLINE ────────────────────────────────────────────────────────────────
+Route::middleware(['auth', 'permission:view-discipline'])
+    ->prefix('discipline')
+    ->name('discipline.')
+    ->group(function () {
+        Route::get('/', [DisciplineController::class, 'index'])
+            ->name('index');
+        
+        Route::middleware('permission:manage-discipline')->group(function () {
+            Route::post('/incidents', [DisciplineController::class, 'createIncident'])
+                ->name('incidents.create');
         });
     });
 
