@@ -17,7 +17,7 @@ class ClassSubject extends Model
     protected function casts(): array
     {
         return [
-            'coefficient'    => 'integer',
+            'coefficient'    => 'decimal:1',
             'hours_per_week' => 'decimal:1',
             'is_active'      => 'boolean',
         ];

@@ -236,7 +236,7 @@ class LivretController extends Controller
         $absences = $this->absenceTotalsForYear($enrollment);
 
         // Photo élève
-        $studentPhoto = $this->studentPhotoPath($enrollment->student);
+        $studentPhoto = $this->studentPhotoPath($enrollment->student, false);
 
         // Contact parent
         $parentContacts = $this->buildParentContactLines($enrollment->student);
@@ -277,19 +277,27 @@ class LivretController extends Controller
         ];
     }
 
-    private function studentPhotoPath($student): ?string
+    private function studentPhotoPath($student, bool $forPdf = false): ?string
     {
         if ($student->photo) {
-            $storagePath = public_path('storage/' . ltrim($student->photo, '/'));
-            if (file_exists($storagePath)) {
-                return 'file://' . str_replace('\\', '/', $storagePath);
+            if ($forPdf) {
+                $storagePath = public_path('storage/' . ltrim($student->photo, '/'));
+                if (file_exists($storagePath)) {
+                    return 'file://' . str_replace('\\', '/', $storagePath);
+                }
+            }
+
+            return asset('storage/' . ltrim($student->photo, '/'));
+        }
+
+        if ($forPdf) {
+            $default = public_path('images/default-avatar.png');
+            if (file_exists($default)) {
+                return 'file://' . str_replace('\\', '/', $default);
             }
         }
-        $default = public_path('images/default-avatar.png');
-        if (file_exists($default)) {
-            return 'file://' . str_replace('\\', '/', $default);
-        }
-        return null;
+
+        return asset('images/default-avatar.png');
     }
 
     private function buildParentContactLines($student): string

@@ -29,7 +29,7 @@ class BulletinSubjectDetail extends Model
     protected function casts(): array
     {
         return [
-            'coefficient'     => 'integer',
+            'coefficient'     => 'decimal:1',
             'seq_grade'       => 'decimal:2',
             'seq1_grade'      => 'decimal:2',
             'seq2_grade'      => 'decimal:2',

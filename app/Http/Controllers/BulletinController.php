@@ -64,7 +64,7 @@ class BulletinController extends Controller
         $trimesterId = $request->input('trimester_id');
 
         $bulletinData = $this->buildBulletinData(
-            $enrollment, $type, $sequenceId, $trimesterId
+            $enrollment, $type, $sequenceId, $trimesterId, false
         );
 
         return view('bulletins.show', $bulletinData);
@@ -78,7 +78,7 @@ class BulletinController extends Controller
         $trimesterId = $request->input('trimester_id');
 
         $data = $this->buildBulletinData(
-            $enrollment, $type, $sequenceId, $trimesterId
+            $enrollment, $type, $sequenceId, $trimesterId, true
         );
 
         $pdf = Pdf::loadView('bulletins.pdf', $data)
@@ -120,7 +120,8 @@ class BulletinController extends Controller
                 $enr,
                 $request->type,
                 $request->sequence_id,
-                $request->trimester_id
+                $request->trimester_id,
+                false
             );
         }
 
@@ -152,7 +153,8 @@ class BulletinController extends Controller
         StudentEnrollment $enrollment,
         string $type,
         ?int $sequenceId,
-        ?int $trimesterId
+        ?int $trimesterId,
+        bool $forPdf = false
     ): array {
         $enrollment->load([
             'student',
@@ -292,7 +294,7 @@ class BulletinController extends Controller
             'distinction'  => $distinction,
             'appreciation' => $average !== null
                 ? \App\Models\AppreciationScale::forGrade($average) : null,
-            'studentPhoto'  => $this->studentPhotoPath($enrollment->student),
+            'studentPhoto'  => $this->studentPhotoPath($enrollment->student, $forPdf),
             'parentContacts'=> $this->buildParentContactLines($enrollment->student),
             'documentTitle' => $documentTitle,
             'documentTitleEn' => $documentTitleEn,
@@ -446,21 +448,27 @@ class BulletinController extends Controller
         });
     }
 
-    private function studentPhotoPath($student): ?string
+    private function studentPhotoPath($student, bool $forPdf = false): ?string
     {
         if ($student->photo) {
-            $storagePath = public_path('storage/' . ltrim($student->photo, '/'));
-            if (file_exists($storagePath)) {
-                return 'file://' . str_replace('\\', '/', $storagePath);
+            if ($forPdf) {
+                $storagePath = public_path('storage/' . ltrim($student->photo, '/'));
+                if (file_exists($storagePath)) {
+                    return 'file://' . str_replace('\\', '/', $storagePath);
+                }
+            }
+
+            return asset('storage/' . ltrim($student->photo, '/'));
+        }
+
+        if ($forPdf) {
+            $default = public_path('images/default-avatar.png');
+            if (file_exists($default)) {
+                return 'file://' . str_replace('\\', '/', $default);
             }
         }
 
-        $default = public_path('images/default-avatar.png');
-        if (file_exists($default)) {
-            return 'file://' . str_replace('\\', '/', $default);
-        }
-
-        return null;
+        return asset('images/default-avatar.png');
     }
 
     private function buildParentContactLines($student): string

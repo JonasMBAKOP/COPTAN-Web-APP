@@ -28,7 +28,7 @@ class AssignSubjectsRequest extends FormRequest
         return [
             'subjects'                    => ['nullable', 'array'],
             'subjects.*.subject_id'       => ['required', 'exists:subjects,id'],
-            'subjects.*.coefficient'      => ['required', 'integer',
+            'subjects.*.coefficient'      => ['required', 'numeric',
                                               'min:1', 'max:9'],
             'subjects.*.hours_per_week'   => ['nullable', 'numeric',
                                               'min:0.5', 'max:30'],

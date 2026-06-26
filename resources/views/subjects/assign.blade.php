@@ -264,7 +264,7 @@
                             <input type="number"
                                 name="subjects[{{ $cs->subject_id }}][coefficient]"
                                 value="{{ $cs->coefficient }}"
-                                min="1" max="9"
+                                step="0.5" min="1" max="9"
                                 @input="updateTotals()"
                                 class="w-full px-2 py-2 border border-gray-200
                                         rounded-lg text-sm text-center font-semibold
@@ -711,11 +711,11 @@ function assignManager(initCoef, initHours) {
             let coef = 0, hours = 0;
             document.querySelectorAll(
                 'input[name$="[coefficient]"]'
-            ).forEach(i => coef  += parseInt(i.value)   || 0);
+            ).forEach(i => coef  += parseFloat(i.value) || 0);
             document.querySelectorAll(
                 'input[name$="[hours_per_week]"]'
             ).forEach(i => hours += parseFloat(i.value) || 0);
-            this.totalCoef  = coef;
+            this.totalCoef  = Math.round(coef * 10) / 10;
             this.totalHours = Math.round(hours * 10) / 10;
         }
     }
@@ -851,7 +851,7 @@ function confirmAddSubject() {
                         Coefficient
                     </label>
                     <input type="number" name="subjects[${id}][coefficient]"
-                           value="${coef}" min="1" max="9"
+                           value="${coef}" step="0.5" min="1" max="9"
                            class="w-full px-2 py-2 border border-gray-200
                                   rounded-lg text-sm text-center font-semibold
                                   focus:outline-none" style="color:#1A3A6B;">
