@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('discipline_records', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('school_year_id')->constrained()->onDelete('cascade');
+            $table->foreignId('school_year_id')->constrained('academic_years')->onDelete('cascade');
             $table->foreignId('student_id')->constrained()->onDelete('cascade');
             $table->foreignId('class_id')->constrained()->onDelete('cascade');
             $table->foreignId('reported_by')->constrained('staff', 'id')->onDelete('cascade');
