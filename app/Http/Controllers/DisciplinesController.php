@@ -7,6 +7,7 @@ use App\Models\DisciplineRecord;
 use App\Models\AcademicYear;
 use App\Models\ClassGroup;
 use App\Models\Student;
+use App\Models\StudentEnrollment;
 use App\Models\Staff;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,13 +21,13 @@ class DisciplinesController extends Controller
     {
         $activeYear = AcademicYear::where('is_active', true)->firstOrFail();
 
-        $query = DisciplineRecord::with(['student', 'classe.level', 'reporter'])
-            ->where('school_year_id', $activeYear->id)
+        $query = DisciplineRecord::with(['studentEnrollment.student', 'classe.level', 'reporter'])
+            ->where('academic_year_id', $activeYear->id)
             ->orderByDesc('incident_date');
 
         // Filtres
         if ($request->filled('class_id')) {
-            $query->where('class_id', $request->class_id);
+            $query->where('class_group_id', $request->class_id);
         }
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -36,7 +37,7 @@ class DisciplinesController extends Controller
         }
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->whereHas('student', function ($q) use ($search) {
+            $query->whereHas('studentEnrollment.student', function ($q) use ($search) {
                 $q->where('last_name', 'like', "%{$search}%")
                   ->orWhere('first_name', 'like', "%{$search}%")
                   ->orWhere('matricule', 'like', "%{$search}%");
@@ -49,7 +50,7 @@ class DisciplinesController extends Controller
                         ->orderBy('name')->get();
 
         // Statistiques rapides
-        $statsQuery = DisciplineRecord::where('school_year_id', $activeYear->id);
+        $statsQuery = DisciplineRecord::where('academic_year_id', $activeYear->id);
         $stats = [
             'total'               => (clone $statsQuery)->count(),
             'ouverts'             => (clone $statsQuery)->where('status', 'ouvert')->count(),
@@ -66,13 +67,18 @@ class DisciplinesController extends Controller
     {
         $activeYear  = AcademicYear::where('is_active', true)->firstOrFail();
         $classes     = ClassGroup::with('level.section')
-                           ->where('school_year_id', $activeYear->id)
+                           ->where('academic_year_id', $activeYear->id)
                            ->orderBy('name')->get();
 
+        $enrollments = StudentEnrollment::where('academic_year_id', $activeYear->id)
+            ->with('student', 'classGroup.level.section')
+            ->get()
+            ->sortBy(fn ($enrollment) => $enrollment->student->last_name);
+
         // Pré-sélection élève si passé en query string
-        $selectedStudent = null;
-        if ($request->filled('student_id')) {
-            $selectedStudent = Student::find($request->student_id);
+        $selectedEnrollment = null;
+        if ($request->filled('student_enrollment_id')) {
+            $selectedEnrollment = $enrollments->firstWhere('id', $request->student_enrollment_id);
         }
 
         $incidentTypes  = DisciplineRecord::$incidentTypes;
@@ -80,7 +86,7 @@ class DisciplinesController extends Controller
         $staffList      = Staff::orderBy('last_name')->get();
 
         return view('discipline.create', compact(
-            'activeYear', 'classes', 'selectedStudent',
+            'activeYear', 'classes', 'enrollments', 'selectedEnrollment',
             'incidentTypes', 'sanctionTypes', 'staffList'
         ));
     }
@@ -90,25 +96,27 @@ class DisciplinesController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'student_id'          => 'required|exists:students,id',
-            'class_id'            => 'required|exists:school_classes,id',
-            'incident_date'       => 'required|date',
-            'incident_type'       => 'required|in:' . implode(',', array_keys(DisciplineRecord::$incidentTypes)),
-            'description'         => 'required|string|min:10',
-            'sanction_type'       => 'required|in:' . implode(',', array_keys(DisciplineRecord::$sanctionTypes)),
-            'sanction_days'       => 'nullable|integer|min:1|max:30',
-            'sanction_start'      => 'nullable|date',
-            'sanction_end'        => 'nullable|date|after_or_equal:sanction_start',
-            'notes_internes'      => 'nullable|string',
-            'convocation_parent'  => 'boolean',
-            'convocation_date'    => 'nullable|date',
+            'student_enrollment_id' => 'required|exists:student_enrollments,id',
+            'incident_date'         => 'required|date',
+            'incident_type'         => 'required|in:' . implode(',', array_keys(DisciplineRecord::$incidentTypes)),
+            'description'           => 'required|string|min:10',
+            'sanction_type'         => 'required|in:' . implode(',', array_keys(DisciplineRecord::$sanctionTypes)),
+            'sanction_days'         => 'nullable|integer|min:1|max:30',
+            'sanction_start'        => 'nullable|date',
+            'sanction_end'          => 'nullable|date|after_or_equal:sanction_start',
+            'notes_internes'        => 'nullable|string',
+            'convocation_parent'    => 'boolean',
+            'convocation_date'      => 'nullable|date',
         ]);
 
         $activeYear = AcademicYear::where('is_active', true)->firstOrFail();
 
+        $enrollment = StudentEnrollment::findOrFail($validated['student_enrollment_id']);
+
         $record = DisciplineRecord::create([
             ...$validated,
-            'school_year_id'     => $activeYear->id,
+            'academic_year_id'   => $activeYear->id,
+            'class_group_id'     => $enrollment->class_group_id,
             'reported_by'        => Auth::user()->staff->id ?? Staff::first()->id,
             'convocation_parent' => $request->boolean('convocation_parent'),
             'status'             => 'ouvert',
@@ -123,11 +131,11 @@ class DisciplinesController extends Controller
 
     public function show(DisciplineRecord $discipline)
     {
-        $discipline->load(['student.enrollments.classe.level.section', 'classe.level.section', 'reporter', 'schoolYear']);
+        $discipline->load(['studentEnrollment.student', 'studentEnrollment.classGroup.level.section', 'classe.level.section', 'reporter', 'schoolYear']);
 
-        // Historique complet de l'élève
+        // Historique complet du même élève
         $history = DisciplineRecord::with(['schoolYear', 'reporter'])
-            ->where('student_id', $discipline->student_id)
+            ->where('student_enrollment_id', $discipline->student_enrollment_id)
             ->orderByDesc('incident_date')
             ->get();
 
@@ -196,7 +204,7 @@ class DisciplinesController extends Controller
 
     public function convocation(DisciplineRecord $discipline)
     {
-        $discipline->load(['student', 'classe.level.section', 'reporter', 'schoolYear']);
+        $discipline->load(['studentEnrollment.student', 'classe.level.section', 'reporter', 'schoolYear']);
 
         $schoolSettings = \App\Models\SchoolSetting::first();
 
@@ -213,8 +221,8 @@ class DisciplinesController extends Controller
     public function studentsByClass(Request $request)
     {
         $students = Student::whereHas('enrollments', function ($q) use ($request) {
-            $q->where('class_id', $request->class_id)
-              ->where('school_year_id', $request->school_year_id ?? AcademicYear::where('is_active', true)->value('id'));
+            $q->where('class_group_id', $request->class_id)
+              ->where('academic_year_id', $request->academic_year_id ?? AcademicYear::where('is_active', true)->value('id'));
         })->orderBy('last_name')->get(['id', 'last_name', 'first_name', 'matricule']);
 
         return response()->json($students);

@@ -5,14 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+use App\Models\AcademicYear;
+use App\Models\ClassGroup;
+use App\Models\Student;
+use App\Models\StudentEnrollment;
+use App\Models\Staff;
+
 class DisciplineRecord extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'school_year_id',
-        'student_id',
-        'class_id',
+        'academic_year_id',
+        'student_enrollment_id',
+        'class_group_id',
         'reported_by',
         'incident_date',
         'incident_type',
@@ -110,14 +116,19 @@ class DisciplineRecord extends Model
         return $this->belongsTo(AcademicYear::class);
     }
 
-    public function student()
+    public function studentEnrollment()
     {
-        return $this->belongsTo(Student::class);
+        return $this->belongsTo(StudentEnrollment::class);
+    }
+
+    public function getStudentAttribute()
+    {
+        return $this->studentEnrollment?->student;
     }
 
     public function classe()
     {
-        return $this->belongsTo(AcademicYear::class, 'class_id');
+        return $this->belongsTo(ClassGroup::class, 'class_group_id');
     }
 
     public function reporter()
@@ -130,7 +141,7 @@ class DisciplineRecord extends Model
     public function scopeCurrentYear($query)
     {
         $activeYear = AcademicYear::where('is_active', true)->first();
-        return $activeYear ? $query->where('school_year_id', $activeYear->id) : $query;
+        return $activeYear ? $query->where('academic_year_id', $activeYear->id) : $query;
     }
 
     public function scopeOpen($query)
@@ -138,13 +149,13 @@ class DisciplineRecord extends Model
         return $query->where('status', 'ouvert');
     }
 
-    public function scopeForStudent($query, int $studentId)
+    public function scopeForStudent($query, int $studentEnrollmentId)
     {
-        return $query->where('student_id', $studentId);
+        return $query->where('student_enrollment_id', $studentEnrollmentId);
     }
 
-    public function scopeForClass($query, int $classId)
+    public function scopeForClass($query, int $classGroupId)
     {
-        return $query->where('class_id', $classId);
+        return $query->where('class_group_id', $classGroupId);
     }
 }

@@ -10,10 +10,10 @@ return new class extends Migration
     {
         Schema::create('discipline_records', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('school_year_id')->constrained('academic_years')->onDelete('cascade');
-            $table->foreignId('student_id')->constrained()->onDelete('cascade');
-            $table->foreignId('class_id')->constrained('class_groups')->onDelete('cascade');
-            $table->foreignId('reported_by')->constrained('staff', 'id')->onDelete('cascade');
+            $table->foreignId('academic_year_id')->constrained('academic_years')->cascadeOnDelete();
+            $table->foreignId('student_enrollment_id')->constrained('student_enrollments')->cascadeOnDelete();
+            $table->foreignId('class_group_id')->constrained('class_groups')->cascadeOnDelete();
+            $table->foreignId('reported_by')->constrained('staff')->cascadeOnDelete();
             $table->date('incident_date');
             $table->enum('incident_type', [
                 'retard',
