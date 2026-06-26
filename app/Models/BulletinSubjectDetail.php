@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
 class BulletinSubjectDetail extends Model
@@ -21,6 +22,7 @@ class BulletinSubjectDetail extends Model
         'average',
         'total',
         'rank_in_subject',
+        // 'appreciation' stocke le CODE court : CNA, CMA, CA, CBA, CTBA
         'appreciation',
     ];
 
@@ -39,6 +41,41 @@ class BulletinSubjectDetail extends Model
             'rank_in_subject' => 'integer',
             'subject_order'   => 'integer',
         ];
+    }
+
+    // ── Accesseurs ────────────────────────────────────────────────────────
+
+    /**
+     * Renvoie le label complet de l'appréciation en français.
+     * Ex: 'CA' → 'Compétences Acquises'
+     */
+    protected function appreciationLabel(): Attribute
+    {
+        return Attribute::get(function () {
+            if (! $this->appreciation) {
+                return null;
+            }
+
+            return match ($this->appreciation) {
+                'CTBA' => 'Compétences Très Bien Acquises',
+                'CBA'  => 'Compétences Bien Acquises',
+                'CA'   => 'Compétences Acquises',
+                'CMA'  => 'Compétences Moyennement Acquises',
+                'CNA'  => 'Compétences Non Acquises',
+                default => $this->appreciation,
+            };
+        });
+    }
+
+    /**
+     * Renvoie les couleurs CSS associées au code d'appréciation.
+     * @return array{bg: string, color: string}
+     */
+    protected function appreciationColors(): Attribute
+    {
+        return Attribute::get(function () {
+            return AppreciationScale::colorsForCode($this->appreciation ?? '');
+        });
     }
 
     // ── Relations ──────────────────────────────────────────────────────────

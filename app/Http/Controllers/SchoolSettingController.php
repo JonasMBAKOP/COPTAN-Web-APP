@@ -92,6 +92,51 @@ class SchoolSettingController extends Controller
             ->with('active_tab', 'appearance');
     }
 
+    // ── CACHET — UPLOAD ───────────────────────────────────────────────────
+    public function updateSignatureSeal(Request $request)
+    {
+        $request->validate([
+            'signature_seal' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ], [
+            'signature_seal.required' => 'Veuillez sélectionner une image.',
+            'signature_seal.image'    => 'Le fichier doit être une image.',
+            'signature_seal.mimes'    => 'Formats acceptés : JPG, PNG, WEBP.',
+            'signature_seal.max'      => 'La taille maximale est 2 Mo.',
+        ]);
+
+        $settings = SchoolSetting::instance();
+
+        if ($settings->signature_seal && Storage::disk('public')->exists($settings->signature_seal)) {
+            Storage::disk('public')->delete($settings->signature_seal);
+        }
+
+        $path = $request->file('signature_seal')->store('school', 'public');
+        $settings->update(['signature_seal' => $path]);
+
+        AuditLog::log('signature_seal_updated', $settings);
+
+        return back()
+            ->with('success', 'Cachet du proviseur mis à jour avec succès.')
+            ->with('active_tab', 'appearance');
+    }
+
+    // ── CACHET — SUPPRESSION ──────────────────────────────────────────────
+    public function deleteSignatureSeal()
+    {
+        $settings = SchoolSetting::instance();
+
+        if ($settings->signature_seal && Storage::disk('public')->exists($settings->signature_seal)) {
+            Storage::disk('public')->delete($settings->signature_seal);
+        }
+
+        $settings->update(['signature_seal' => null]);
+        AuditLog::log('signature_seal_deleted', $settings);
+
+        return back()
+            ->with('success', 'Cachet du proviseur supprimé.')
+            ->with('active_tab', 'appearance');
+    }
+
     // ── TÉLÉPHONES — CRÉATION ─────────────────────────────────────────────
     public function storePhone(Request $request)
     {

@@ -75,7 +75,7 @@
             href="{{ route('subjects.index') }}"
             :active="request()->routeIs('subjects.*')" />
         @endcan
-        
+
         <x-sidebar-item
             icon="clock"
             label="Emploi du temps"
@@ -169,19 +169,19 @@
             :active="request()->routeIs('grades.entry*')" />
         @endcan
 
-        @can('validate-grades')
+        {{-- @can('validate-grades')
         <x-sidebar-item
             icon="check-circle"
             label="Validation des notes"
             href="#"
             :active="request()->routeIs('grades.validate*')" />
-        @endcan
+        @endcan --}}
 
         @can('view-bulletins')
         <x-sidebar-item
             icon="document"
             label="Bulletins"
-            href="#"
+            href="{{ route('bulletins.index') }}"
             :active="request()->routeIs('bulletins.*')" />
         @endcan
         @endcanany
@@ -204,7 +204,7 @@
         <x-sidebar-item
             icon="x-circle"
             label="Absences"
-            href="#"
+            href="{{ route('absences.index') }}"
             :active="request()->routeIs('absences.*')" />
         @endcan
 
@@ -260,7 +260,7 @@
         <x-sidebar-item
             icon="shield"
             label="Incidents"
-            href="#"
+            href="{{ route('discipline.index') }}"
             :active="request()->routeIs('discipline.*')" />
         @endcan
 

@@ -355,7 +355,7 @@
     {{-- ONGLET 2 — Logo & Apparence                                        --}}
     {{-- ══════════════════════════════════════════════════════════════════ --}}
     <div x-show="tab === 'appearance'" x-transition>
-        <div class="max-w-2xl">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <h3 class="text-sm font-semibold uppercase tracking-wider
                            text-gray-400 mb-6 pb-2 border-b border-gray-100">
@@ -419,7 +419,7 @@
                 <form method="POST"
                       action="{{ route('settings.logo.update') }}"
                       enctype="multipart/form-data"
-                      x-data="logoUpload()">
+                      x-data="imageUpload()">
                     @csrf
 
                     <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -482,6 +482,128 @@
                                    text-sm font-semibold transition-colors"
                             style="background-color: #1A5C2A;">
                         Enregistrer le logo
+                    </button>
+                </form>
+            </div>
+
+            {{-- Cachet du proviseur --}}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-sm font-semibold uppercase tracking-wider
+                           text-gray-400 mb-2 pb-2 border-b border-gray-100">
+                    Cachet du proviseur
+                </h3>
+                <p class="text-xs text-gray-500 mb-6">
+                    Image du cachet officiel affichée sur les cartes scolaires et certains documents imprimables.
+                </p>
+
+                <div class="flex items-center gap-6 mb-6 p-4 bg-gray-50 rounded-xl">
+                    @if($settings->signature_seal)
+                        <img src="{{ asset('storage/' . $settings->signature_seal) }}"
+                             alt="Cachet du proviseur"
+                             class="h-24 w-24 object-contain rounded-lg
+                                    border border-gray-200 bg-white p-1">
+                        <div>
+                            <p class="text-sm font-medium text-gray-800 mb-1">
+                                Cachet actuel
+                            </p>
+                            <form method="POST"
+                                  action="{{ route('settings.signature-seal.delete') }}"
+                                  onsubmit="return confirm('Supprimer le cachet ?')">
+                                @csrf @method('DELETE')
+                                <button type="submit"
+                                        class="flex items-center gap-1 text-xs
+                                               text-red-600 hover:text-red-700">
+                                    <svg class="w-3.5 h-3.5" fill="none"
+                                         stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              stroke-width="2"
+                                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2
+                                                 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1
+                                                 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                    Supprimer le cachet
+                                </button>
+                            </form>
+                        </div>
+                    @else
+                        <div class="h-24 w-24 rounded-lg border-2 border-dashed
+                                    border-gray-300 flex items-center justify-center bg-white">
+                            <svg class="w-8 h-8 text-gray-300" fill="none"
+                                 stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      stroke-width="1.5"
+                                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955
+                                         11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824
+                                         10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133
+                                         -2.052-.382-3.016z"/>
+                            </svg>
+                        </div>
+                        <p class="text-sm text-gray-500">
+                            Aucun cachet configuré
+                        </p>
+                    @endif
+                </div>
+
+                <form method="POST"
+                      action="{{ route('settings.signature-seal.update') }}"
+                      enctype="multipart/form-data"
+                      x-data="imageUpload()">
+                    @csrf
+
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ $settings->signature_seal ? 'Remplacer le cachet' : 'Ajouter un cachet' }}
+                    </label>
+
+                    <div class="border-2 border-dashed border-gray-300 rounded-xl p-8
+                                text-center cursor-pointer hover:border-blue-400
+                                hover:bg-blue-50 transition-colors"
+                         @click="$refs.sealFileInput.click()"
+                         @dragover.prevent
+                         @drop.prevent="handleDrop($event)">
+
+                        <template x-if="!preview">
+                            <div>
+                                <svg class="w-10 h-10 text-gray-300 mx-auto mb-3"
+                                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                          stroke-width="1.5"
+                                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                </svg>
+                                <p class="text-sm text-gray-500">
+                                    <span class="font-medium" style="color:#1A3A6B;">
+                                        Cliquer pour choisir
+                                    </span>
+                                    ou glisser-déposer
+                                </p>
+                                <p class="text-xs text-gray-400 mt-1">
+                                    JPG, PNG, WEBP — Max 2 Mo — fond transparent recommandé
+                                </p>
+                            </div>
+                        </template>
+
+                        <template x-if="preview">
+                            <div class="flex flex-col items-center gap-2">
+                                <img :src="preview"
+                                     class="h-24 w-24 object-contain rounded-lg border border-gray-200">
+                                <p class="text-xs text-gray-500" x-text="fileName"></p>
+                                <p class="text-xs text-blue-600">Cliquer pour changer</p>
+                            </div>
+                        </template>
+
+                        <input type="file" name="signature_seal" x-ref="sealFileInput"
+                               class="hidden" accept="image/*"
+                               @change="handleFile($event)">
+                    </div>
+
+                    @error('signature_seal')
+                        <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+
+                    <button type="submit" x-show="preview"
+                            class="mt-4 w-full py-2.5 rounded-lg text-white
+                                   text-sm font-semibold transition-colors"
+                            style="background-color:#1A5C2A;">
+                        Enregistrer le cachet
                     </button>
                 </form>
             </div>
@@ -983,9 +1105,9 @@
 
 </div>
 
-{{-- Script Alpine.js pour le logo --}}
+{{-- Script Alpine.js pour les uploads d'images --}}
 <script>
-function logoUpload() {
+function imageUpload() {
     return {
         preview: null,
         fileName: '',
@@ -1001,7 +1123,8 @@ function logoUpload() {
             const file = event.dataTransfer.files[0];
             if (!file) return;
             this.fileName = file.name;
-            this.$refs.fileInput.files = event.dataTransfer.files;
+            const input = event.currentTarget.querySelector('input[type="file"]');
+            if (input) input.files = event.dataTransfer.files;
             const reader = new FileReader();
             reader.onload = (e) => { this.preview = e.target.result; };
             reader.readAsDataURL(file);

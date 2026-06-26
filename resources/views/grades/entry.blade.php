@@ -490,19 +490,14 @@
 @endif {{-- end activeYear --}}
 
 @php
+use App\Models\AppreciationScale;
+
 function gradeLabel(float $g): string {
-    if ($g >= 16) return 'Très Bien';
-    if ($g >= 14) return 'Bien';
-    if ($g >= 12) return 'Assez Bien';
-    if ($g >= 10) return 'Passable';
-    return 'Insuffisant';
+    return AppreciationScale::forGrade($g)?->code ?? '—';
 }
 function gradeStyle(float $g): string {
-    if ($g >= 16) return 'background:#D1FAE5;color:#065F46;';
-    if ($g >= 14) return 'background:#DBEAFE;color:#1D4ED8;';
-    if ($g >= 12) return 'background:#EDE9FE;color:#6D28D9;';
-    if ($g >= 10) return 'background:#FEF3C7;color:#92400E;';
-    return 'background:#FEE2E2;color:#991B1B;';
+    $ui = AppreciationScale::uiForGrade($g);
+    return $ui ? "background:{$ui['bg']};color:{$ui['color']};" : '';
 }
 @endphp
 
@@ -711,16 +706,10 @@ function entryFilters(sections, sequences, initSection, initSubject, initClass, 
 }
 
 /* ── Fonctions interactives du tableau de saisie ────────────────────── */
-const APPREC = [
-    { min:16, label:'Très Bien',  bg:'#D1FAE5', color:'#065F46' },
-    { min:14, label:'Bien',       bg:'#DBEAFE', color:'#1D4ED8' },
-    { min:12, label:'Assez Bien', bg:'#EDE9FE', color:'#6D28D9' },
-    { min:10, label:'Passable',   bg:'#FEF3C7', color:'#92400E' },
-    { min:0,  label:'Insuffisant',bg:'#FEE2E2', color:'#991B1B' },
-];
+const APPREC = {!! json_encode($appreciationJs ?? []) !!};
 
 function getApprec(v) {
-    return APPREC.find(a => v >= a.min) || APPREC[APPREC.length-1];
+    return APPREC.find(a => v >= a.min && v <= a.max) || APPREC[APPREC.length - 1];
 }
 
 function updateApprec(eid, val) {

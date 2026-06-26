@@ -4,41 +4,71 @@
 @section('page-title', 'Gestion Globale des Frais')
 @section('page-subtitle', 'Vue d\'ensemble de la santé financière de l\'établissement')
 
+@push('styles')
+<style>
+@keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+.g-card { animation: fadeUp .45s ease both; }
+.g-card:nth-child(1){animation-delay:.04s}
+.g-card:nth-child(2){animation-delay:.08s}
+.g-card:nth-child(3){animation-delay:.12s}
+.g-card:nth-child(4){animation-delay:.16s}
+.g-kpi-hover { transition: box-shadow .2s ease, transform .2s ease; }
+.g-kpi-hover:hover { box-shadow: 0 12px 32px rgba(26,58,107,.12); transform: translateY(-2px); }
+</style>
+@endpush
+
 @section('content')
 
-{{-- ── SECTION FILTRES & EXPORT ─────────────────────────────────────────── --}}
-<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-    <form method="GET" action="{{ route('finances.global') }}" class="flex items-center gap-2">
-        <label class="text-sm font-semibold text-gray-500">Année Académique :</label>
-        <select name="year_id" onchange="this.form.submit()"
-                class="px-3 py-2 border border-gray-200 rounded-xl text-sm font-medium
-                       focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none bg-white shadow-sm transition-all"
-                style="color:#1A3A6B; border-color: rgba(26,58,107,0.15);">
-            @foreach($years as $year)
-            <option value="{{ $year->id }}"
-                    {{ $selectedYear?->id == $year->id ? 'selected' : '' }}>
-                {{ $year->label }} {{ $year->is_active ? '(Active)' : '' }}
-            </option>
-            @endforeach
-        </select>
-    </form>
-    
-    <div class="flex items-center gap-2">
-        <a href="javascript:window.print();" 
-           class="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-600 rounded-xl text-xs font-semibold bg-white hover:bg-gray-50 hover:text-gray-900 transition-all shadow-sm">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
-            </svg>
-            Imprimer / Exporter
-        </a>
-        <a href="{{ route('finances.index') }}" 
-           class="flex items-center gap-2 px-4 py-2 text-white rounded-xl text-xs font-semibold hover:opacity-90 transition-all shadow-sm"
-           style="background-color: #1A3A6B;">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
-            </svg>
-            Enregistrer un paiement
-        </a>
+{{-- ── BARRE OUTILS ───────────────────────────────────────────────────── --}}
+<div class="g-card bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-6">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
+            <p class="text-xs font-bold uppercase tracking-wider text-gray-400">Pilotage financier</p>
+            <h2 class="text-lg font-black mt-0.5" style="color:#1A3A6B;">
+                Gestion globale des frais scolaires
+            </h2>
+            @if($selectedYear)
+            <p class="text-xs text-gray-500 mt-1">
+                Période :
+                {{ $selectedYear->start_date?->locale('fr')->translatedFormat('F Y') }}
+                → {{ $selectedYear->end_date?->locale('fr')->translatedFormat('F Y') }}
+            </p>
+            @endif
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            <form method="GET" action="{{ route('finances.global') }}" class="flex items-center gap-2">
+                <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Année</label>
+                <select name="year_id" onchange="this.form.submit()"
+                        class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold
+                               focus:outline-none bg-white"
+                        style="color:#1A3A6B;">
+                    @foreach($years as $year)
+                    <option value="{{ $year->id }}"
+                            {{ $selectedYear?->id == $year->id ? 'selected' : '' }}>
+                        {{ $year->label }} {{ $year->is_active ? '(Active)' : '' }}
+                    </option>
+                    @endforeach
+                </select>
+            </form>
+
+            <a href="{{ route('finances.reports', ['type' => 'annuel', 'year_id' => $selectedYear?->id]) }}"
+               class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border border-gray-200
+                      bg-white text-gray-700 hover:bg-gray-50 transition-all">
+                Rapports
+            </a>
+            <a href="javascript:window.print();"
+               class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border border-gray-200
+                      bg-white text-gray-700 hover:bg-gray-50 transition-all">
+                Imprimer
+            </a>
+            <a href="{{ route('finances.index') }}"
+               class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white
+                      hover:opacity-95 transition-all shadow-sm"
+               style="background-color:#1A3A6B;">
+                Enregistrer un paiement
+            </a>
+        </div>
     </div>
 </div>
 
@@ -69,7 +99,8 @@
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
     
     {{-- Card 1 : Frais attendus --}}
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center justify-between relative overflow-hidden"
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 g-kpi-hover relative overflow-hidden
+                flex items-center justify-between"
          style="border-left: 5px solid #1A3A6B;">
         <div class="space-y-1 z-10">
             <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Frais attendus</p>
@@ -86,7 +117,7 @@
     </div>
 
     {{-- Card 2 : Frais collectés --}}
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col justify-between relative overflow-hidden"
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 g-kpi-hover relative overflow-hidden flex flex-col justify-between"
          style="border-left: 5px solid #1A5C2A;">
         <div class="flex items-center justify-between mb-2">
             <div class="space-y-1">
@@ -137,7 +168,7 @@
             <p class="text-xl font-black text-yellow-600" style="color: #C8A415;">
                 {{ $paidInFullRate }}%
             </p>
-            <p class="text-2xs font-semibold text-green-600">+5% par rapport au mois dernier</p>
+            <p class="text-2xs text-gray-400">{{ $globalStats['debtors'] ?? 0 }} élève(s) débiteur(s)</p>
         </div>
         <div class="relative flex items-center justify-center z-10" style="width: 52px; height: 52px;">
             <svg class="w-full h-full transform -rotate-90">
@@ -158,35 +189,71 @@
         
         {{-- Collecte Mensuelle (Graphique) --}}
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
-                <h3 class="font-bold text-sm" style="color: #1A3A6B;">Collecte mensuelle</h3>
-                <span class="text-2xs bg-gray-100 text-gray-500 font-semibold px-2 py-1 rounded-md">Année {{ $selectedYear?->label }}</span>
-            </div>
-            
-            <div class="h-64 flex items-end justify-between gap-2 pt-6 px-4">
+            <div class="flex flex-wrap items-start justify-between gap-3 mb-5 pb-2 border-b border-gray-100">
+                <div>
+                    <h3 class="font-black text-sm" style="color:#1A3A6B;">Collecte mensuelle</h3>
+                    @if($selectedYear)
+                    <p class="text-xs text-gray-400 mt-0.5">
+                        {{ $selectedYear->start_date?->locale('fr')->translatedFormat('M Y') }}
+                        → {{ $selectedYear->end_date?->locale('fr')->translatedFormat('M Y') }}
+                    </p>
+                    @endif
+                </div>
                 @php
+                    $monthlyTotal = $monthlyData->sum('total');
                     $maxMonthValue = $monthlyData->max('total') ?: 1;
                 @endphp
-                @foreach($monthlyData as $m)
-                    @php
-                        $pctHeight = round(($m->total / $maxMonthValue) * 100);
-                        // Ne pas descendre en dessous de 4% pour laisser une barre visible si total > 0
-                        if ($m->total > 0 && $pctHeight < 4) $pctHeight = 4;
-                    @endphp
-                    <div class="flex-1 flex flex-col items-center group relative">
-                        {{-- Tooltip au survol --}}
-                        <div class="absolute -top-10 scale-0 group-hover:scale-100 bg-slate-800 text-white text-2xs font-bold px-2 py-1.5 rounded-lg shadow-md transition-all duration-150 z-20 whitespace-nowrap">
-                            {{ number_format($m->total) }} FCFA
+                <div class="text-right">
+                    <p class="text-xs text-gray-400">Total année</p>
+                    <p class="text-sm font-black" style="color:#1A3A6B;">
+                        {{ number_format($monthlyTotal) }} <span class="text-xs font-normal text-gray-400">FCFA</span>
+                    </p>
+                </div>
+            </div>
+
+            @if($monthlyData->isEmpty() || $monthlyTotal == 0)
+            <div class="flex flex-col items-center justify-center py-12 rounded-xl" style="background:#F8FAFC;">
+                <p class="text-sm text-gray-400">Aucune collecte enregistrée sur la période.</p>
+            </div>
+            @else
+            <div id="global-chart-bars" class="flex items-end gap-1.5" style="height:168px;">
+                @foreach($monthlyData as $i => $m)
+                @php
+                    $pct = round(($m->total / $maxMonthValue) * 100);
+                    if ($m->total > 0 && $pct < 3) $pct = 3;
+                @endphp
+                <div class="flex-1 flex flex-col items-center gap-1 group min-w-0"
+                     title="{{ $m->full_label ?? $m->label }} : {{ number_format($m->total) }} FCFA">
+                    <span class="text-gray-400 font-bold truncate w-full text-center"
+                          style="font-size:8.5px; min-height:14px;">
+                        @if($m->total > 0)
+                            @if($m->total >= 1000000)
+                                {{ number_format($m->total/1000000, 1) }}M
+                            @elseif($m->total >= 1000)
+                                {{ number_format($m->total/1000, 0) }}k
+                            @else
+                                {{ number_format($m->total, 0) }}
+                            @endif
+                        @endif
+                    </span>
+                    <div class="w-full relative rounded-t-lg overflow-hidden flex-1"
+                         style="background:#EBF3FB; min-height:110px;">
+                        <div class="global-bar absolute bottom-0 left-0 right-0 rounded-t-lg"
+                             data-pct="{{ $pct }}"
+                             data-delay="{{ $i * 65 }}"
+                             style="height:0;
+                                    background:linear-gradient(to top,#0B2040,#2D6FD4);
+                                    transition:height .65s cubic-bezier(.22,.68,0,1.2);">
                         </div>
-                        <div class="w-full bg-slate-100 rounded-t-lg group-hover:bg-slate-200 transition-all flex items-end" style="height: 180px;">
-                            <div class="w-full rounded-t-lg transition-all duration-300" 
-                                 style="height: {{ $pctHeight }}%; background-color: #1A3A6B; opacity: 0.95;">
-                            </div>
-                        </div>
-                        <span class="text-2xs font-bold text-gray-500 mt-2">{{ $m->label }}</span>
                     </div>
+                    <span class="text-gray-500 group-hover:text-blue-700 transition-colors truncate w-full text-center"
+                          style="font-size:9px; font-weight:700;">
+                        {{ $m->label }}
+                    </span>
+                </div>
                 @endforeach
             </div>
+            @endif
         </div>
 
         {{-- Collecte par Section --}}
@@ -247,7 +314,6 @@
                                  style="width: {{ $is->rate }}%; background-color: {{ $is->rate >= 70 ? '#1A5C2A' : ($is->rate >= 40 ? '#C8A415' : '#EF4444') }}">
                             </div>
                         </div>
-                        <p class="text-2xs text-gray-400 font-medium italic">Date limite : {{ $is->due_date }}</p>
                     </div>
                 @empty
                     <p class="text-sm text-gray-400 italic text-center py-4">Aucune tranche configurée.</p>
@@ -430,3 +496,27 @@
 @endif
 
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const bars = document.querySelectorAll('.global-bar[data-pct]');
+    const wrap = document.getElementById('global-chart-bars');
+    if (!bars.length || !wrap) return;
+
+    const io = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            bars.forEach(bar => {
+                const pct   = parseInt(bar.dataset.pct) || 0;
+                const delay = parseInt(bar.dataset.delay) || 0;
+                setTimeout(() => { bar.style.height = pct + '%'; }, delay);
+            });
+            io.unobserve(entry.target);
+        });
+    }, { threshold: 0.25 });
+
+    io.observe(wrap);
+});
+</script>
+@endpush

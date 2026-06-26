@@ -149,9 +149,11 @@
                 </span>
             </div>
             <button type="button"
-                    @click="openPrint('{{ route($doc['route']) }}', {{ ($doc['section_only'] ?? false) ? 'true' : 'false' }})"
+                    @click="openPrint('{{ route($doc['route']) }}', {{ ($doc['section_only'] ?? false) ? 'true' : 'false' }}, {{ ($doc['class_only'] ?? false) ? 'true' : 'false' }})"
                     class="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-all mt-auto inline-flex items-center justify-center gap-2"
-                    style="background-color:#1A3A6B;">
+                    style="background-color:#1A3A6B;"
+                    :class="{ 'opacity-60 cursor-not-allowed': scope !== 'class' && {{ ($doc['class_only'] ?? false) ? 'true' : 'false' }} }"
+                    :disabled="scope !== 'class' && {{ ($doc['class_only'] ?? false) ? 'true' : 'false' }}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V4h12v5M6 18H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1M7 14h10v6H7z"/>
                 </svg>
@@ -195,9 +197,13 @@ function documentsHub() {
             return p.toString();
         },
 
-        openPrint(baseUrl, sectionOnly = false) {
+        openPrint(baseUrl, sectionOnly = false, classOnly = false) {
             if (!this.yearId) {
                 alert('Veuillez sélectionner une année scolaire.');
+                return;
+            }
+            if (classOnly && this.scope !== 'class') {
+                alert('La génération des livrets scolaires ne fonctionne que pour une seule classe à la fois. Sélectionnez une classe.');
                 return;
             }
             if (sectionOnly && this.scope === 'class') {

@@ -29,7 +29,7 @@ body { font-family: Arial, sans-serif; background:#eef1f5; padding:16px; }
     ])
 </div>
 <p style="text-align:center;font-size:10px;color:#6B7280;margin-top:12px;" class="no-print">
-    Format carte d'identité scolaire (85,6 × 54 mm) — découpez le cadre après impression.
+    Format carte d'identité scolaire (100 × 63 mm) — découpez le cadre après impression.
 </p>
 </body>
 </html>

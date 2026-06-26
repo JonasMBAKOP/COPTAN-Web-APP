@@ -145,8 +145,9 @@
                 Générer le rapport
             </button>
 
-            {{-- Export PDF --}}
+            {{-- Aperçu / Impression --}}
             <a href="{{ route('finances.reports.export', request()->query()) }}"
+               target="_blank"
                class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm
                       font-bold border-2 transition-all hover:shadow-md"
                style="border-color:#E87722; color:#E87722;">
@@ -158,7 +159,7 @@
                              2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0
                              01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                Exporter
+                Imprimer
             </a>
         </div>
     </div>
@@ -318,37 +319,68 @@
 
 </div>
 
-{{-- ── Évolution annuelle (si type = annuel) ─────────────────────────── --}}
+{{-- ── Évolution mensuelle (mode annuel) ─────────────────────────────── --}}
 @if($type === 'annuel' && count($evolution))
-<div class="r-card bg-white rounded-2xl shadow-sm border border-gray-100
-            p-5 mb-5">
-    <h3 class="font-black text-sm mb-5 pb-2 border-b border-gray-100"
-        style="color:#1A3A6B;">
-        Évolution mensuelle — {{ $selectedYear?->label }}
-    </h3>
-    @php $evoMax = collect($evolution)->max('total') ?: 1; @endphp
-    <div class="flex items-end gap-1.5" style="height:120px;">
-        @foreach($evolution as $i => $evo)
-        @php $pct = round(($evo['total']/$evoMax)*100); @endphp
-        <div class="flex-1 flex flex-col items-center gap-1 group"
-             title="{{ $evo['label'] }} : {{ number_format($evo['total']) }} FCFA ({{ $evo['count'] }})">
-            <div class="w-full relative rounded-t-lg overflow-hidden"
-                 style="flex:1; background:#EBF3FB;">
-                <div class="bar-h absolute bottom-0 left-0 right-0 rounded-t-lg"
-                     style="--w:100%; height:0;
-                            background:linear-gradient(to top,#0B2040,#2D6FD4);
-                            animation-name:none;
-                            transition:height .6s cubic-bezier(.22,.68,0,1.2) {{ $i*60 }}ms;"
-                     data-pct="{{ $pct }}"
-                     data-index="{{ $i }}">
-                </div>
-            </div>
-            <span class="text-gray-500 group-hover:text-blue-700 transition-colors"
-                  style="font-size:9px; font-weight:700;">
-                {{ $evo['label'] }}
-            </span>
+<div class="r-card bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5">
+    <div class="flex flex-wrap items-start justify-between gap-3 mb-5 pb-2 border-b border-gray-100">
+        <div>
+            <h3 class="font-black text-sm" style="color:#1A3A6B;">
+                Évolution mensuelle — {{ $selectedYear?->label }}
+            </h3>
+            @if($selectedYear)
+            <p class="text-xs text-gray-400 mt-0.5">
+                {{ $selectedYear->start_date?->locale('fr')->translatedFormat('F Y') }}
+                → {{ $selectedYear->end_date?->locale('fr')->translatedFormat('F Y') }}
+            </p>
+            @endif
         </div>
-        @endforeach
+        @php
+            $evoTotal = collect($evolution)->sum('total');
+            $evoMax   = collect($evolution)->max('total') ?: 1;
+        @endphp
+        <div class="text-right">
+            <p class="text-xs text-gray-400">Total période</p>
+            <p class="text-sm font-black" style="color:#1A3A6B;">
+                {{ number_format($evoTotal) }} <span class="text-xs font-normal text-gray-400">FCFA</span>
+            </p>
+        </div>
+    </div>
+
+    <div id="evo-chart-wrap" class="relative">
+        <div class="flex items-end gap-1.5 pl-1" style="height:148px;" id="evo-chart-bars">
+            @foreach($evolution as $i => $evo)
+            @php $pct = round(($evo['total'] / $evoMax) * 100); @endphp
+            <div class="flex-1 flex flex-col items-center gap-1 group min-w-0"
+                 title="{{ $evo['full_label'] ?? $evo['label'] }} : {{ number_format($evo['total']) }} FCFA ({{ $evo['count'] }})">
+                <span class="text-gray-400 font-bold truncate w-full text-center"
+                      style="font-size:8.5px; min-height:14px;">
+                    @if($evo['total'] > 0)
+                        @if($evo['total'] >= 1000000)
+                            {{ number_format($evo['total']/1000000, 1) }}M
+                        @elseif($evo['total'] >= 1000)
+                            {{ number_format($evo['total']/1000, 0) }}k
+                        @else
+                            {{ number_format($evo['total'], 0) }}
+                        @endif
+                    @endif
+                </span>
+                <div class="w-full relative rounded-t-lg overflow-hidden flex-1"
+                     style="background:#EBF3FB; min-height:100px;">
+                    <div class="evo-bar absolute bottom-0 left-0 right-0 rounded-t-lg"
+                         data-pct="{{ $pct }}"
+                         data-delay="{{ $i * 70 }}"
+                         style="height:0;
+                                background:linear-gradient(to top,#0B2040,#2D6FD4);
+                                transition:height .65s cubic-bezier(.22,.68,0,1.2);">
+                    </div>
+                </div>
+                <span class="text-gray-500 group-hover:text-blue-700 transition-colors truncate w-full text-center"
+                      style="font-size:9px; font-weight:700;">
+                    {{ $evo['label'] }}
+                </span>
+            </div>
+            @endforeach
+        </div>
     </div>
 </div>
 @endif
@@ -492,21 +524,25 @@ function setType(val) {
         val === 'mensuel' ? '' : 'none';
 }
 
-// Barres annuelles
+// Barres évolution mensuelle
 document.addEventListener('DOMContentLoaded', () => {
-    const io = new IntersectionObserver(entries => {
-        entries.forEach(e => {
-            if (!e.isIntersecting) return;
-            e.target.querySelectorAll('[data-pct]').forEach((bar, i) => {
-                const pct = parseInt(bar.dataset.pct) || 0;
-                setTimeout(() => bar.style.height = pct + '%', i * 60);
-            });
-            io.unobserve(e.target);
-        });
-    }, { threshold: 0.3 });
+    const bars = document.querySelectorAll('.evo-bar[data-pct]');
+    const wrap = document.getElementById('evo-chart-bars');
+    if (!bars.length || !wrap) return;
 
-    const evo = document.querySelector('[data-index]')?.closest('.flex');
-    if (evo) io.observe(evo);
+    const io = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            bars.forEach(bar => {
+                const pct   = parseInt(bar.dataset.pct) || 0;
+                const delay = parseInt(bar.dataset.delay) || 0;
+                setTimeout(() => { bar.style.height = pct + '%'; }, delay);
+            });
+            io.unobserve(entry.target);
+        });
+    }, { threshold: 0.25 });
+
+    io.observe(wrap);
 });
 </script>
 @endpush

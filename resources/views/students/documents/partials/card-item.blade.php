@@ -1,6 +1,29 @@
 @php
     $enr = $enrollment ?? $student->printEnrollment ?? null;
     $year = $year ?? $enr?->academicYear;
+
+    $mottoFr = 'Paix - Travail - Patrie';
+    $mottoEn = 'Peace - Work - Fatherland';
+
+    $ministryFr = strtoupper($school->ministry ?: 'MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES');
+    $ministryEn = strtoupper($school->ministry_en ?: 'MINISTRY OF SECONDARY EDUCATION');
+
+    $splitMinistry = function (string $text): array {
+        $words = preg_split('/\s+/', trim($text));
+        $mid   = (int) ceil(count($words) / 2);
+
+        return [
+            implode(' ', array_slice($words, 0, $mid)),
+            implode(' ', array_slice($words, $mid)),
+        ];
+    };
+
+    [$ministryFr1, $ministryFr2] = $splitMinistry($ministryFr);
+    [$ministryEn1, $ministryEn2] = $splitMinistry($ministryEn);
+
+    $primaryPhone = isset($phones)
+        ? ($phones->firstWhere('is_primary', true) ?? $phones->first())
+        : null;
 @endphp
 
 <!-- GUILLOCHE PATTERN BACKGROUND -->
@@ -19,8 +42,11 @@
         <div class="id-card__header">
             <div class="id-card__header-section id-card__header-fr">
                 <div class="id-card__header-text">RÉPUBLIQUE DU CAMEROUN</div>
-                <div class="id-card__header-text">MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES</div>
-                <div class="id-card__header-motto">Paix - Travail - Patrie</div>
+                <div class="id-card__header-motto">{{ $mottoFr }}</div>
+                <div class="id-card__header-text">{{ $ministryFr1 }}</div>
+                @if($ministryFr2)
+                <div class="id-card__header-text">{{ $ministryFr2 }}</div>
+                @endif
             </div>
 
             <!-- FLAG SVG -->
@@ -28,7 +54,6 @@
                 <svg viewBox="0 0 100 60" width="24" height="15">
                     <rect width="33.33" height="60" fill="#007A5E"/>
                     <rect x="33.33" width="33.33" height="60" fill="#CE1126"/>
-                    <!-- ÉTOILE JAUNE SUR LE ROUGE -->
                     <g transform="translate(50, 30)">
                         <path d="M 0 -8 L 2.4 -2.4 L 8 -1.2 L 3.2 3.2 L 4.8 9.6 L 0 5.6 L -4.8 9.6 L -3.2 3.2 L -8 -1.2 L -2.4 -2.4 Z" fill="#FCD116"/>
                     </g>
@@ -38,8 +63,11 @@
 
             <div class="id-card__header-section id-card__header-en">
                 <div class="id-card__header-text">REPUBLIC OF CAMEROON</div>
-                <div class="id-card__header-text">MINISTRY OF SECONDARY EDUCATION</div>
-                <div class="id-card__header-motto">Peace - Work - Fatherland</div>
+                <div class="id-card__header-motto">{{ $mottoEn }}</div>
+                <div class="id-card__header-text">{{ $ministryEn1 }}</div>
+                @if($ministryEn2)
+                <div class="id-card__header-text">{{ $ministryEn2 }}</div>
+                @endif
             </div>
         </div>
 
@@ -72,7 +100,7 @@
                         </div>
                     @endif
                 </div>
-                <div class="id-card__matricule">MLE: {{ $student->matricule }}</div>
+                <div class="id-card__matricule">MATRICULE: {{ $student->matricule }}</div>
             </div>
 
             <!-- INFO TABLE -->
@@ -122,10 +150,16 @@
                     </tr>
                 </table>
 
-                <!-- LOGO HAUT DROIT -->
+                <!-- LOGO & COORDONNÉES HAUT DROIT -->
                 <div class="id-card__top-logo">
                     @if($school->logo)
-                        <img src="{{ asset('storage/' . $school->logo) }}" alt="" />
+                        <img src="{{ asset('storage/' . $school->logo) }}" alt="" class="id-card__top-logo-image" />
+                    @endif
+                    @if($school->postal_box)
+                        <div class="id-card__top-logo-meta">B.P. {{ $school->postal_box }}</div>
+                    @endif
+                    @if($primaryPhone)
+                        <div class="id-card__top-logo-meta">{{ $primaryPhone->number }}</div>
                     @endif
                 </div>
 

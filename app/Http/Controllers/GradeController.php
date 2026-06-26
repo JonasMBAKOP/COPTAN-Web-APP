@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreGradeRequest;
+use App\Models\AppreciationScale;
 use App\Models\AcademicYear;
 use App\Models\AuditLog;
 use App\Models\ClassGroup;
@@ -353,12 +354,14 @@ class GradeController extends Controller
             }
         }
 
+        $appreciationJs = AppreciationScale::toJsArray();
+
         return view('grades.notes', compact(
             'activeYear', 'sections', 'sequences', 'subjects', 'classes',
             'selectedSectionId', 'selectedSubjectId',
             'selectedClassId', 'selectedSequenceId',
             'enrollments', 'grades', 'classSubject',
-            'selectedClass', 'sequence'
+            'selectedClass', 'sequence', 'appreciationJs'
         ));
     }
 
@@ -508,13 +511,15 @@ class GradeController extends Controller
             }
         }
 
+        $appreciationJs = AppreciationScale::toJsArray();
+
         return view('grades.entry', compact(
             'activeYear', 'sections', 'sequences', 'subjects', 'classes',
             'selectedSectionId', 'selectedSubjectId',
             'selectedClassId', 'selectedSequenceId',
             'enrollments', 'grades', 'classSubject',
             'selectedClass', 'sequence',
-            'readyToShow', 'isLocked', 'lock'
+            'readyToShow', 'isLocked', 'lock', 'appreciationJs'
         ));
     }
 

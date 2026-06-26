@@ -46,4 +46,9 @@ class CouncilDecision extends Model
               )
         );
     }
+
+    public function getLabelAttribute(): string
+    {
+        return $this->label_fr ?? '';
+    }
 }

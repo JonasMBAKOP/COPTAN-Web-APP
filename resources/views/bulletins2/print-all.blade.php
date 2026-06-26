@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Bulletins — {{ $classGroup->full_name }} — {{ $sequence->label }}</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         @media print {
             @page {
@@ -213,7 +212,7 @@
                 if ($grade !== null) { $gc = $grade >= 14 ? 'grade-good' : ($grade >= 10 ? 'grade-avg' : 'grade-bad'); }
             @endphp
             <tr>
-                <td class="col-subject">{{ $detail->classSubject?->subject?->name ?? '—' }}</td>
+                <td class="col-subject">{{ $detail->classSubject?->subject?->name_fr ?? '—' }}</td>
                 <td class="col-teacher">{{ $detail->teacher_name ? \Str::limit($detail->teacher_name, 18) : '—' }}</td>
                 <td class="coef-cell">{{ $coef }}</td>
                 <td class="grade-cell {{ $gc }}">
@@ -223,7 +222,17 @@
                 </td>
                 <td class="total-cell">{{ $tot !== null ? number_format($tot, 2) : '—' }}</td>
                 <td class="grade-cell" style="color:#6B7280;">{{ $detail->rank_in_subject ?? '—' }}</td>
-                <td class="appr-cell">{{ $detail->appreciation ?? '—' }}</td>
+                <td class="appr-cell">
+                    @if($detail->appreciation)
+                        @php $ac = \App\Models\AppreciationScale::colorsForCode($detail->appreciation); @endphp
+                        <span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:7px;font-weight:800;
+                                     background:{{ $ac['bg'] }};color:{{ $ac['color'] }};">
+                            {{ $detail->appreciation }}
+                        </span>
+                    @else
+                        <span style="color:#9CA3AF;">—</span>
+                    @endif
+                </td>
             </tr>
             @endforeach
 

@@ -15,9 +15,11 @@
 {{-- CALCUL STATISTIQUES RÉELLES --}}
 @php
     $totalMaxStudents = 0;
-    foreach($sections as $section) {
-        $sectionClasses = $classGroups->get($section->id, collect());
-        $totalMaxStudents += $sectionClasses->sum('max_students');
+    if (!($isTeacher ?? false)) {
+        foreach($sections as $section) {
+            $sectionClasses = $classGroups->get($section->id, collect());
+            $totalMaxStudents += $sectionClasses->sum('max_students');
+        }
     }
     $occupationRate = $totalMaxStudents > 0 ? round(($stats['total_students'] / $totalMaxStudents) * 100) : 0;
 @endphp
@@ -84,6 +86,15 @@
             {{-- Sélection de l'année --}}
             <div>
                 <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Année scolaire</label>
+                @if($isTeacher ?? false)
+                <div class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-semibold bg-gray-50"
+                     style="color:#1A3A6B;">
+                    {{ $selectedYear?->label ?? '—' }}
+                    @if($selectedYear?->is_active)
+                    <span class="text-xs font-bold text-green-600 ml-1">(Active)</span>
+                    @endif
+                </div>
+                @else
                 <form method="GET" action="{{ route('classes.index') }}">
                     <select name="year_id" onchange="this.form.submit()"
                             class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 bg-white font-medium"
@@ -95,6 +106,7 @@
                         @endforeach
                     </select>
                 </form>
+                @endif
             </div>
 
             {{-- Sélection de la section --}}
@@ -120,7 +132,13 @@
                     @foreach($sections as $sec)
                         <optgroup label="{{ $sec->name }}" x-show="selectedSection === '' || selectedSection == '{{ $sec->id }}'">
                             @foreach($sec->levels as $lev)
+                                @php
+                                    $levelHasClass = ($classGroups->get($sec->id, collect()))
+                                        ->contains(fn ($c) => (int) $c->level_id === (int) $lev->id);
+                                @endphp
+                                @if(!($isTeacher ?? false) || $levelHasClass)
                                 <option value="{{ $lev->id }}">{{ $lev->name }}</option>
+                                @endif
                             @endforeach
                         </optgroup>
                     @endforeach
@@ -144,8 +162,13 @@
         </div>
     </div>
 
-    {{-- ── GRAPHIQUES ACCORDÉONS PAR SECTION (MOCKUP 1) ────────────────────────────────────────── --}}
+    {{-- ── GRILLE PAR SECTION ─────────────────────────────────────────── --}}
     @if($selectedYear)
+        @if(($isTeacher ?? false) && $sections->isEmpty())
+        <div class="bg-white rounded-2xl border border-gray-100 p-10 text-center text-gray-500">
+            <p class="font-semibold">Aucune classe ne vous est affectée pour {{ $selectedYear->label }}.</p>
+        </div>
+        @endif
         @foreach($sections as $section)
         @php
             $sectionClasses = $classGroups->get($section->id, collect());
@@ -186,7 +209,7 @@
                     </div>
                     @else
                         {{-- Grille unifiée de classes (alignées horizontalement, 5/6 par ligne sans en-têtes de niveaux) --}}
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                             @foreach($sectionClasses->sortBy('level.order_index')->sortBy('name') as $class)
                             @php
                                 $pct = $class->max_students > 0 ? round(($class->student_enrollments_count / $class->max_students) * 100) : 0;
@@ -265,6 +288,7 @@
                                 </div>
 
                                 {{-- Barre de progression et occupation --}}
+                                @unless($isTeacher ?? false)
                                 <div class="mt-2">
                                     <div class="flex justify-between items-center text-xs mb-1.5">
                                         @if($isFull)
@@ -281,6 +305,11 @@
                                         </div>
                                     </div>
                                 </div>
+                                @else
+                                <div class="mt-2 text-xs font-semibold text-gray-500">
+                                    Effectif : {{ $class->student_enrollments_count }} élève(s)
+                                </div>
+                                @endunless
                             </div>
                             @endforeach
                         </div>
@@ -291,8 +320,8 @@
         @endforeach
     @endif
 
-    {{-- ── CARTES DE STATISTIQUES GLOBALEs AU BAS (MOCKUP 1) ────────────────────────────────────────── --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+    {{-- ── CARTES DE STATISTIQUES GLOBALEs AU BAS ─────────────────────── --}}
+    <div class="grid grid-cols-1 {{ ($isTeacher ?? false) ? 'md:grid-cols-2' : 'md:grid-cols-3' }} gap-6 mt-8">
         {{-- Total Classes --}}
         <div class="rounded-2xl p-6 text-white flex items-center justify-between shadow-sm transition-transform duration-200 hover:scale-[1.01]" style="background-color: #1A3A6B;">
             <div>
@@ -319,7 +348,8 @@
             </div>
         </div>
 
-        {{-- Occupation Moyenne --}}
+        {{-- Occupation Moyenne (administration uniquement) --}}
+        @unless($isTeacher ?? false)
         <div class="bg-white border border-gray-150 rounded-2xl p-6 flex items-center justify-between shadow-sm transition-transform duration-200 hover:scale-[1.01]">
             <div>
                 <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Occupation Moyenne</p>
@@ -334,6 +364,7 @@
                 <span class="absolute text-xs font-black" style="color: #A24E0C;">{{ $occupationRate }}%</span>
             </div>
         </div>
+        @endunless
     </div>
 
 </div>

@@ -36,7 +36,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-grades', 'enter-grades',
             'validate-grades', 'lock-grades',
             // Bulletins
-            'view-bulletins', 'generate-bulletins', 'print-bulletins',
+            'view-bulletins', 'manage-bulletins', 'generate-bulletins', 'print-bulletins',
             // Absences
             'view-absences', 'manage-absences',
             // Finances
@@ -80,7 +80,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-classes', 'manage-classes',
             'view-subjects', 'manage-subjects',
             'view-grades', 'enter-grades', 'validate-grades', 'lock-grades',
-            'view-bulletins', 'generate-bulletins', 'print-bulletins',
+            'view-bulletins', 'manage-bulletins', 'generate-bulletins', 'print-bulletins',
             'view-absences', 'manage-absences',
             'view-discipline', 'manage-discipline',
             'view-timetable', 'manage-timetable',

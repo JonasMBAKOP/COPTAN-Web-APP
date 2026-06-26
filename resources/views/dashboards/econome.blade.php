@@ -242,145 +242,73 @@
 </div>
 
 {{-- ════════════════════════════════════════════════════════════════════ --}}
-{{-- LIGNE 2 : GRAPHIQUE + COLONNE DROITE                                  --}}
+{{-- ACTIONS RAPIDES — pleine largeur, horizontal                          --}}
+{{-- ════════════════════════════════════════════════════════════════════ --}}
+<div class="anim-5 bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-5">
+    <h3 class="text-sm font-black mb-3" style="color:#1A3A6B;">
+        Actions rapides
+    </h3>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+
+        <a href="{{ route('finances.index') }}"
+           class="btn-rapide flex items-center gap-3 px-4 py-3 rounded-xl text-white text-sm font-bold"
+           style="background-color:#E87722;">
+            <span class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                </svg>
+            </span>
+            Enregistrer un paiement
+        </a>
+
+        <a href="{{ route('students.create') }}"
+           class="btn-rapide flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold border-2"
+           style="border-color:#1A3A6B; color:#1A3A6B;">
+            <span class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style="background-color:#EBF3FB;">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                </svg>
+            </span>
+            Inscrire un élève
+        </a>
+
+        <a href="{{ route('students.index') }}"
+           class="btn-rapide flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold border-2 border-gray-200 text-gray-700 hover:border-gray-300">
+            <span class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+            </span>
+            <span class="flex-1">Réinscrire un élève</span>
+            @if($pendingReEnrollments > 0)
+            <span class="text-xs font-black text-white px-2 py-0.5 rounded-full"
+                  style="background-color:#E87722;">
+                {{ $pendingReEnrollments }}
+            </span>
+            @endif
+        </a>
+
+        <a href="{{ route('finances.reports') }}"
+           class="btn-rapide flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold border-2 border-gray-200 text-gray-700 hover:border-gray-300">
+            <span class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style="background-color:#F3E8FF;">
+                <svg class="w-4 h-4" style="color:#7C3AED;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+            </span>
+            Rapports financiers
+        </a>
+    </div>
+</div>
+
+{{-- ════════════════════════════════════════════════════════════════════ --}}
+{{-- COLLECTE MENSUELLE + DERNIERS PAIEMENTS                               --}}
 {{-- ════════════════════════════════════════════════════════════════════ --}}
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
-
-    {{-- ── Collecte mensuelle ──────────────────────────────────────────── --}}
-    <div class="hidden anim-5 lg:col-span-2 bg-white rounded-2xl shadow-sm
-                border border-gray-100 p-5">
-
-        <div class="flex items-center justify-between mb-5">
-            <div>
-                <h3 class="text-sm font-black" style="color:#1A3A6B;">
-                    Collecte mensuelle
-                </h3>
-                <p class="text-xs text-gray-400 mt-0.5">
-                    Mes enregistrements · 6 derniers mois
-                </p>
-            </div>
-            @php
-                $periodTotal = collect($chartData)->sum('total');
-                $periodCount = collect($chartData)->sum('count');
-            @endphp
-            <div class="text-right">
-                <p class="text-xs text-gray-400">Total période</p>
-                <p class="text-sm font-black" style="color:#1A3A6B;">
-                    {{ number_format($periodTotal) }}
-                    <span class="text-xs font-normal text-gray-400">FCFA</span>
-                </p>
-                <p class="text-xs text-gray-400">
-                    {{ $periodCount }} paiement{{ $periodCount > 1 ? 's' : '' }}
-                </p>
-            </div>
-        </div>
-
-        @if($periodTotal === 0.0)
-        {{-- Aucune donnée --}}
-        <div class="flex flex-col items-center justify-center h-44
-                    rounded-xl" style="background-color:#F8FAFC;">
-            <svg class="w-10 h-10 text-gray-300 mb-2" fill="none"
-                 stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      stroke-width="1.5"
-                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002
-                         2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10
-                         m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2
-                         a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-            </svg>
-            <p class="text-sm text-gray-400 font-medium">
-                Aucun paiement enregistré sur la période
-            </p>
-        </div>
-        @else
-        {{-- Graphique ─────────────────────────────────────────────────── --}}
-        @php
-            $chartMax = collect($chartData)->max('total') ?: 1;
-        @endphp
-        <div class="relative" id="chart-container">
-            {{-- Tooltip (caché par défaut) --}}
-            <div id="chart-tooltip"
-                 class="absolute z-20 pointer-events-none
-                        bg-gray-900 text-white text-xs font-bold
-                        px-3 py-2 rounded-xl shadow-xl
-                        opacity-0 transition-opacity duration-150
-                        whitespace-nowrap"
-                 style="top:-52px; left:50%; transform:translateX(-50%);">
-                <span id="tooltip-amount"></span>
-                <span id="tooltip-count" class="text-gray-400 font-normal ml-1.5"></span>
-                <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-px
-                            w-0 h-0"
-                     style="border:5px solid transparent;
-                            border-top-color:#111827;">
-                </div>
-            </div>
-
-            {{-- Barres --}}
-            <div class="flex items-end gap-2" style="height:140px;">
-                @foreach($chartData as $i => $bar)
-                @php
-                    $pct = $chartMax > 0 ? round(($bar['total'] / $chartMax) * 100) : 0;
-                    $delay = $i * 0.07;
-                @endphp
-                <div class="flex-1 flex flex-col items-center gap-1 group
-                            cursor-pointer chart-bar-wrap"
-                     data-total="{{ $bar['total'] }}"
-                     data-count="{{ $bar['count'] }}"
-                     data-label="{{ $bar['label'] }}">
-
-                    {{-- Valeur --}}
-                    <p class="text-xs font-bold text-gray-400
-                               group-hover:text-blue-700 transition-colors
-                               truncate max-w-full text-center">
-                        @if($bar['total'] > 0)
-                            @if($bar['total'] >= 1000000)
-                                {{ number_format($bar['total']/1000000, 1) }}M
-                            @else
-                                {{ number_format($bar['total']/1000, 0) }}k
-                            @endif
-                        @endif
-                    </p>
-
-                    {{-- Barre --}}
-                    <div class="w-full rounded-t-xl overflow-hidden relative"
-                         style="height:110px; background:#F0F5FF;">
-                        <div class="bar-col absolute bottom-0 left-0 right-0
-                                    rounded-t-xl group-hover:brightness-110
-                                    transition-all duration-200"
-                             data-pct="{{ $pct }}"
-                             style="height:0%;
-                                    animation:barGrow .7s cubic-bezier(.22,.68,0,1.2) {{ $delay }}s both;
-                                    background:{{ $bar['total'] > 0
-                                        ? 'linear-gradient(to top,#0D2040,#2D6FD4)'
-                                        : '#E5E7EB' }};">
-                        </div>
-                    </div>
-
-                    {{-- Label --}}
-                    <p class="text-xs font-semibold text-gray-500
-                               group-hover:text-blue-700 transition-colors">
-                        {{ $bar['label'] }}
-                    </p>
-                </div>
-                @endforeach
-            </div>
-        </div>
-        @endif
-
-        <div class="flex items-center gap-4 mt-4 pt-4 border-t border-gray-100">
-            <div class="flex items-center gap-1.5 text-xs text-gray-400">
-                <span class="w-3 h-3 rounded"
-                      style="background:linear-gradient(to right,#1A3A6B,#4A90D4);">
-                </span>
-                Enregistrements par moi
-            </div>
-            <a href="{{ route('finances.reports') }}"
-               class="ml-auto text-xs font-semibold hover:underline"
-               style="color:#1A3A6B;">
-                Rapport complet →
-            </a>
-        </div>
-    </div>
 
     {{-- ── Collecte mensuelle ──────────────────────────────────────────── --}}
     <div class="anim-5 lg:col-span-2 bg-white rounded-2xl shadow-sm
@@ -431,106 +359,45 @@
         </div>
 
         @else
-        {{-- Graphique barres ──────────────────────────────────────────────── --}}
-        <div class="relative" id="chart-wrap">
-
-            {{-- Lignes de grille horizontales --}}
-            <div class="absolute inset-0 flex flex-col justify-between
-                        pointer-events-none"
-                style="padding-bottom:36px;">
-                @foreach([100, 75, 50, 25] as $pct)
-                <div class="flex items-center gap-2" style="opacity:.4">
-                    <span class="text-gray-400 flex-shrink-0"
-                        style="font-size:9px; width:32px; text-align:right;">
-                        @php
-                            $val = $chartMax * $pct / 100;
-                            echo $val >= 1000000
-                                ? round($val/1000000,1).'M'
-                                : ($val >= 1000 ? round($val/1000).'k' : $val);
-                        @endphp
-                    </span>
-                    <div class="flex-1 border-t border-dashed border-gray-200"></div>
-                </div>
-                @endforeach
-            </div>
-
-            {{-- Barres --}}
-            <div class="relative flex items-end gap-2 pl-9"
-                style="height:160px;"
-                id="chart-bars">
-
-                @foreach($chartData as $i => $bar)
-                @php
-                    $pct   = $chartMax > 0 ? round(($bar['total']/$chartMax)*100) : 0;
-                    $delay = $i * 80; // ms
-                @endphp
-                <div class="flex-1 flex flex-col items-center gap-0 chart-col group"
-                    data-total="{{ $bar['total'] }}"
-                    data-count="{{ $bar['count'] }}"
-                    data-label="{{ $bar['label'] }}"
-                    style="cursor:pointer;">
-
-                    {{-- Valeur au-dessus --}}
-                    <span class="text-xs font-black mb-1 transition-colors
-                                group-hover:text-blue-700"
-                        style="color:#9CA3AF; font-size:9.5px; min-height:16px;">
-                        @if($bar['total'] > 0)
-                            @if($bar['total'] >= 1000000)
-                                {{ number_format($bar['total']/1000000, 1) }}M
-                            @elseif($bar['total'] >= 1000)
-                                {{ number_format($bar['total']/1000, 0) }}k
-                            @else
-                                {{ number_format($bar['total'], 0) }}
-                            @endif
+        {{-- Graphique barres (même pattern que finances/global) --}}
+        <div id="eco-chart-bars" class="flex items-end gap-1.5" style="height:168px;">
+            @foreach($chartData as $i => $bar)
+            @php
+                $pct = $chartMax > 0 ? round(($bar['total'] / $chartMax) * 100) : 0;
+                if ($bar['total'] > 0 && $pct < 3) $pct = 3;
+            @endphp
+            <div class="flex-1 flex flex-col items-center gap-1 group min-w-0"
+                 title="{{ $bar['label'] }} : {{ number_format($bar['total']) }} FCFA · {{ $bar['count'] }} paiement{{ $bar['count'] != 1 ? 's' : '' }}">
+                <span class="text-gray-400 font-bold truncate w-full text-center"
+                      style="font-size:8.5px; min-height:14px;">
+                    @if($bar['total'] > 0)
+                        @if($bar['total'] >= 1000000)
+                            {{ number_format($bar['total'] / 1000000, 1) }}M
+                        @elseif($bar['total'] >= 1000)
+                            {{ number_format($bar['total'] / 1000, 0) }}k
+                        @else
+                            {{ number_format($bar['total'], 0) }}
                         @endif
-                    </span>
-
-                    {{-- Conteneur barre --}}
-                    <div class="w-full relative rounded-t-xl overflow-hidden
-                                group-hover:brightness-110 transition-all"
-                        style="flex:1; background:#EBF3FB; border-radius:8px 8px 0 0;">
-                        {{-- Barre animée --}}
-                        <div class="chart-bar absolute bottom-0 left-0 right-0
-                                    rounded-t-xl"
-                            data-pct="{{ $pct }}"
-                            data-delay="{{ $delay }}"
-                            style="height:0;
-                                    border-radius:8px 8px 0 0;
-                                    background:{{ $bar['total'] > 0
-                                        ? 'linear-gradient(to top,#0B2040 0%,#2D6FD4 100%)'
-                                        : '#E5E7EB' }};
-                                    transition:height .65s cubic-bezier(.22,.68,0,1.2);">
-                        </div>
+                    @endif
+                </span>
+                <div class="w-full relative rounded-t-lg overflow-hidden flex-1"
+                     style="background:#EBF3FB; min-height:110px;">
+                    <div class="eco-bar absolute bottom-0 left-0 right-0 rounded-t-lg"
+                         data-pct="{{ $pct }}"
+                         data-delay="{{ $i * 65 }}"
+                         style="height:0;
+                                background:{{ $bar['total'] > 0
+                                    ? 'linear-gradient(to top,#0B2040,#2D6FD4)'
+                                    : '#E5E7EB' }};
+                                transition:height .65s cubic-bezier(.22,.68,0,1.2);">
                     </div>
                 </div>
-                @endforeach
-
+                <span class="text-gray-500 group-hover:text-blue-700 transition-colors truncate w-full text-center"
+                      style="font-size:9px; font-weight:700;">
+                    {{ $bar['label'] }}
+                </span>
             </div>
-
-            {{-- Labels mois --}}
-            <div class="flex gap-2 pl-9 mt-1">
-                @foreach($chartData as $bar)
-                <div class="flex-1 text-center">
-                    <span class="text-xs font-semibold text-gray-400"
-                        style="font-size:10px;">
-                        {{ $bar['label'] }}
-                    </span>
-                </div>
-                @endforeach
-            </div>
-
-            {{-- Tooltip flottant --}}
-            <div id="chart-tooltip"
-                class="absolute z-30 pointer-events-none px-3 py-2 rounded-xl
-                        shadow-xl text-white text-xs font-bold"
-                style="background:#0B1E3D; opacity:0; transition:opacity .15s;
-                        white-space:nowrap; top:-52px; left:0;">
-                <span id="tt-amount"></span>
-                <span id="tt-count" class="ml-2 opacity-60 font-normal"></span>
-                <div style="position:absolute;top:100%;left:50%;transform:translateX(-50%);
-                            border:5px solid transparent;border-top-color:#0B1E3D;">
-                </div>
-            </div>
+            @endforeach
         </div>
         @endif
 
@@ -550,104 +417,8 @@
         </div>
     </div>
 
-    {{-- ── Colonne droite ──────────────────────────────────────────────── --}}
-    <div class="space-y-4">
-
-        {{-- Actions rapides --}}
-        <div class="anim-6 bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <h3 class="text-sm font-black mb-4 pb-2 border-b border-gray-100"
-                style="color:#1A3A6B;">
-                Actions rapides
-            </h3>
-            <div class="space-y-2">
-
-                {{-- Enregistrer un paiement --}}
-                <a href="{{ route('finances.index') }}"
-                   class="btn-rapide flex items-center gap-3 w-full px-4 py-3
-                          rounded-xl text-white text-sm font-bold"
-                   style="background-color:#E87722;">
-                    <span class="w-8 h-8 bg-white/20 rounded-lg flex
-                                 items-center justify-center flex-shrink-0">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                             viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                  stroke-width="2.5" d="M12 4v16m8-8H4"/>
-                        </svg>
-                    </span>
-                    Enregistrer un paiement
-                </a>
-
-                {{-- Inscrire un élève --}}
-                <a href="{{ route('students.create') }}"
-                   class="btn-rapide flex items-center gap-3 w-full px-4 py-3
-                          rounded-xl text-sm font-bold border-2"
-                   style="border-color:#1A3A6B; color:#1A3A6B;">
-                    <span class="w-8 h-8 rounded-lg flex items-center
-                                 justify-center flex-shrink-0"
-                          style="background-color:#EBF3FB;">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                             viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                  stroke-width="2"
-                                  d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0
-                                     11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
-                        </svg>
-                    </span>
-                    Inscrire un élève
-                </a>
-
-                {{-- Réinscrire un élève --}}
-                <a href="{{ route('students.index') }}"
-                   class="btn-rapide flex items-center gap-3 w-full px-4 py-3
-                          rounded-xl text-sm font-bold border-2 border-gray-200
-                          text-gray-700 hover:border-gray-300">
-                    <span class="w-8 h-8 bg-gray-100 rounded-lg flex
-                                 items-center justify-center flex-shrink-0">
-                        <svg class="w-4 h-4 text-gray-600" fill="none"
-                             stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                  stroke-width="2"
-                                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582
-                                     9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0
-                                     01-15.357-2m15.357 2H15"/>
-                        </svg>
-                    </span>
-                    Réinscrire un élève
-                    @if($pendingReEnrollments > 0)
-                    <span class="ml-auto text-xs font-black text-white px-2
-                                 py-0.5 rounded-full"
-                          style="background-color:#E87722;">
-                        {{ $pendingReEnrollments }}
-                    </span>
-                    @endif
-                </a>
-
-                {{-- Rapports financiers --}}
-                <a href="{{ route('finances.reports') }}"
-                   class="btn-rapide flex items-center gap-3 w-full px-4 py-3
-                          rounded-xl text-sm font-bold border-2 border-gray-200
-                          text-gray-700 hover:border-gray-300">
-                    <span class="w-8 h-8 rounded-lg flex items-center
-                                 justify-center flex-shrink-0"
-                          style="background-color:#F3E8FF;">
-                        <svg class="w-4 h-4" style="color:#7C3AED;" fill="none"
-                             stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                  stroke-width="2"
-                                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2
-                                     2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2
-                                     a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0
-                                     002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2
-                                     2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                        </svg>
-                    </span>
-                    Rapports financiers
-                </a>
-            </div>
-        </div>
-
-        {{-- Mes derniers paiements --}}
-        <div class="anim-6 bg-white rounded-2xl shadow-sm border border-gray-100">
+    {{-- ── Mes derniers paiements ──────────────────────────────────────── --}}
+    <div class="anim-6 bg-white rounded-2xl shadow-sm border border-gray-100 lg:col-span-1">
             <div class="px-5 py-3.5 border-b border-gray-100 flex
                         items-center justify-between">
                 <h3 class="text-sm font-black" style="color:#1A3A6B;">
@@ -687,7 +458,6 @@
                 @endforeach
             </div>
             @endif
-        </div>
     </div>
 </div>
 
@@ -1009,67 +779,25 @@
         .forEach(el => io.observe(el));
 })();
 
-/* ═══ GRAPHIQUE BARRES ═══════════════════════════════════════════════════ */
+/* ═══ GRAPHIQUE BARRES (collecte mensuelle) ═════════════════════════════ */
 (function() {
-    const bars    = document.querySelectorAll('.chart-bar[data-pct]');
-    const cols    = document.querySelectorAll('.chart-col');
-    const tooltip = document.getElementById('chart-tooltip');
-    const wrap    = document.getElementById('chart-wrap');
+    const bars = document.querySelectorAll('.eco-bar[data-pct]');
+    const wrap = document.getElementById('eco-chart-bars');
+    if (!bars.length || !wrap) return;
 
-    if (!bars.length) return;
-
-    const fmt = v => new Intl.NumberFormat('fr-FR').format(Math.round(v)) + ' FCFA';
-
-    /* Animation des barres à l'entrée dans le viewport */
-    const io = new IntersectionObserver((entries) => {
+    const io = new IntersectionObserver(entries => {
         entries.forEach(entry => {
             if (!entry.isIntersecting) return;
-
             bars.forEach(bar => {
                 const pct   = parseInt(bar.dataset.pct) || 0;
                 const delay = parseInt(bar.dataset.delay) || 0;
-                setTimeout(() => {
-                    bar.style.height = pct + '%';
-                }, delay);
+                setTimeout(() => { bar.style.height = pct + '%'; }, delay);
             });
-
             io.unobserve(entry.target);
         });
-    }, { threshold: 0.3 });
+    }, { threshold: 0.25 });
 
-    const container = document.getElementById('chart-bars');
-    if (container) io.observe(container);
-
-    /* Tooltip au survol */
-    if (!tooltip || !wrap) return;
-
-    cols.forEach(col => {
-        col.addEventListener('mouseenter', (e) => {
-            const total = parseFloat(col.dataset.total) || 0;
-            const count = parseInt(col.dataset.count)  || 0;
-            const label = col.dataset.label || '';
-
-            document.getElementById('tt-amount').textContent = label + ' : ' + fmt(total);
-            document.getElementById('tt-count').textContent  =
-                count + ' paiement' + (count !== 1 ? 's' : '');
-
-            // Positionner le tooltip
-            const cRect = wrap.getBoundingClientRect();
-            const eRect = col.getBoundingClientRect();
-            const left  = eRect.left - cRect.left + eRect.width / 2;
-            tooltip.style.left    = left + 'px';
-            tooltip.style.transform = 'translateX(-50%)';
-            tooltip.style.opacity = '1';
-
-            /* Highlight la barre */
-            col.querySelector('.chart-bar').style.filter = 'brightness(1.2)';
-        });
-
-        col.addEventListener('mouseleave', () => {
-            tooltip.style.opacity = '0';
-            col.querySelector('.chart-bar').style.filter = '';
-        });
-    });
+    io.observe(wrap);
 })();
 </script>
 @endpush

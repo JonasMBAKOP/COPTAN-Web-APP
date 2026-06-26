@@ -730,11 +730,9 @@ class FinanceController extends Controller
         ])->sortByDesc('total')->values();
 
         // Évolution (pour graphique mensuel ou mensuel de l'année)
-        if ($type === 'annuel' && $selectedYear) {
-            $evolution = $this->buildYearlyEvolution($allPayments);
-        } else {
-            $evolution = [];
-        }
+        $evolution = ($type === 'annuel' && $selectedYear)
+            ? $this->buildYearlyEvolution($allPayments, $selectedYear)
+            : [];
 
         // ── Économes disponibles (pour directeur) ─────────────────────────
         $economes = $isAdmin
@@ -762,48 +760,45 @@ class FinanceController extends Controller
         return $month >= 9 ? $startYear : $endYear;
     }
 
-    private function buildYearlyEvolution($payments): array
+    private function buildYearlyEvolution($payments, ?AcademicYear $academicYear = null): array
     {
-        $months = ['Jan','Fév','Mar','Avr','Mai','Juin',
-                'Juil','Aoû','Sep','Oct','Nov','Déc'];
+        if (! $academicYear) {
+            return [];
+        }
 
-        $grouped = $payments->groupBy(fn($p) => $p->payment_date->month);
-        $result  = [];
+        $result = [];
 
-        for ($m = 1; $m <= 12; $m++) {
-            $g = $grouped->get($m, collect());
+        foreach ($academicYear->monthPeriods() as $period) {
+            $filtered = $payments->filter(fn ($p) =>
+                (int) $p->payment_date->format('n') === $period['month']
+                && (int) $p->payment_date->format('Y') === $period['year']
+            );
+
             $result[] = [
-                'label' => $months[$m - 1],
-                'total' => (int)$g->sum('amount_paid'),
-                'count' => $g->count(),
+                'label'      => $period['label'],
+                'full_label' => $period['full_label'],
+                'month'      => $period['month'],
+                'year'       => $period['year'],
+                'total'      => (int) $filtered->sum('amount_paid'),
+                'count'      => $filtered->count(),
             ];
         }
 
         return $result;
     }
 
-    // ── EXPORT PDF ────────────────────────────────────────────────────────────
+    // ── APERÇU IMPRIMABLE (comme certificats / fiches) ─────────────────────
     public function exportReport(Request $request)
     {
-        // Réutiliser la même logique de reports()
         $reportData = $this->buildReportData($request);
         $school     = \App\Models\SchoolSetting::instance();
         $phones     = \App\Models\SchoolPhone::orderByDesc('is_primary')->get();
-        $agreements  = \App\Models\SchoolAgreement::orderBy('id')->get();
+        $agreements = \App\Models\SchoolAgreement::orderBy('id')->get();
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView(
+        return view(
             'finances.reports-pdf',
             array_merge($reportData, compact('school', 'phones', 'agreements'))
-        )->setPaper('a4', 'landscape');
-
-        $filename = 'rapport-'
-            . $reportData['type'] . '-'
-            . ($reportData['type'] === 'mensuel'
-                ? now()->setMonth($reportData['month'])->format('M-Y')
-                : $reportData['selectedYear']?->label)
-            . '.pdf';
-
-        return $pdf->download($filename);
+        );
     }
 
     private function buildReportData(Request $request): array
@@ -875,7 +870,7 @@ class FinanceController extends Controller
         ])->sortByDesc('total')->values();
 
         $evolution = ($type === 'annuel' && $selectedYear)
-            ? $this->buildYearlyEvolution($allPayments)
+            ? $this->buildYearlyEvolution($allPayments, $selectedYear)
             : [];
 
         $economes = $isAdmin
@@ -957,59 +952,42 @@ class FinanceController extends Controller
         ->groupBy('payment_method')
         ->get();
 
-        // ── Stats par tranche
-        $installmentStatsRaw = FeeInstallment::selectRaw(
-            'fee_installments.id,
-            fee_installments.label,
-            fee_installments.installment_number,
-            fee_installments.amount,
-            fee_installments.due_date_end,
-            SUM(student_payments.amount_paid) as collected,
-            COUNT(DISTINCT student_payments.student_enrollment_id) as payers'
-        )
-        ->leftJoin('student_payments',
-            'student_payments.fee_installment_id', '=', 'fee_installments.id')
-        ->leftJoin('fee_structures',
-            'fee_structures.id', '=', 'fee_installments.fee_structure_id')
-        ->when($selectedYear, fn($q) =>
-            $q->where('fee_structures.academic_year_id', $selectedYear->id)
-        )
-        ->groupBy('fee_installments.id',
-                'fee_installments.label',
-                'fee_installments.installment_number',
-                'fee_installments.amount',
-                'fee_installments.due_date_end')
-        ->orderBy('fee_installments.installment_number')
-        ->get();
-
-        $installmentStats = $installmentStatsRaw->map(function($is) use ($totalEnrolled) {
-            $rate = $totalEnrolled > 0 ? round(($is->payers / $totalEnrolled) * 100) : 0;
-            
-            $dueDate = '';
-            if ($is->due_date_end) {
-                try {
-                    $dueDate = \Carbon\Carbon::parse($is->due_date_end)->translatedFormat('d F');
-                } catch (\Exception $e) {
-                    $dueDate = $is->due_date_end;
+        // ── Stats par tranche (agrégées par libellé, toutes classes confondues)
+        $installmentStatsRaw = FeeInstallment::query()
+            ->selectRaw('
+                fee_installments.label,
+                MIN(fee_installments.installment_number) as installment_number,
+                SUM(COALESCE(student_payments.amount_paid, 0)) as collected,
+                COUNT(DISTINCT student_payments.student_enrollment_id) as payers
+            ')
+            ->leftJoin('student_payments', function ($join) use ($selectedYear) {
+                $join->on('student_payments.fee_installment_id', '=', 'fee_installments.id');
+                if ($selectedYear) {
+                    $join->whereExists(function ($q) use ($selectedYear) {
+                        $q->selectRaw('1')
+                            ->from('student_enrollments')
+                            ->whereColumn('student_enrollments.id', 'student_payments.student_enrollment_id')
+                            ->where('student_enrollments.academic_year_id', $selectedYear->id);
+                    });
                 }
-            } else {
-                $dueDate = match($is->installment_number) {
-                    1 => '15 Septembre',
-                    2 => '15 Décembre',
-                    3 => '15 Mars',
-                    default => 'Non définie',
-                };
-            }
-            
+            })
+            ->join('fee_structures', 'fee_structures.id', '=', 'fee_installments.fee_structure_id')
+            ->when($selectedYear, fn ($q) =>
+                $q->where('fee_structures.academic_year_id', $selectedYear->id)
+            )
+            ->groupBy('fee_installments.label')
+            ->orderBy('installment_number')
+            ->get();
+
+        $installmentStats = $installmentStatsRaw->map(function ($is) use ($totalEnrolled) {
+            $rate = $totalEnrolled > 0 ? round(($is->payers / $totalEnrolled) * 100) : 0;
+
             return (object) [
-                'id' => $is->id,
-                'label' => $is->label,
+                'label'              => $is->label,
                 'installment_number' => $is->installment_number,
-                'amount' => $is->amount,
-                'collected' => $is->collected ?? 0,
-                'payers' => $is->payers ?? 0,
-                'rate' => $rate,
-                'due_date' => $dueDate,
+                'collected'          => (float) ($is->collected ?? 0),
+                'payers'             => (int) ($is->payers ?? 0),
+                'rate'               => $rate,
             ];
         });
 
@@ -1105,29 +1083,30 @@ class FinanceController extends Controller
         ->take(5)
         ->get();
 
-        // ── Évolution mensuelle (Septembre à Juin)
+        // ── Évolution mensuelle (période de l'année scolaire)
         $monthlyData = collect();
-        $monthsOrder = [
-            9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Déc',
-            1 => 'Jan', 2 => 'Fév', 3 => 'Mar', 4 => 'Avr',
-            5 => 'Mai', 6 => 'Juin'
-        ];
-        
-        $rawMonthly = StudentPayment::selectRaw('MONTH(payment_date) as month, SUM(amount_paid) as total')
-            ->when($selectedYear, fn($q) =>
-                $q->whereHas('studentEnrollment', fn($q2) =>
+
+        if ($selectedYear) {
+            $yearPayments = StudentPayment::when($selectedYear, fn ($q) =>
+                $q->whereHas('studentEnrollment', fn ($q2) =>
                     $q2->where('academic_year_id', $selectedYear->id)
                 )
-            )
-            ->groupBy('month')
-            ->get()
-            ->keyBy('month');
-            
-        foreach ($monthsOrder as $mNum => $mLabel) {
-            $monthlyData->push((object) [
-                'label' => $mLabel,
-                'total' => $rawMonthly->has($mNum) ? (float) $rawMonthly->get($mNum)->total : 0,
-            ]);
+            )->get();
+
+            foreach ($selectedYear->monthPeriods() as $period) {
+                $total = $yearPayments
+                    ->filter(fn ($p) =>
+                        (int) $p->payment_date->format('n') === $period['month']
+                        && (int) $p->payment_date->format('Y') === $period['year']
+                    )
+                    ->sum('amount_paid');
+
+                $monthlyData->push((object) [
+                    'label'      => $period['label'],
+                    'full_label' => $period['full_label'],
+                    'total'      => (float) $total,
+                ]);
+            }
         }
 
         return view('finances.global', compact(

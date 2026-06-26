@@ -2,9 +2,37 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Liste des élèves</title>
+<title>Liste des élèves — {{ $year->label ?? '' }}</title>
 @include('students.documents.partials.base-styles')
 <style>
+@page { size: A4 portrait; margin: 7mm 9mm; }
+.student-list-page {
+    max-width: 192mm;
+    padding: 7mm 9mm;
+    color: #111827;
+}
+.student-list-page .cert-official-header {
+    margin-bottom: 10px;
+}
+.student-list-title {
+    background: #E5E7EB;
+    border: 1px solid #4B5563;
+    padding: 7px 8px;
+    margin-bottom: 14px;
+    text-align: center;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1.15;
+    text-transform: uppercase;
+}
+.student-list-subtitle {
+    margin-top: 3px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: none;
+}
 .section-banner {
     background: #1A3A6B; color: #fff; padding: 8px 12px;
     font-size: 12px; font-weight: 900; text-transform: uppercase;
@@ -22,6 +50,7 @@
 .list-table td.mat { font-family: 'Courier New', monospace; font-size: 9px; }
 .list-summary { font-size: 9px; color: #6B7280; margin-bottom: 6px; }
 @media print {
+    body { background: #fff !important; }
     .section-banner { page-break-before: auto; }
     .class-block { page-break-inside: avoid; }
 }
@@ -30,7 +59,7 @@
 <body>
 @include('students.documents.partials.print-toolbar')
 
-<div class="page">
+<div class="page student-list-page">
     @php
         $totalStudents = 0;
         $isSingleClass = ($filters['scope'] ?? '') === 'class';
@@ -41,10 +70,14 @@
         $listSubtitle .= ' — ' . now()->format('d/m/Y');
     @endphp
 
-    @include('students.documents.partials.school-header', [
-        'docTitle' => 'Liste des élèves',
-        'docSubtitle' => $listSubtitle,
+    @include('students.documents.partials.certificate-official-header', [
+        'showCertificateTitle' => false,
     ])
+
+    <div class="student-list-title">
+        <div>Liste des élèves</div>
+        <div class="student-list-subtitle">{{ $listSubtitle }}</div>
+    </div>
 
     @foreach($groups as $group)
     @unless($isSingleClass)

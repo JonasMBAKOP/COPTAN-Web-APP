@@ -8,6 +8,18 @@
         ? $agreements->map(fn ($agreement) => 'N° ' . $agreement->number)
         : collect();
     $showCertificateTitle = $showCertificateTitle ?? true;
+    $forPdf = $forPdf ?? false;
+
+    $logoSrc = null;
+    if ($school->logo) {
+        $storagePath = public_path('storage/' . $school->logo);
+        if (file_exists($storagePath)) {
+            $logoSrc = $forPdf ? $storagePath : asset('storage/' . $school->logo);
+        }
+    }
+    if (! $logoSrc && file_exists(public_path('images/logo.jpg'))) {
+        $logoSrc = $forPdf ? public_path('images/logo.jpg') : asset('images/logo.jpg');
+    }
 @endphp
 
 <header class="cert-official-header">
@@ -32,8 +44,8 @@
         </div>
 
         <div class="cert-official-header__logo">
-            @if($school->logo)
-                <img src="{{ asset('storage/' . $school->logo) }}" alt="Logo {{ $school->short_name }}">
+            @if($logoSrc)
+                <img src="{{ $logoSrc }}" alt="Logo {{ $school->short_name }}">
             @else
                 <div class="cert-official-header__logo-placeholder">
                     {{ strtoupper(substr($school->short_name ?? 'C', 0, 1)) }}

@@ -68,4 +68,34 @@ class AcademicYear extends Model
     {
         return !$this->is_active && $this->end_date?->isPast();
     }
+
+    /** @return list<array{month: int, year: int, label: string, full_label: string}> */
+    public function monthPeriods(): array
+    {
+        if (! $this->start_date || ! $this->end_date) {
+            return [];
+        }
+
+        $shortLabels = [
+            1 => 'Jan', 2 => 'Fév', 3 => 'Mar', 4 => 'Avr',
+            5 => 'Mai', 6 => 'Juin', 7 => 'Juil', 8 => 'Aoû',
+            9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Déc',
+        ];
+
+        $periods = [];
+        $current = $this->start_date->copy()->startOfMonth();
+        $end     = $this->end_date->copy()->startOfMonth();
+
+        while ($current <= $end) {
+            $periods[] = [
+                'month'      => $current->month,
+                'year'       => $current->year,
+                'label'      => $shortLabels[$current->month],
+                'full_label' => $current->locale('fr')->translatedFormat('M Y'),
+            ];
+            $current->addMonth();
+        }
+
+        return $periods;
+    }
 }

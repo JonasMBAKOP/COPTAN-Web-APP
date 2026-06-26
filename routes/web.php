@@ -13,8 +13,12 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\StudentDocumentController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\GradeController;
+use App\Http\Controllers\BulletinController;
+use App\Http\Controllers\LivretController;
+// use App\Http\Controllers\BulletinsController;
 use App\Http\Controllers\AbsenceController;
 use App\Http\Controllers\DisciplineController;
+use App\Http\Controllers\DisciplinesController;
 
 
 // ── PAGE D'ACCUEIL → Redirection vers login ──────────────────────────────────
@@ -129,6 +133,12 @@ Route::middleware(['auth', 'permission:manage-settings'])
              ->name('logo.update');
         Route::delete('/logo', [SchoolSettingController::class, 'deleteLogo'])
              ->name('logo.delete');
+
+        // Cachet du proviseur
+        Route::post('/signature-seal', [SchoolSettingController::class, 'updateSignatureSeal'])
+             ->name('signature-seal.update');
+        Route::delete('/signature-seal', [SchoolSettingController::class, 'deleteSignatureSeal'])
+             ->name('signature-seal.delete');
 
         // Téléphones
         Route::post('/phones',
@@ -497,36 +507,142 @@ Route::middleware(['auth', 'permission:view-grades'])
             ->name('lock');
     });
 
+
+// ── BULLETINS SCOLAIRES ──────────────────────────────────────────────────────
+// Route::middleware(['auth', 'permission:view-bulletins'])
+//     ->prefix('bulletins')
+//     ->name('bulletins.')
+//     ->group(function () {
+//         Route::get('/', [BulletinController::class, 'index'])->name('index');
+
+//         Route::middleware('permission:generate-bulletins')->group(function () {
+//             Route::post('/generate', [BulletinController::class, 'generate'])->name('generate');
+//             Route::post('/class/{classGroup}/sequence/{sequence}/publish-all',
+//                 [BulletinController::class, 'publishAll'])->name('publish-all');
+//         });
+
+//         Route::get('/class/{classGroup}/sequence/{sequence}',
+//             [BulletinController::class, 'classIndex'])->name('class');
+
+//         Route::middleware('permission:print-bulletins')->group(function () {
+//             Route::get('/class/{classGroup}/sequence/{sequence}/print-all',
+//                 [BulletinController::class, 'printAll'])->name('print-all');
+//         });
+
+//         Route::get('/{bulletin}', [BulletinController::class, 'show'])->name('show');
+
+//         Route::middleware('permission:print-bulletins')->group(function () {
+//             Route::get('/{bulletin}/pdf', [BulletinController::class, 'pdf'])->name('pdf');
+//         });
+
+//         Route::middleware('permission:generate-bulletins')->group(function () {
+//             Route::patch('/{bulletin}/publish',
+//                 [BulletinController::class, 'togglePublish'])->name('publish');
+//         });
+//     });
+Route::middleware(['auth', 'permission:view-bulletins'])
+    ->prefix('bulletins')
+    ->name('bulletins.')
+    ->group(function () {
+        Route::get('/', [BulletinController::class, 'index'])->name('index');
+
+        Route::get('/{enrollment}',     [BulletinController::class, 'show'])->name('show');
+        Route::get('/{enrollment}/pdf', [BulletinController::class, 'pdf'])->name('pdf');
+        Route::get('/api/students',     [BulletinController::class, 'apiStudents'])->name('api.students');
+
+        Route::middleware('permission:manage-bulletins')->group(function () {
+            Route::post('/bulk-pdf', [BulletinController::class, 'bulkPdf'])->name('bulk-pdf');
+        });
+    });
+
+// ── LIVRETS SCOLAIRES ────────────────────────────────────────────────────────
+Route::middleware(['auth', 'permission:view-bulletins'])
+    ->prefix('livrets')
+    ->name('livrets.')
+    ->group(function () {
+        Route::middleware('permission:manage-bulletins')->group(function () {
+            Route::get('/bulk', [LivretController::class, 'bulk'])->name('bulk');
+        });
+
+        Route::get('/{enrollment}',     [LivretController::class, 'show'])->name('show');
+    });
+
 // ── ABSENCES ──────────────────────────────────────────────────────────────────
 Route::middleware(['auth', 'permission:view-absences'])
     ->prefix('absences')
     ->name('absences.')
     ->group(function () {
-        Route::get('/', [AbsenceController::class, 'index'])
-            ->name('index');
-        Route::get('/class/{classGroup}', [AbsenceController::class, 'classAbsences'])
-            ->name('class');
+        // Route::get('/', [AbsenceController::class, 'index'])
+        //     ->name('index');
+        // Route::get('/class/{classGroup}', [AbsenceController::class, 'classAbsences'])
+        //     ->name('class');
         
+        // Route::middleware('permission:manage-absences')->group(function () {
+        //     Route::post('/record', [AbsenceController::class, 'record'])
+        //         ->name('record');
+
+        Route::get('/',                    [AbsenceController::class, 'index'])->name('index');
+        Route::get('/student/{enrollment}',[AbsenceController::class, 'student'])->name('student');
+        Route::get('/api/students',        [AbsenceController::class, 'apiStudents'])->name('api.students');
+
         Route::middleware('permission:manage-absences')->group(function () {
-            Route::post('/record', [AbsenceController::class, 'record'])
-                ->name('record');
+            Route::get('/create',          [AbsenceController::class, 'create'])->name('create');
+            Route::post('/',               [AbsenceController::class, 'store'])->name('store');
+            Route::patch('/{absence}/justify', [AbsenceController::class, 'justify'])->name('justify');
+            Route::delete('/{absence}',    [AbsenceController::class, 'destroy'])->name('destroy');
         });
     });
 
 // ── DISCIPLINE ────────────────────────────────────────────────────────────────
+// Route::middleware(['auth', 'permission:view-discipline'])
+//     ->prefix('discipline')
+//     ->name('discipline.')
+//     ->group(function () {
+//         Route::get('/', [DisciplineController::class, 'index'])
+//             ->name('index');
+        
+//         Route::middleware('permission:manage-discipline')->group(function () {
+//             Route::post('/incidents', [DisciplineController::class, 'createIncident'])
+//                 ->name('incidents.create');
+//         });
+//     });
 Route::middleware(['auth', 'permission:view-discipline'])
     ->prefix('discipline')
     ->name('discipline.')
     ->group(function () {
-        Route::get('/', [DisciplineController::class, 'index'])
-            ->name('index');
-        
+        Route::get('/', [DisciplineController::class, 'index'])->name('index');
+        Route::get('/api/students', [DisciplineController::class, 'apiStudents'])->name('api.students');
+
         Route::middleware('permission:manage-discipline')->group(function () {
-            Route::post('/incidents', [DisciplineController::class, 'createIncident'])
-                ->name('incidents.create');
+            Route::get('/create', [DisciplineController::class, 'create'])->name('create');
+            Route::post('/', [DisciplineController::class, 'store'])->name('store');
+            Route::patch('/{disciplineIncident}/status',
+                [DisciplineController::class, 'updateStatus'])->name('status');
+            Route::delete('/{disciplineIncident}',
+                [DisciplineController::class, 'destroy'])->name('destroy');
         });
+
+        Route::get('/{disciplineIncident}', [DisciplineController::class, 'show'])->name('show');
     });
 
+// // DEUXIEME CONTRÔLEUR POUR LA DISCIPLINE
+// Route::prefix('disciplines')->name('disciplines.')->middleware(['auth'])->group(function () {
+ 
+//     // Liste, création, détail, édition, suppression
+//     Route::get('/',                         [DisciplinesController::class, 'index'])   ->name('index');
+//     Route::get('/create',                   [DisciplinesController::class, 'create'])  ->name('create');
+//     Route::post('/',                        [DisciplinesController::class, 'store'])   ->name('store');
+//     Route::get('/{disciplines}',             [DisciplinesController::class, 'show'])    ->name('show');
+//     Route::get('/{disciplines}/edit',        [DisciplinesController::class, 'edit'])    ->name('edit');
+//     Route::put('/{disciplines}',             [DisciplinesController::class, 'update'])  ->name('update');
+//     Route::delete('/{disciplines}',          [DisciplinesController::class, 'destroy']) ->name('destroy');
+ 
+//     // PDF Convocation
+//     Route::get('/{disciplines}/convocation', [DisciplinesController::class, 'convocation'])->name('convocation');
+ 
+//     // AJAX
+//     Route::get('/ajax/students-by-class',   [DisciplinesController::class, 'studentsByClass'])->name('students-by-class');
+// });
 
 
 // // ── SECTIONS ──────────────────────────────────────────────────────────────────

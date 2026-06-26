@@ -235,17 +235,14 @@
                 </td>
                 <td class="px-5 py-3.5 text-center">
                     @if(!$absent && $grade !== null)
-                    @php
-                        $a = $grade >= 16 ? ['Très Bien','#D1FAE5','#065F46']
-                           : ($grade >= 14 ? ['Bien','#DBEAFE','#1D4ED8']
-                           : ($grade >= 12 ? ['Assez Bien','#EDE9FE','#6D28D9']
-                           : ($grade >= 10 ? ['Passable','#FEF3C7','#92400E']
-                           : ['Insuffisant','#FEE2E2','#991B1B'])));
-                    @endphp
+                    @php $a = \App\Models\AppreciationScale::uiForGrade((float) $grade); @endphp
+                    @if($a)
                     <span class="text-xs font-bold px-2 py-1 rounded-lg"
-                          style="background:{{ $a[1] }}; color:{{ $a[2] }};">
-                        {{ $a[0] }}
+                          style="background:{{ $a['bg'] }}; color:{{ $a['color'] }};"
+                          title="{{ \App\Models\AppreciationScale::forGrade((float) $grade)?->label_fr }}">
+                        {{ $a['code'] }}
                     </span>
+                    @endif
                     @endif
                 </td>
             </tr>

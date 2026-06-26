@@ -1,12 +1,12 @@
 <style>
 /* ──────────────────────────────────────────────────────────────────────────
-   CARTE SCOLAIRE - CR80 LANDSCAPE
-   Dimensions: 95mm × 60mm (Standard ID-1 card format)
+   CARTE SCOLAIRE — format élargi pour une meilleure lisibilité
+   Dimensions: 100mm × 63mm
    ────────────────────────────────────────────────────────────────────────── */
 
 .id-card {
-    width: 95mm;
-    height: 60mm;
+    width: 100mm;
+    height: 63mm;
     font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
     color: #191c1e;
     background: #ffffff;
@@ -41,33 +41,35 @@
 .id-card__header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     gap: 2mm;
-    padding: 1.5mm 2mm;
+    padding: 1.4mm 2mm;
     background: #f8fafc;
     border-bottom: 1px solid #1A3A6B;
+    flex-shrink: 0;
 }
 
 .id-card__header-section {
     font-size: 4.5pt;
-    line-height: 1.1;
+    line-height: 1.12;
     font-weight: 700;
     text-transform: uppercase;
     color: #1A3A6B;
     text-align: center;
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
-.id-card__header-fr {
-    text-align: left;
-}
-
+.id-card__header-fr,
 .id-card__header-en {
-    text-align: right;
+    text-align: center;
 }
 
 .id-card__header-text {
-    letter-spacing: 0.3px;
+    letter-spacing: 0.2px;
     font-size: 4.5pt;
 }
 
@@ -75,7 +77,8 @@
     font-size: 3.5pt;
     font-weight: 600;
     color: #6B7280;
-    margin-top: 0.5mm;
+    margin: 0.35mm 0;
+    text-transform: none;
 }
 
 .id-card__flag {
@@ -92,21 +95,22 @@
 
 /* ÉCOLE INFO & TITRE ───────────────────────────────────────────────────── */
 .id-card__school-header {
-    padding: 1mm 2mm;
+    padding: 0.8mm 2mm 0.6mm;
     background: #fff;
     text-align: center;
     border-bottom: 0.75px solid #e5e7eb;
+    flex-shrink: 0;
 }
 
 .id-card__school-info {
-    margin-bottom: 0.5mm;
+    margin-bottom: 0.4mm;
 }
 
 .id-card__school-name {
     font-size: 7pt;
     font-weight: 900;
     color: #1A3A6B;
-    line-height: 1;
+    line-height: 1.05;
     letter-spacing: 0.2px;
 }
 
@@ -114,7 +118,7 @@
     font-size: 5.5pt;
     font-weight: 700;
     color: #E87722;
-    margin-top: 0.3mm;
+    margin-top: 0.2mm;
 }
 
 .id-card__title-section {
@@ -142,9 +146,10 @@
     flex: 1;
     display: flex;
     gap: 1.5mm;
-    padding: 1.5mm 2mm;
+    padding: 1.4mm 2mm 1.2mm;
     position: relative;
     overflow: hidden;
+    min-height: 0;
 }
 
 /* PHOTO SECTION ────────────────────────────────────────────────────────── */
@@ -157,8 +162,8 @@
 }
 
 .id-card__photo-box {
-    width: 24mm;
-    height: 30mm;
+    width: 25mm;
+    height: 31mm;
     border: 1px solid #1A3A6B;
     background: #f1f5f9;
     display: flex;
@@ -181,7 +186,7 @@
 }
 
 .id-card__matricule {
-    font-size: 3.5pt;
+    font-size: 3.6pt;
     font-weight: 700;
     color: #1A3A6B;
     text-align: center;
@@ -194,18 +199,19 @@
     display: flex;
     flex-direction: column;
     position: relative;
+    min-width: 0;
 }
 
 .id-card__info-table {
-    width: calc(100% - 18mm);
+    width: calc(100% - 20mm);
     border-collapse: collapse;
-    font-size: 3.8pt;
-    line-height: 1.1;
+    font-size: 3.9pt;
+    line-height: 1.12;
     table-layout: fixed;
 }
 
 .id-card__info-row {
-    height: 5mm;
+    height: 5.2mm;
 }
 
 .id-card__info-label {
@@ -223,7 +229,7 @@
 }
 
 .id-card__label-en {
-    margin-top: 0.15mm;
+    margin-top: 0.12mm;
     font-size: 3.2pt;
     font-style: italic;
     font-weight: 600;
@@ -243,51 +249,68 @@
     color: #E87722;
     font-weight: 900;
     text-transform: uppercase;
-    font-size: 4.2pt;
+    font-size: 4.3pt;
 }
 
-/* LOGO HAUT DROIT ──────────────────────────────────────────────────────── */
+/* LOGO & COORDONNÉES HAUT DROIT ─────────────────────────────────────────── */
 .id-card__top-logo {
     position: absolute;
-    top: 1mm;
-    right: 1mm;
-    width: 12mm;
-    height: 12mm;
+    top: -1.8mm;
+    right: 0;
+    width: 18mm;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    gap: 0;
+    text-align: center;
+    line-height: 1;
 }
 
-.id-card__top-logo img {
-    width: 100%;
-    height: 100%;
+.id-card__top-logo-image {
+    width: 11.5mm;
+    height: 11.5mm;
     object-fit: contain;
+    display: block;
+}
+
+.id-card__top-logo-meta {
+    font-size: 3.2pt;
+    font-weight: 700;
+    color: #1A3A6B;
+    line-height: 1;
+    white-space: nowrap;
+    margin-top: -0.15mm;
+}
+
+.id-card__top-logo-meta + .id-card__top-logo-meta {
+    margin-top: -0.05mm;
 }
 
 /* CACHET/SIGNATURE BAS DROIT ───────────────────────────────────────────── */
 .id-card__seal-area {
     position: absolute;
-    bottom: 1mm;
-    right: 1mm;
+    bottom: 0.5mm;
+    right: 0.5mm;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5mm;
-    width: 16mm;
+    gap: 0.4mm;
+    width: 17mm;
     text-align: center;
 }
 
 .id-card__seal-image {
-    width: 16mm;
-    height: 16mm;
+    width: 17mm;
+    height: 17mm;
     object-fit: contain;
     transform: rotate(-12deg);
     opacity: 0.9;
 }
 
 .id-card__seal-svg {
-    width: 16mm;
-    height: 16mm;
+    width: 17mm;
+    height: 17mm;
     flex-shrink: 0;
     transform: rotate(-12deg);
 }
@@ -318,11 +341,11 @@
         margin: 0;
         padding: 0;
     }
-    
+
     .no-print {
         display: none !important;
     }
-    
+
     .id-card {
         box-shadow: none;
         border: 0.5px solid #e5e7eb;

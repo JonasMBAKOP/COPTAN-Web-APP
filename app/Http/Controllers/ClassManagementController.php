@@ -10,50 +10,119 @@ use App\Models\ClassGroup;
 use App\Models\Level;
 use App\Models\Section;
 use App\Models\Staff;
+use App\Models\TeacherAssignment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ClassManagementController extends Controller
 {
+    private function isClassAdmin(): bool
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        return $user->hasAnyRole(['super-admin', 'directeur', 'censeur', 'fondateur']);
+    }
+
+    private function isTeacherView(): bool
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        return ! $this->isClassAdmin() && $user->hasRole('enseignant');
+    }
+
+    /** IDs des classes où l'enseignant est affecté pour l'année donnée */
+    private function teacherClassIds(?AcademicYear $year): array
+    {
+        if (! $year) {
+            return [];
+        }
+
+        /** @var \App\Models\User $user */
+        $user  = Auth::user();
+        $staff = $user->staff;
+
+        if (! $staff) {
+            return [];
+        }
+
+        return TeacherAssignment::where('staff_id', $staff->id)
+            ->where('academic_year_id', $year->id)
+            ->whereHas('classSubject')
+            ->with('classSubject:id,class_group_id')
+            ->get()
+            ->pluck('classSubject.class_group_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     // ── LISTE ─────────────────────────────────────────────────────────────
     public function index(Request $request)
     {
-        // Année sélectionnée (active par défaut)
-        $selectedYearId = $request->input('year_id');
-        $activeYear     = AcademicYear::active();
-        $selectedYear   = $selectedYearId
-            ? AcademicYear::find($selectedYearId)
-            : $activeYear;
+        $activeYear   = AcademicYear::active();
+        $isTeacher    = $this->isTeacherView();
+        $teacherIds   = $isTeacher ? $this->teacherClassIds($activeYear) : [];
 
-        $years    = AcademicYear::orderByDesc('start_date')->get();
-        $sections = Section::with([
-            'levels' => fn($q) => $q->orderBy('order_index'),
-        ])->get();
-
-        // Classes de l'année sélectionnée, organisées par section
-        $classGroups = collect();
-        if ($selectedYear) {
-            $classGroups = ClassGroup::where('academic_year_id', $selectedYear->id)
-                ->with(['level.section', 'titularStaff', 'studentEnrollments'])
-                ->withCount([
-                    'studentEnrollments' => fn($q) =>
-                        $q->where('status', 'active'),
-                    'classSubjects',
-                ])
-                ->get()
-                ->groupBy('level.section.id');
+        if ($isTeacher) {
+            $selectedYear = $activeYear;
+        } else {
+            $selectedYearId = $request->input('year_id');
+            $selectedYear   = $selectedYearId
+                ? AcademicYear::find($selectedYearId)
+                : $activeYear;
         }
 
-        // Statistiques globales
+        $years = AcademicYear::orderByDesc('start_date')->get();
+
+        $sectionsQuery = Section::with([
+            'levels' => fn ($q) => $q->orderBy('order_index'),
+        ]);
+
+        $classGroups = collect();
+
+        if ($selectedYear) {
+            $classesQuery = ClassGroup::where('academic_year_id', $selectedYear->id)
+                ->with(['level.section', 'titularStaff', 'studentEnrollments'])
+                ->withCount([
+                    'studentEnrollments' => fn ($q) =>
+                        $q->where('status', 'active'),
+                    'classSubjects',
+                ]);
+
+            if ($isTeacher) {
+                if (empty($teacherIds)) {
+                    $sections = collect();
+                } else {
+                    $classesQuery->whereIn('id', $teacherIds);
+                    $classGroups = $classesQuery->get()->groupBy('level.section.id');
+
+                    $sectionIds = $classGroups->keys()->filter()->values();
+                    $sections   = $sectionsQuery->whereIn('id', $sectionIds)->get();
+                }
+            } else {
+                $classGroups = $classesQuery->get()->groupBy('level.section.id');
+                $sections    = $sectionsQuery->get();
+            }
+        } else {
+            $sections = $isTeacher ? collect() : $sectionsQuery->get();
+        }
+
+        if (! isset($sections)) {
+            $sections = collect();
+        }
+
         $stats = [
             'total_classes'  => $classGroups->flatten()->count(),
-            'total_students' => $classGroups->flatten()
-                                ->sum('student_enrollments_count'),
+            'total_students' => $classGroups->flatten()->sum('student_enrollments_count'),
             'sections_used'  => $classGroups->keys()->count(),
         ];
 
         return view('classes.index', compact(
             'sections', 'classGroups', 'selectedYear',
-            'years', 'stats', 'activeYear'
+            'years', 'stats', 'activeYear', 'isTeacher'
         ));
     }
 

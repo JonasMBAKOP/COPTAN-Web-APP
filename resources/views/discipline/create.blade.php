@@ -1,231 +1,392 @@
 @extends('layouts.app')
-
-@section('title', 'Signaler un incident')
-@section('page-title', 'Signaler un incident disciplinaire')
-@section('page-subtitle', 'Enregistrement d\'un nouveau fait disciplinaire')
+@section('title', 'Nouvel incident')
+@section('page-title', 'Enregistrer un incident disciplinaire')
+@section('page-subtitle', 'Consigner un incident et sa sanction')
 
 @section('content')
 
-<div class="max-w-3xl mx-auto">
+<div x-data="disciplineForm()">
 
-    <a href="{{ route('discipline.index') }}"
-       class="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-800 mb-6 transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-        </svg>
-        Retour aux incidents
-    </a>
+    <form method="POST" action="{{ route('discipline.store') }}" class="pb-24">
+        @csrf
 
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div class="px-6 py-5 border-b border-gray-50"
-             style="background:linear-gradient(135deg,rgba(26,58,107,0.03),rgba(26,58,107,0.07));">
-            <h2 class="font-black text-base" style="color:#1A3A6B;">Nouveau fait disciplinaire</h2>
-            <p class="text-xs text-gray-400 mt-1">
-                Tous les champs marqués * sont obligatoires
-            </p>
+        {{-- En-tête récapitulatif --}}
+        <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-[10px]"
+                      style="background:#1A3A6B;">1</span>
+                Élève
+                <span class="text-gray-300">→</span>
+                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-[10px]"
+                      style="background:#2D6FD4;">2</span>
+                Incident
+                <span class="text-gray-300">→</span>
+                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-[10px]"
+                      style="background:#E87722;">3</span>
+                Sanction
+            </div>
+            <a href="{{ route('discipline.index') }}"
+               class="text-sm font-semibold text-gray-500 hover:text-gray-700">
+                ← Retour à la liste
+            </a>
         </div>
 
-        <form method="POST" action="{{ route('discipline.store') }}" class="p-6 space-y-5">
-            @csrf
+        @if($errors->any())
+        <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <p class="font-bold mb-1">Veuillez corriger les erreurs suivantes :</p>
+            <ul class="list-disc list-inside space-y-0.5">
+                @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+        @endif
 
-            {{-- Élève --}}
-            <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">
-                    Élève concerné *
-                </label>
-                @if($selectedEnrollment)
-                <input type="hidden" name="student_enrollment_id" value="{{ $selectedEnrollment->id }}">
-                <div class="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-xl">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-black text-white text-xs"
-                         style="background:#1A3A6B;">
-                        {{ strtoupper(substr($selectedEnrollment->student->first_name, 0, 1)) }}
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+
+            {{-- Colonne principale --}}
+            <div class="xl:col-span-2 space-y-5">
+
+                {{-- Étape 1 : Élève --}}
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-3"
+                         style="background:linear-gradient(90deg,#F8FAFC,#FFFFFF);">
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm"
+                             style="background:#1A3A6B;">1</div>
+                        <div>
+                            <h3 class="text-sm font-black" style="color:#1A3A6B;">Élève concerné</h3>
+                            <p class="text-xs text-gray-400">Sélectionnez la section, la classe puis l'élève</p>
+                        </div>
                     </div>
-                    <div>
-                        <p class="text-sm font-bold" style="color:#1A3A6B;">
-                            {{ $selectedEnrollment->student->full_name }}
-                        </p>
-                        <p class="text-xs text-gray-500">{{ $selectedEnrollment->classGroup->full_name }}</p>
+                    <div class="p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                Section
+                            </label>
+                            <select x-model="sectionId" @change="onSectionChange()"
+                                    class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100">
+                                <option value="">— Toutes les sections —</option>
+                                @foreach($sections as $section)
+                                <option value="{{ $section->id }}">{{ $section->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                Classe <span class="text-red-500">*</span>
+                            </label>
+                            <select x-ref="classSelect"
+                                    x-model="classId" @change="loadStudents()"
+                                    class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100">
+                                <option value="">— Choisir une classe —</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                Élève <span class="text-red-500">*</span>
+                            </label>
+                            <select name="student_enrollment_id"
+                                    x-ref="studentSelect"
+                                    x-model="enrollmentId"
+                                    :disabled="enrollments.length === 0"
+                                    class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                                <option value="">— Sélectionner —</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div x-show="selectedStudentName" x-cloak
+                         class="mx-5 mb-5 px-4 py-3 rounded-xl flex items-center gap-3"
+                         style="background:#EBF3FB;">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                             style="background:#1A3A6B;"
+                             x-text="selectedStudentName ? selectedStudentName.charAt(0) : ''"></div>
+                        <div>
+                            <p class="text-sm font-black text-gray-800" x-text="selectedStudentName"></p>
+                            <p class="text-xs text-gray-500">Élève sélectionné pour cet incident</p>
+                        </div>
                     </div>
                 </div>
-                @else
-                <select name="student_enrollment_id" required
-                        class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold
-                               focus:ring-2 focus:ring-blue-200 focus:border-blue-400 focus:outline-none transition-all">
-                    <option value="">— Sélectionner un élève —</option>
-                    @foreach($enrollments as $e)
-                    <option value="{{ $e->id }}"
-                            {{ old('student_enrollment_id') == $e->id ? 'selected' : '' }}>
-                        {{ $e->student->full_name }} — {{ $e->classGroup->full_name }}
-                    </option>
-                    @endforeach
-                </select>
-                @endif
-                @error('student_enrollment_id')
-                <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
-                @enderror
-            </div>
 
-            {{-- Date & Heure --}}
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">
-                        Date de l'incident *
-                    </label>
-                    <input type="date" name="incident_date" required
-                           value="{{ old('incident_date', now()->format('Y-m-d')) }}"
-                           max="{{ now()->format('Y-m-d') }}"
-                           class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold
-                                  focus:ring-2 focus:ring-blue-200 focus:border-blue-400 focus:outline-none transition-all">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">
-                        Heure (optionnel)
-                    </label>
-                    <input type="time" name="incident_time"
-                           value="{{ old('incident_time') }}"
-                           class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold
-                                  focus:ring-2 focus:ring-blue-200 focus:border-blue-400 focus:outline-none transition-all">
-                </div>
-            </div>
+                {{-- Étape 2 : Incident --}}
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-3"
+                         style="background:linear-gradient(90deg,#F8FAFC,#FFFFFF);">
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm"
+                             style="background:#2D6FD4;">2</div>
+                        <div>
+                            <h3 class="text-sm font-black" style="color:#1A3A6B;">Détails de l'incident</h3>
+                            <p class="text-xs text-gray-400">Date, lieu, type et description des faits</p>
+                        </div>
+                    </div>
+                    <div class="p-5 space-y-5">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                    Date <span class="text-red-500">*</span>
+                                </label>
+                                <input type="date" name="incident_date"
+                                       value="{{ old('incident_date', date('Y-m-d')) }}"
+                                       max="{{ date('Y-m-d') }}"
+                                       class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                    Heure
+                                </label>
+                                <input type="time" name="incident_time" value="{{ old('incident_time') }}"
+                                       class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                    Lieu
+                                </label>
+                                <select name="location"
+                                        class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100">
+                                    <option value="">— Non précisé —</option>
+                                    @foreach(\App\Models\DisciplineIncident::LOCATIONS as $value => $label)
+                                    <option value="{{ $value }}" {{ old('location') === $value ? 'selected' : '' }}>
+                                        {{ $label }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
 
-            {{-- Type & Lieu --}}
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">
-                        Type d'incident *
-                    </label>
-                    <select name="incident_type" required
-                            class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold
-                                   focus:ring-2 focus:ring-blue-200 focus:border-blue-400 focus:outline-none transition-all">
-                        <option value="">— Sélectionner —</option>
-                        @foreach($incidentTypes as $key => $label)
-                        <option value="{{ $key }}" {{ old('incident_type') === $key ? 'selected' : '' }}>
-                            {{ $label }}
-                        </option>
-                        @endforeach
-                    </select>
-                    @error('incident_type')
-                    <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">
-                        Lieu
-                    </label>
-                    <input type="text" name="location" value="{{ old('location') }}"
-                           placeholder="Salle de classe, cour, couloir..."
-                           class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold
-                                  focus:ring-2 focus:ring-blue-200 focus:border-blue-400 focus:outline-none transition-all">
-                </div>
-            </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                                Type d'incident <span class="text-red-500">*</span>
+                            </label>
+                            <input type="hidden" name="incident_type" x-model="incidentType">
+                            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                                @foreach(\App\Models\DisciplineIncident::INCIDENT_TYPES as $value => $label)
+                                <button type="button"
+                                        @click="incidentType = '{{ $value }}'"
+                                        :class="incidentType === '{{ $value }}'
+                                            ? 'border-blue-600 bg-blue-50 shadow-sm'
+                                            : 'border-gray-200 bg-white hover:border-gray-300'"
+                                        class="px-3 py-3 rounded-xl border text-left transition-all">
+                                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg"
+                                          :class="incidentType === '{{ $value }}'
+                                              ? 'bg-blue-100 text-blue-700'
+                                              : 'bg-gray-100 text-gray-500'">
+                                        @include('discipline.partials.incident-type-icon', ['type' => $value])
+                                    </span>
+                                    <p class="text-xs font-bold text-gray-800 mt-2 leading-tight">{{ $label }}</p>
+                                </button>
+                                @endforeach
+                            </div>
+                        </div>
 
-            {{-- Description --}}
-            <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">
-                    Description des faits *
-                </label>
-                <textarea name="description" required rows="4"
-                          placeholder="Décrivez précisément l'incident, le contexte et les témoins..."
-                          class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold
-                                 focus:ring-2 focus:ring-blue-200 focus:border-blue-400 focus:outline-none
-                                 transition-all resize-none">{{ old('description') }}</textarea>
-                @error('description')
-                <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
-                @enderror
-            </div>
-
-            {{-- Séparateur --}}
-            <div class="border-t border-gray-100 pt-5">
-                <h3 class="text-xs font-black text-gray-500 uppercase tracking-wide mb-4">
-                    Sanction & Suite disciplinaire
-                </h3>
-            </div>
-
-            {{-- Sanction & Durée --}}
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">
-                        Sanction prononcée
-                    </label>
-                    <select name="sanction_type"
-                            class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold
-                                   focus:ring-2 focus:ring-blue-200 focus:border-blue-400 focus:outline-none transition-all">
-                        <option value="">— Aucune (en cours d'examen) —</option>
-                        @foreach($sanctionTypes as $key => $label)
-                        <option value="{{ $key }}" {{ old('sanction_type') === $key ? 'selected' : '' }}>
-                            {{ $label }}
-                        </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">
-                        Durée (jours)
-                    </label>
-                    <input type="number" name="sanction_duration_days"
-                           value="{{ old('sanction_duration_days') }}"
-                           min="1" max="365"
-                           placeholder="Ex : 3"
-                           class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold
-                                  focus:ring-2 focus:ring-blue-200 focus:border-blue-400 focus:outline-none transition-all">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                Description des faits <span class="text-red-500">*</span>
+                            </label>
+                            <textarea name="description" rows="5"
+                                      placeholder="Décrivez précisément ce qui s'est passé, le contexte et les personnes impliquées..."
+                                      class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 resize-none">{{ old('description') }}</textarea>
+                            <p class="text-xs text-gray-400 mt-1">Soyez factuel et objectif — cette description figurera au dossier disciplinaire.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {{-- Convocation parents --}}
-            <div class="grid grid-cols-2 gap-4">
-                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                    <input type="checkbox" name="parent_convoked" id="parent_convoked" value="1"
-                           {{ old('parent_convoked') ? 'checked' : '' }}
-                           class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-200">
-                    <label for="parent_convoked" class="text-sm font-semibold text-gray-700 cursor-pointer">
-                        Parents convoqués
-                    </label>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">
-                        Date de convocation
-                    </label>
-                    <input type="date" name="convocation_date"
-                           value="{{ old('convocation_date') }}"
-                           class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold
-                                  focus:ring-2 focus:ring-blue-200 focus:border-blue-400 focus:outline-none transition-all">
+            {{-- Colonne latérale : Sanction --}}
+            <div class="space-y-5">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden xl:sticky xl:top-4">
+                    <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-3"
+                         style="background:linear-gradient(90deg,#FEF3EA,#FFFFFF);">
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm"
+                             style="background:#E87722;">3</div>
+                        <div>
+                            <h3 class="text-sm font-black" style="color:#1A3A6B;">Sanction</h3>
+                            <p class="text-xs text-gray-400">Optionnelle à l'enregistrement</p>
+                        </div>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                Type de sanction
+                            </label>
+                            <select name="sanction_type" x-model="sanctionType"
+                                    class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-100">
+                                <option value="">Observation (par défaut)</option>
+                                @foreach(\App\Models\DisciplineIncident::SANCTIONS as $value => $label)
+                                @if($value !== 'observation')
+                                <option value="{{ $value }}" {{ old('sanction_type') === $value ? 'selected' : '' }}>
+                                    {{ $label }}
+                                </option>
+                                @endif
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div x-show="['detention','temporary_suspension'].includes(sanctionType)" x-cloak>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                Durée (jours)
+                            </label>
+                            <input type="number" name="sanction_duration_days"
+                                   value="{{ old('sanction_duration_days') }}"
+                                   min="1" max="30"
+                                   class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none">
+                        </div>
+
+                        <div class="rounded-xl border border-gray-100 p-4 space-y-3"
+                             style="background:#F8FAFC;">
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input type="checkbox" name="parent_convoked" value="1"
+                                       x-model="parentConvoked"
+                                       class="mt-0.5 w-4 h-4 rounded" style="accent-color:#E87722;">
+                                <span>
+                                    <span class="text-sm font-bold text-gray-800 block">Convoquer le parent / tuteur</span>
+                                    <span class="text-xs text-gray-400">Cochez si une convocation est nécessaire</span>
+                                </span>
+                            </label>
+                            <div x-show="parentConvoked" x-cloak>
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                    Date de convocation
+                                </label>
+                                <input type="date" name="convocation_date"
+                                       value="{{ old('convocation_date') }}"
+                                       class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none">
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl px-4 py-3 text-xs text-gray-500 leading-relaxed"
+                             style="background:#EBF3FB;">
+                            L'incident sera enregistré avec le statut <strong>Ouvert</strong>.
+                            Vous pourrez le clôturer depuis la fiche incident.
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            {{-- Statut --}}
-            <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">
-                    Statut du dossier *
-                </label>
-                <div class="flex gap-3">
-                    @foreach(['pending' => 'En attente', 'in_progress' => 'En cours de traitement', 'resolved' => 'Résolu'] as $val => $lbl)
-                    <label class="flex items-center gap-2 flex-1 p-3 rounded-xl border cursor-pointer transition-all
-                                  {{ old('status', 'pending') === $val ? 'border-blue-300 bg-blue-50' : 'border-gray-200 hover:bg-gray-50' }}">
-                        <input type="radio" name="status" value="{{ $val }}"
-                               {{ old('status', 'pending') === $val ? 'checked' : '' }}
-                               class="text-blue-600 focus:ring-blue-200">
-                        <span class="text-xs font-bold text-gray-700">{{ $lbl }}</span>
-                    </label>
-                    @endforeach
-                </div>
-            </div>
-
-            {{-- Actions --}}
-            <div class="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
+        {{-- Barre d'actions fixe --}}
+        <div class="fixed bottom-0 left-0 md:left-64 right-0 z-30 bg-white border-t border-gray-200 shadow-xl px-5 py-3.5 flex items-center justify-between gap-4">
+            <p class="text-sm text-gray-500 hidden sm:block">
+                Les champs marqués <span class="text-red-500">*</span> sont obligatoires
+            </p>
+            <div class="flex gap-2 ml-auto">
                 <a href="{{ route('discipline.index') }}"
-                   class="px-5 py-2.5 rounded-xl text-sm font-bold border border-gray-200 text-gray-600
-                          hover:bg-gray-50 transition-all">
+                   class="px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50">
                     Annuler
                 </a>
                 <button type="submit"
-                        class="px-6 py-2.5 rounded-xl text-sm font-bold text-white hover:opacity-90 transition-all shadow-sm"
-                        style="background:#1A3A6B;">
+                        class="px-6 py-2.5 rounded-xl text-white text-sm font-bold flex items-center gap-2 hover:shadow-md transition-all"
+                        style="background-color:#E87722;">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
                     Enregistrer l'incident
                 </button>
             </div>
-        </form>
-    </div>
-
+        </div>
+    </form>
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+const _disciplineClasses = {!! json_encode($classesJson) !!};
+
+function disciplineForm() {
+    return {
+        sectionId:      '{{ $preSectionId ?? '' }}',
+        classId:        '{{ $preEnrollment?->class_group_id ?? '' }}',
+        enrollmentId:   '{{ $preEnrollment?->id ?? '' }}',
+        allClasses:     _disciplineClasses,
+        enrollments:    [],
+        incidentType:   @json(old('incident_type', 'comportement')),
+        sanctionType:   @json(old('sanction_type', '')),
+        parentConvoked: {{ old('parent_convoked') ? 'true' : 'false' }},
+
+        get filteredClasses() {
+            if (!this.sectionId) return this.allClasses;
+            return this.allClasses.filter(c =>
+                String(c.section_id) === String(this.sectionId)
+            );
+        },
+
+        get selectedStudentName() {
+            const found = this.enrollments.find(
+                e => String(e.id) === String(this.enrollmentId)
+            );
+            return found ? found.full_name : '';
+        },
+
+        init() {
+            this.rebuildClassOptions();
+            if (this.classId) this.loadStudents();
+        },
+
+        rebuildClassOptions() {
+            const select = this.$refs.classSelect;
+            if (!select) return;
+
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+
+            this.filteredClasses.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                select.appendChild(opt);
+            });
+        },
+
+        rebuildStudentOptions() {
+            const select = this.$refs.studentSelect;
+            if (!select) return;
+
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+
+            this.enrollments.forEach(e => {
+                const opt = document.createElement('option');
+                opt.value = e.id;
+                opt.textContent = e.full_name;
+                select.appendChild(opt);
+            });
+        },
+
+        onSectionChange() {
+            const stillVisible = this.filteredClasses.some(
+                c => String(c.id) === String(this.classId)
+            );
+            if (!stillVisible) {
+                this.classId = '';
+                this.enrollmentId = '';
+                this.enrollments = [];
+            }
+            this.rebuildClassOptions();
+            this.rebuildStudentOptions();
+        },
+
+        async loadStudents() {
+            if (!this.classId) {
+                this.enrollments = [];
+                this.enrollmentId = '';
+                this.rebuildStudentOptions();
+                return;
+            }
+            try {
+                const r = await fetch(`/discipline/api/students?class_id=${this.classId}`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                const d = await r.json();
+                this.enrollments = d.enrollments || [];
+                if (!this.enrollments.some(e => String(e.id) === String(this.enrollmentId))) {
+                    this.enrollmentId = '';
+                }
+                this.rebuildStudentOptions();
+            } catch (e) {
+                console.error(e);
+            }
+        },
+    };
+}
+</script>
+@endpush

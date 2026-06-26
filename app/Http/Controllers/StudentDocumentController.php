@@ -27,13 +27,17 @@ class StudentDocumentController extends Controller
         ));
     }
 
-    public function single(Request $request, Student $student, string $type): View
+    public function single(Request $request, Student $student, string $type)
     {
         $year       = $this->documents->yearFromRequest($request->integer('year_id') ?: null);
         $enrollment = $this->documents->enrollmentForStudent($student, $year);
 
         abort_if(! $enrollment && in_array($type, ['certificat', 'carte', 'livret'], true), 404,
             'Aucune inscription active trouvée pour cet élève.');
+
+        if ($type === 'livret') {
+            return redirect()->route('livrets.show', $enrollment);
+        }
 
         return $this->renderDocument($type, collect([$student]), $year, $enrollment, $student);
     }
@@ -53,9 +57,27 @@ class StudentDocumentController extends Controller
         return $this->bulk($request, 'fiches');
     }
 
-    public function bulkBooklets(Request $request): View
+    public function bulkBooklets(Request $request)
     {
-        return $this->bulk($request, 'livrets');
+        $year    = $this->documents->yearFromRequest($request->integer('year_id') ?: null);
+        $filters = $this->filtersFromRequest($request);
+
+        abort_if(! $year, 422, 'Aucune année scolaire sélectionnée.');
+
+        $classId = $filters['class_id'];
+        abort_if(!$classId, 422, 'Aucune classe sélectionnée.');
+
+        $students = $this->documents->getStudentsForPrint($year, $filters);
+        $enrollmentIds = \App\Models\StudentEnrollment::whereIn('student_id', $students->pluck('id'))
+            ->where('class_group_id', $classId)
+            ->where('academic_year_id', $year->id)
+            ->pluck('id')
+            ->toArray();
+
+        return redirect()->route('livrets.bulk', [
+            'class_group_id' => $classId,
+            'student_ids' => $enrollmentIds,
+        ]);
     }
 
     public function bulkLists(Request $request): View

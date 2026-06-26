@@ -2,361 +2,624 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\GenerateBulletinRequest;
 use App\Models\AcademicYear;
-use App\Models\AppreciationScale;
 use App\Models\AuditLog;
 use App\Models\BulletinReport;
 use App\Models\BulletinSubjectDetail;
 use App\Models\ClassGroup;
+use App\Models\CouncilDecision;
+use App\Models\Distinction;
 use App\Models\Grade;
-use App\Models\GradeLock;
-use App\Models\SchoolSetting;
-use App\Models\SchoolPhone;
-use App\Models\Section;
 use App\Models\Sequence;
 use App\Models\StudentEnrollment;
 use App\Models\Trimester;
+use App\Models\Staff;
+use App\Services\GradeCalculationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class BulletinController extends Controller
 {
-    // ── INDEX : Sélection Classe + Séquence ──────────────────────────────
+    public function __construct(
+        private GradeCalculationService $calc
+    ) {}
+
+    // ── PAGE DE SÉLECTION ─────────────────────────────────────────────────
     public function index(Request $request)
     {
         $activeYear = AcademicYear::active();
 
-        $sequences = collect();
-        $sections  = collect();
+        $sections = \App\Models\Section::orderBy('id')->get();
 
-        if ($activeYear) {
-            $sequences = Sequence::where('academic_year_id', $activeYear->id)
-                ->with('trimester')
-                ->orderBy('number')
-                ->get();
+        $classes = $activeYear
+            ? ClassGroup::where('academic_year_id', $activeYear->id)
+                ->with('level.section')
+                ->withCount(['studentEnrollments as enrolled' => fn($q) =>
+                    $q->where('status', 'active')
+                ])
+                ->orderBy('name')->get()
+            : collect();
 
-            $sections = Section::with([
-                'levels.classGroups' => fn($q) =>
-                    $q->where('academic_year_id', $activeYear->id)
-                      ->withCount([
-                          'studentEnrollments as enrolled' => fn($q2) =>
-                              $q2->where('status', 'active'),
-                      ])
-                      ->orderBy('name'),
-            ])->orderBy('id')->get();
-        }
+        $sequences  = $activeYear
+            ? Sequence::where('academic_year_id', $activeYear->id)
+                ->with('trimester')->orderBy('number')->get()
+            : collect();
 
-        // Stats des bulletins générés par classe/séquence
-        $generatedStats = BulletinReport::where('type', 'sequence')
-            ->selectRaw('sequence_id, student_enrollment_id, COUNT(*) as cnt')
-            ->groupBy('sequence_id', 'student_enrollment_id')
-            ->get()
-            ->groupBy('sequence_id');
-
-        // Nombre de bulletins générés par (class_group_id, sequence_id)
-        $bulletinCounts = BulletinReport::selectRaw(
-            'bulletin_reports.sequence_id,
-             student_enrollments.class_group_id,
-             COUNT(*) as cnt'
-        )
-        ->join('student_enrollments',
-            'student_enrollments.id', '=', 'bulletin_reports.student_enrollment_id')
-        ->where('bulletin_reports.type', 'sequence')
-        ->groupBy('bulletin_reports.sequence_id', 'student_enrollments.class_group_id')
-        ->get()
-        ->keyBy(fn($row) => $row->class_group_id . '_' . $row->sequence_id);
+        $trimesters = $activeYear
+            ? Trimester::where('academic_year_id', $activeYear->id)
+                ->orderBy('number')->get()
+            : collect();
 
         return view('bulletins.index', compact(
-            'activeYear', 'sequences', 'sections', 'bulletinCounts'
+            'activeYear', 'sections', 'classes', 'sequences', 'trimesters'
         ));
     }
 
-    // ── GÉNÉRATION DES BULLETINS D'UNE CLASSE ────────────────────────────
-    public function generate(Request $request)
+    // ── APERÇU D'UN BULLETIN (HTML) ────────────────────────────────────────
+    public function show(Request $request, StudentEnrollment $enrollment)
     {
-        $request->validate([
-            'class_group_id' => 'required|exists:class_groups,id',
-            'sequence_id'    => 'required|exists:sequences,id',
-        ]);
+        $type        = $request->input('type', 'sequentiel');
+        $sequenceId  = $request->input('sequence_id');
+        $trimesterId = $request->input('trimester_id');
 
-        $classGroup = ClassGroup::with([
-            'level.section',
-            'academicYear',
-            'classSubjects' => fn($q) =>
-                $q->where('is_active', true)
-                  ->with('subject')
-                  ->orderBy('subject_id'),
-        ])->findOrFail($request->class_group_id);
+        $bulletinData = $this->buildBulletinData(
+            $enrollment, $type, $sequenceId, $trimesterId
+        );
 
-        $sequence = Sequence::with('trimester')->findOrFail($request->sequence_id);
+        return view('bulletins.show', $bulletinData);
+    }
 
-        // Vérifier verrou
-        $isLocked = GradeLock::where([
-            'class_group_id' => $classGroup->id,
-            'sequence_id'    => $sequence->id,
-            'is_locked'      => true,
-        ])->exists();
+    // ── GÉNÉRATION PDF INDIVIDUELLE ─────────────────────────────────────────
+    public function pdf(Request $request, StudentEnrollment $enrollment)
+    {
+        $type        = $request->input('type', 'sequentiel');
+        $sequenceId  = $request->input('sequence_id');
+        $trimesterId = $request->input('trimester_id');
 
-        /** @var \App\Models\User $authUser */
-        $authUser = Auth::user();
-        if (!$isLocked && !$authUser->hasAnyRole(['super-admin', 'directeur', 'censeur'])) {
-            return back()->with('error',
-                'Les notes doivent être verrouillées avant de générer les bulletins.');
-        }
+        $data = $this->buildBulletinData(
+            $enrollment, $type, $sequenceId, $trimesterId
+        );
 
-        // Élèves actifs de la classe
+        $pdf = Pdf::loadView('bulletins.pdf', $data)
+                  ->setPaper('a4', 'portrait');
+
+        $filename = 'bulletin-'
+            . str_replace(' ', '-', $enrollment->student->full_name)
+            . '-' . $data['periodLabel'] . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    // ── GÉNÉRATION EN MASSE (CLASSE ENTIÈRE) ───────────────────────────────
+    public function bulkPdf(GenerateBulletinRequest $request)
+    {
+        $classGroup = ClassGroup::with('level.section')
+            ->find($request->class_group_id);
+
         $enrollments = StudentEnrollment::where([
             'class_group_id'   => $classGroup->id,
             'academic_year_id' => $classGroup->academic_year_id,
             'status'           => 'active',
-        ])->with('student')->get();
+        ])->with('student')
+          ->get()
+          ->sortBy('student.last_name');
 
-        // Toutes les notes de la séquence pour cette classe
-        $allGrades = Grade::whereIn(
-            'student_enrollment_id', $enrollments->pluck('id')
-        )->where('sequence_id', $sequence->id)
-         ->get()
-         ->keyBy(fn($g) => $g->student_enrollment_id . '_' . $g->class_subject_id);
-
-        // Calcul des moyennes de tous les élèves
-        $averages = [];
-        foreach ($enrollments as $enrollment) {
-            $totalPoints = 0;
-            $totalCoef   = 0;
-
-            foreach ($classGroup->classSubjects as $cs) {
-                $key   = $enrollment->id . '_' . $cs->id;
-                $grade = $allGrades->get($key);
-                if ($grade && $grade->grade !== null && !$grade->is_absent) {
-                    $totalPoints += $grade->grade * $cs->coefficient;
-                    $totalCoef   += $cs->coefficient;
-                } elseif ($totalCoef === 0 || $cs->coefficient > 0) {
-                    // Absence = 0 au sens du calcul
-                    if ($grade && $grade->is_absent) {
-                        $totalPoints += 0 * $cs->coefficient;
-                        $totalCoef   += $cs->coefficient;
-                    }
-                }
-            }
-
-            $avg = $totalCoef > 0 ? round($totalPoints / $totalCoef, 2) : null;
-            $averages[$enrollment->id] = $avg;
+        // Filtrer si sélection partielle
+        if ($request->filled('student_ids')) {
+            $enrollments = $enrollments->whereIn('id', $request->student_ids);
         }
 
-        // Calcul des rangs
-        $sortedAvgs = collect($averages)->filter()->sortDesc()->values();
-        $classAverage  = $sortedAvgs->count() > 0 ? round($sortedAvgs->avg(), 2) : null;
-        $highestAvg    = $sortedAvgs->first();
-        $lowestAvg     = $sortedAvgs->last();
-        $classSize     = $enrollments->count();
-
-        $ranks = [];
-        $rank  = 1;
-        $prev  = null;
-        $sameRankCount = 1;
-        foreach ($sortedAvgs as $idx => $avg) {
-            if ($prev !== null && $avg < $prev) {
-                $rank += $sameRankCount;
-                $sameRankCount = 1;
-            } elseif ($prev !== null && $avg === $prev) {
-                $sameRankCount++;
-            }
-            foreach ($averages as $enrollId => $a) {
-                if ($a == $avg && !isset($ranks[$enrollId])) {
-                    $ranks[$enrollId] = $rank;
-                }
-            }
-            $prev = $avg;
+        if ($enrollments->isEmpty()) {
+            return back()->with('error', 'Aucun élève sélectionné.');
         }
 
-        DB::transaction(function () use (
-            $enrollments, $classGroup, $sequence,
-            $allGrades, $averages, $ranks,
-            $classAverage, $highestAvg, $lowestAvg, $classSize
-        ) {
-            $generatedBy = Auth::id();
-
-            foreach ($enrollments as $enrollment) {
-                $avg  = $averages[$enrollment->id] ?? null;
-                $rank = $ranks[$enrollment->id] ?? null;
-
-                // Absences pour la séquence (approximation : total de l'année)
-                $absences = $enrollment->absences()
-                    ->where('is_justified', false)
-                    ->sum('hours');
-                $justifiedAbs = $enrollment->absences()
-                    ->where('is_justified', true)
-                    ->sum('hours');
-
-                // Appréciation générale
-                $appreciation = $avg !== null
-                    ? AppreciationScale::forGrade((float) $avg)
-                    : null;
-
-                // Créer ou mettre à jour le bulletin
-                $bulletin = BulletinReport::updateOrCreate(
-                    [
-                        'student_enrollment_id' => $enrollment->id,
-                        'sequence_id'           => $sequence->id,
-                        'type'                  => 'sequence',
-                    ],
-                    [
-                        'trimester_id'          => $sequence->trimester_id,
-                        'academic_year_id'      => $classGroup->academic_year_id,
-                        'average_general'       => $avg,
-                        'rank'                  => $rank,
-                        'class_size'            => $classSize,
-                        'class_average'         => $classAverage,
-                        'highest_average'       => $highestAvg,
-                        'lowest_average'        => $lowestAvg,
-                        'unjustified_absences'  => $absences,
-                        'justified_absences'    => $justifiedAbs,
-                        'general_observation'   => $appreciation?->label_fr,
-                        'generated_at'          => now(),
-                        'generated_by'          => $generatedBy,
-                    ]
-                );
-
-                // Supprimer les anciens détails par matière
-                $bulletin->subjectDetails()->delete();
-
-                // Recréer les détails par matière
-                $subjectOrder = 1;
-                foreach ($classGroup->classSubjects as $cs) {
-                    $key   = $enrollment->id . '_' . $cs->id;
-                    $grade = $allGrades->get($key);
-
-                    $subjectAvg = null;
-                    if ($grade && !$grade->is_absent && $grade->grade !== null) {
-                        $subjectAvg = (float) $grade->grade;
-                    }
-
-                    // Chercher le nom de l'enseignant assigné à cette matière
-                    $teacher = $cs->teacherAssignments()
-                        ->where('academic_year_id', $classGroup->academic_year_id)
-                        ->with('staff')
-                        ->first()?->staff;
-
-                    $subjectAppreciation = $subjectAvg !== null
-                        ? AppreciationScale::forGrade($subjectAvg)
-                        : null;
-
-                    $total = $subjectAvg !== null
-                        ? round($subjectAvg * $cs->coefficient, 2)
-                        : null;
-
-                    BulletinSubjectDetail::create([
-                        'bulletin_report_id' => $bulletin->id,
-                        'class_subject_id'   => $cs->id,
-                        'subject_order'      => $subjectOrder++,
-                        'coefficient'        => $cs->coefficient,
-                        'teacher_name'       => $teacher?->full_name,
-                        'seq_grade'          => $subjectAvg,  // bulletin séquentiel
-                        'average'            => $subjectAvg,
-                        'total'              => $total,
-                        'appreciation'       => $subjectAppreciation?->code,
-                    ]);
-                }
-            }
-        });
+        $allBulletins = [];
+        foreach ($enrollments as $enr) {
+            $allBulletins[] = $this->buildBulletinData(
+                $enr,
+                $request->type,
+                $request->sequence_id,
+                $request->trimester_id
+            );
+        }
 
         AuditLog::log('bulletins_generated', $classGroup);
 
-        return redirect()
-            ->route('bulletins.class', [
-                'classGroup' => $classGroup->id,
-                'sequence'   => $sequence->id,
-            ])
-            ->with('success',
-                "Bulletins générés pour {$classGroup->full_name} — {$sequence->label}. "
-                . count($enrollments) . " bulletin(s) créé(s).");
+        return view('bulletins.bulk-print', [
+            'bulletins'  => $allBulletins,
+            'classGroup' => $classGroup,
+        ]);
     }
 
-    // ── LISTE DES BULLETINS D'UNE CLASSE / SÉQUENCE ──────────────────────
-    public function classIndex(ClassGroup $classGroup, Sequence $sequence)
+    private function getSequenceOfficialTitle(string $label): string
     {
-        $classGroup->load([
-            'level.section',
+        $labelUpper = strtoupper(trim($label));
+        if (preg_match('/CC\s*([1-3])/', $labelUpper, $matches)) {
+            return "CONTROLE CONTINU " . $matches[1];
+        }
+        if (preg_match('/DS\s*([1-5])/', $labelUpper, $matches)) {
+            return "DEVOIR SURVEILLE " . $matches[1];
+        }
+        if (preg_match('/SEQ(?:UENCE)?\s*([1-5])/', $labelUpper, $matches)) {
+            return "SEQUENCE " . $matches[1];
+        }
+        return $labelUpper;
+    }
+
+    // ── CONSTRUCTION DES DONNÉES DU BULLETIN ────────────────────────────────
+    private function buildBulletinData(
+        StudentEnrollment $enrollment,
+        string $type,
+        ?int $sequenceId,
+        ?int $trimesterId
+    ): array {
+        $enrollment->load([
+            'student',
+            'classGroup.level.section',
+            'classGroup.academicYear',
+            'classGroup.titularStaff',
             'academicYear',
         ]);
 
-        $bulletins = BulletinReport::where([
-            'sequence_id' => $sequence->id,
-            'type'        => 'sequence',
-        ])->whereHas('studentEnrollment', fn($q) =>
-            $q->where('class_group_id', $classGroup->id)
-        )
-        ->with([
-            'studentEnrollment.student',
-            'distinction',
-            'councilDecision',
-        ])
-        ->orderBy('rank')
-        ->get();
+        $classGroup = $enrollment->classGroup;
+        $school     = \App\Models\SchoolSetting::instance();
+        $phones     = \App\Models\SchoolPhone::orderByDesc('is_primary')->get();
+        $agreements = \App\Models\SchoolAgreement::orderBy('cycle')->get();
 
-        return view('bulletins.class-index', compact(
-            'classGroup', 'sequence', 'bulletins'
-        ));
-    }
+        $principalName = \App\Models\Staff::whereHas('positions', function ($q) {
+            $q->where('position', 'directeur');
+        })->first()?->full_name;
 
-    // ── APERÇU / IMPRESSION D'UN BULLETIN ────────────────────────────────
-    public function show(BulletinReport $bulletin)
-    {
-        $bulletin->load([
-            'studentEnrollment.student',
-            'studentEnrollment.classGroup.level.section',
-            'studentEnrollment.classGroup.academicYear',
-            'studentEnrollment.classGroup.classSubjects.subject',
-            'sequence.trimester',
-            'subjectDetails.classSubject.subject',
-            'distinction',
-            'councilDecision',
-            'generatedBy',
-        ]);
+        if (!$principalName) {
+            $principalName = \App\Models\Staff::whereHas('positions', function ($q) {
+                $q->where('position', 'censeur');
+            })->first()?->full_name ?? '—';
+        }
 
-        $school = SchoolSetting::instance();
-        $phones = SchoolPhone::orderByDesc('is_primary')->orderBy('id')->get();
+        if ($type === 'sequentiel') {
+            $sequence  = Sequence::with('trimester')->find($sequenceId);
+            $details   = $this->buildSequenceSubjectDetails($classGroup, $enrollment, $sequence);
+            $average   = $this->calc->sequenceAverage($enrollment, $sequence);
+            $rankInfo  = $this->calc->classRank($classGroup, $enrollment, $sequence);
+            $absences  = $this->calc->absenceTotals($enrollment, $sequence);
+            $periodLabel = $sequence->label;
+            
+            $seqOfficialTitle = $this->getSequenceOfficialTitle($sequence->label);
+            if (str_starts_with($seqOfficialTitle, 'SEQUENCE')) {
+                $documentTitle = 'BULLETIN DE NOTES DE LA ' . $seqOfficialTitle;
+            } else {
+                $documentTitle = 'BULLETIN DE NOTES DU ' . $seqOfficialTitle;
+            }
 
-        // Regrouper les matières par catégorie
-        $subjectsByCategory = $bulletin->subjectDetails
-            ->groupBy(fn($d) =>
-                $d->classSubject?->subject?->subjectCategory?->name ?? 'Général'
+            $seqOfficialTitleEn = $this->getSequenceOfficialTitleEn($sequence->label);
+            $documentTitleEn = $seqOfficialTitleEn . ' REPORT CARD';
+
+            $periodHeaders = [];
+            $periodAverages = [$average];
+            $previousAverages = [];
+            $council     = null;
+            $distinction = $this->getDistinction($average);
+
+        } elseif ($type === 'trimestriel') {
+            $trimester  = Trimester::with('sequences')->find($trimesterId);
+            $sequences  = $trimester->sequences;
+
+            $details = $this->buildTrimesterSubjectDetails(
+                $classGroup, $enrollment, $sequences
             );
+            $average  = $this->calc->trimesterAverage($enrollment, $trimester);
+            $rankInfo = $this->trimesterRank($classGroup, $enrollment, $trimester);
+            $absences = $this->absenceTotalsForPeriod($enrollment,
+                $sequences->first()?->start_date, $sequences->last()?->end_date);
+            $periodLabel = $trimester->label;
+            $documentTitle = 'BULLETIN DE NOTES DU TRIMESTRE ' . $trimester->number;
+            $documentTitleEn = 'REPORT CARD OF TRIMESTER ' . $trimester->number;
+            $periodHeaders = $sequences->pluck('label')->toArray();
 
-        return view('bulletins.show', compact(
-            'bulletin', 'school', 'phones', 'subjectsByCategory'
-        ));
+            $periodAverages = [];
+            foreach ($sequences as $seq) {
+                $periodAverages[] = $this->calc->sequenceAverage($enrollment, $seq);
+            }
+
+            $previousAverages = [];
+            if ($trimester->number >= 2) {
+                $tri1 = Trimester::where('academic_year_id', $classGroup->academic_year_id)->where('number', 1)->first();
+                if ($tri1) {
+                    $previousAverages['TRIM 1'] = $this->calc->trimesterAverage($enrollment, $tri1);
+                }
+            }
+            if ($trimester->number >= 3) {
+                $tri2 = Trimester::where('academic_year_id', $classGroup->academic_year_id)->where('number', 2)->first();
+                if ($tri2) {
+                    $previousAverages['TRIM 2'] = $this->calc->trimesterAverage($enrollment, $tri2);
+                }
+            }
+
+            $council     = CouncilDecision::active()
+                ->forLevel($classGroup->level)->first();
+            $distinction = $this->getDistinction($average);
+
+        } else { // annuel
+            $trimesters = Trimester::where('academic_year_id', $classGroup->academic_year_id)
+                ->orderBy('number')->get();
+
+            $details = $this->buildYearSubjectDetails($classGroup, $enrollment, $trimesters);
+            $average  = $this->calc->yearAverage($enrollment);
+            $rankInfo = $this->yearRank($classGroup, $enrollment);
+            $absences = $this->absenceTotalsForPeriod($enrollment, null, null);
+            $periodLabel = 'Année ' . $classGroup->academicYear->label;
+            $documentTitle = 'BULLETIN DE NOTES ANNUEL';
+            $documentTitleEn = 'ANNUAL REPORT CARD';
+            $periodHeaders = $trimesters->map(fn($t) => 'TRIM ' . $t->number)->toArray();
+
+            $periodAverages = [];
+            foreach ($trimesters as $tri) {
+                $periodAverages[] = $this->calc->trimesterAverage($enrollment, $tri);
+            }
+
+            $previousAverages = [];
+            foreach ($trimesters as $tri) {
+                $previousAverages['TRIM ' . $tri->number] = $this->calc->trimesterAverage($enrollment, $tri);
+            }
+
+            $council     = CouncilDecision::active()
+                ->forLevel($classGroup->level)->first();
+            $distinction = $this->getDistinction($average);
+        }
+
+        $classSize = StudentEnrollment::where([
+            'class_group_id'   => $classGroup->id,
+            'academic_year_id' => $classGroup->academic_year_id,
+            'status'           => 'active',
+        ])->count();
+
+        return [
+            'enrollment'   => $enrollment,
+            'classGroup'   => $classGroup,
+            'school'       => $school,
+            'phones'       => $phones,
+            'agreements'   => $agreements,
+            'principalName'=> $principalName,
+            'type'         => $type,
+            'periodLabel'  => $periodLabel,
+            'periodHeaders'=> $periodHeaders,
+            'details'      => $details,
+            'average'      => $average,
+            'rankInfo'     => $rankInfo,
+            'absences'     => $absences,
+            'council'      => $council,
+            'distinction'  => $distinction,
+            'appreciation' => $average !== null
+                ? \App\Models\AppreciationScale::forGrade($average) : null,
+            'studentPhoto'  => $this->studentPhotoPath($enrollment->student),
+            'parentContacts'=> $this->buildParentContactLines($enrollment->student),
+            'documentTitle' => $documentTitle,
+            'documentTitleEn' => $documentTitleEn,
+            'classSize'     => $classSize,
+            'isRepeating'   => $enrollment->is_repeating ?? false,
+            'academicYear'  => $classGroup->academicYear ?? $enrollment->academicYear,
+            'previousAverages' => $previousAverages,
+            'periodAverages' => $periodAverages,
+        ];
     }
 
-    // ── IMPRESSION DE TOUS LES BULLETINS D'UNE CLASSE ────────────────────
-    public function printAll(ClassGroup $classGroup, Sequence $sequence)
+    private function buildSequenceSubjectDetails($classGroup, $enrollment, Sequence $sequence)
     {
-        $bulletins = BulletinReport::where([
-            'sequence_id' => $sequence->id,
-            'type'        => 'sequence',
-        ])->whereHas('studentEnrollment', fn($q) =>
-            $q->where('class_group_id', $classGroup->id)
-        )
-        ->with([
-            'studentEnrollment.student',
-            'studentEnrollment.classGroup.level.section',
-            'studentEnrollment.classGroup.academicYear',
-            'sequence.trimester',
-            'subjectDetails.classSubject.subject',
-            'distinction',
-            'councilDecision',
-        ])
-        ->orderBy('rank')
-        ->get();
+        return $this->calc->buildSubjectDetails($classGroup, $enrollment, $sequence)
+            ->map(fn ($detail) => array_merge($detail, [
+                'total' => isset($detail['grade']) && $detail['grade'] !== null && !$detail['is_absent']
+                    ? round($detail['grade'] * $detail['coefficient'], 2)
+                    : null,
+            ]));
+    }
 
-        $school = SchoolSetting::instance();
-        $phones = SchoolPhone::orderByDesc('is_primary')->orderBy('id')->get();
+    private function buildTrimesterSubjectDetails($classGroup, $enrollment, $sequences)
+    {
+        $classSubjects = $classGroup->classSubjects()
+            ->where('is_active', true)
+            ->with(['subject', 'teacherAssignments.staff'])
+            ->get();
 
-        $classGroup->load(['level.section', 'academicYear']);
+        $allEnrollments = StudentEnrollment::where([
+            'class_group_id'   => $classGroup->id,
+            'academic_year_id' => $classGroup->academic_year_id,
+            'status'           => 'active',
+        ])->get();
 
-        return view('bulletins.print-all', compact(
-            'bulletins', 'school', 'phones', 'classGroup', 'sequence'
-        ));
+        $teacherMap = $classSubjects->mapWithKeys(fn($cs) => [
+            $cs->id => $this->formatTeacherName($cs->teacherAssignments->first()?->staff),
+        ])->toArray();
+
+        return $classSubjects->map(function($cs) use ($enrollment, $sequences, $teacherMap, $allEnrollments) {
+            $seqGrades = $sequences->map(fn($seq) => Grade::where([
+                'student_enrollment_id' => $enrollment->id,
+                'class_subject_id'      => $cs->id,
+                'sequence_id'           => $seq->id,
+            ])->first());
+
+            $avg = $this->calc->calculateTrimesterSubjectGrade($enrollment->id, $cs->id, $sequences);
+
+            // Calculer les statistiques de la classe pour ce trimestre
+            $classGrades = $allEnrollments->map(function($enr) use ($cs, $sequences) {
+                return $this->calc->calculateTrimesterSubjectGrade($enr->id, $cs->id, $sequences);
+            })->filter(fn($g) => $g !== null)->values();
+
+            $min = $classGrades->min();
+            $max = $classGrades->max();
+            $successCount = $classGrades->filter(fn($g) => $g >= 10)->count();
+            $successRate = $classGrades->count() > 0 ? round(($successCount / $classGrades->count()) * 100, 2) : 0;
+
+            $rank = null;
+            if ($avg !== null) {
+                $sorted = $classGrades->sortDesc()->values();
+                $rankIdx = $sorted->search($avg);
+                $rank = $rankIdx !== false ? $rankIdx + 1 : null;
+            }
+
+            return [
+                'subject'      => $cs->subject,
+                'coefficient'  => $cs->coefficient,
+                'teacher'      => $teacherMap[$cs->id] ?? null,
+                'seq_grades'   => $seqGrades->map(fn($g) => $g && !$g->is_absent ? $g->grade : ($g && $g->is_absent ? 'ABS' : null))->values()->toArray(),
+                'grade'        => $avg,
+                'total'        => $avg !== null ? round($avg * $cs->coefficient, 2) : null,
+                'is_absent'    => false,
+                'rank'         => $rank,
+                'class_size'   => $classGrades->count(),
+                'min'          => $min,
+                'max'          => $max,
+                'success_rate' => $successRate,
+                'appreciation' => $avg !== null
+                    ? \App\Models\AppreciationScale::forGrade($avg) : null,
+            ];
+        });
+    }
+
+    private function buildYearSubjectDetails($classGroup, $enrollment, $trimesters)
+    {
+        $classSubjects = $classGroup->classSubjects()
+            ->where('is_active', true)
+            ->with(['subject', 'teacherAssignments.staff'])
+            ->get();
+
+        $allEnrollments = StudentEnrollment::where([
+            'class_group_id'   => $classGroup->id,
+            'academic_year_id' => $classGroup->academic_year_id,
+            'status'           => 'active',
+        ])->get();
+
+        $teacherMap = $classSubjects->mapWithKeys(fn($cs) => [
+            $cs->id => $this->formatTeacherName($cs->teacherAssignments->first()?->staff),
+        ])->toArray();
+
+        return $classSubjects->map(function($cs) use ($enrollment, $trimesters, $teacherMap, $allEnrollments) {
+            $trimesterAverages = $trimesters->map(function($tri) use ($enrollment, $cs) {
+                return $this->calc->calculateTrimesterSubjectGrade($enrollment->id, $cs->id, $tri->sequences);
+            });
+
+            $validTrimesterAverages = $trimesterAverages->filter(fn($v) => $v !== null);
+            $avg = $validTrimesterAverages->count() > 0
+                ? round($validTrimesterAverages->avg(), 2)
+                : null;
+
+            // Calculer les statistiques de la classe pour l'année
+            $classGrades = $allEnrollments->map(function($enr) use ($cs, $trimesters) {
+                $triAvgs = [];
+                foreach ($trimesters as $tri) {
+                    $triAvg = $this->calc->calculateTrimesterSubjectGrade($enr->id, $cs->id, $tri->sequences);
+                    if ($triAvg !== null) {
+                        $triAvgs[] = $triAvg;
+                    }
+                }
+                return count($triAvgs) > 0 ? round(array_sum($triAvgs) / count($triAvgs), 2) : null;
+            })->filter(fn($g) => $g !== null)->values();
+
+            $min = $classGrades->min();
+            $max = $classGrades->max();
+            $successCount = $classGrades->filter(fn($g) => $g >= 10)->count();
+            $successRate = $classGrades->count() > 0 ? round(($successCount / $classGrades->count()) * 100, 2) : 0;
+
+            $rank = null;
+            if ($avg !== null) {
+                $sorted = $classGrades->sortDesc()->values();
+                $rankIdx = $sorted->search($avg);
+                $rank = $rankIdx !== false ? $rankIdx + 1 : null;
+            }
+
+            return [
+                'subject'             => $cs->subject,
+                'coefficient'         => $cs->coefficient,
+                'teacher'             => $teacherMap[$cs->id] ?? null,
+                'trimester_averages'  => $trimesterAverages->values()->toArray(),
+                'grade'               => $avg,
+                'total'               => $avg !== null ? round($avg * $cs->coefficient, 2) : null,
+                'is_absent'           => false,
+                'rank'                => $rank,
+                'class_size'          => $classGrades->count(),
+                'min'                 => $min,
+                'max'                 => $max,
+                'success_rate'        => $successRate,
+                'appreciation'        => $avg !== null
+                    ? \App\Models\AppreciationScale::forGrade($avg) : null,
+            ];
+        });
+    }
+
+    private function studentPhotoPath($student): ?string
+    {
+        if ($student->photo) {
+            $storagePath = public_path('storage/' . ltrim($student->photo, '/'));
+            if (file_exists($storagePath)) {
+                return 'file://' . str_replace('\\', '/', $storagePath);
+            }
+        }
+
+        $default = public_path('images/default-avatar.png');
+        if (file_exists($default)) {
+            return 'file://' . str_replace('\\', '/', $default);
+        }
+
+        return null;
+    }
+
+    private function buildParentContactLines($student): string
+    {
+        $lines = [];
+
+        if ($student->father_name || $student->father_phone) {
+            $lines[] = 'Père : ' . trim($student->father_name . ' ' . ($student->father_phone ? '(' . $student->father_phone . ')' : ''));
+        }
+
+        if ($student->mother_name || $student->mother_phone) {
+            $lines[] = 'Mère : ' . trim($student->mother_name . ' ' . ($student->mother_phone ? '(' . $student->mother_phone . ')' : ''));
+        }
+
+        if ($student->guardian_name || $student->guardian_phone) {
+            $lines[] = 'Tuteur : ' . trim($student->guardian_name . ' ' . ($student->guardian_phone ? '(' . $student->guardian_phone . ')' : ''));
+        }
+
+        return count($lines) > 0 ? implode(' · ', $lines) : '—';
+    }
+
+    private function getDistinction(?float $average): ?Distinction
+    {
+        if ($average === null) return null;
+
+        if ($average >= 16) return Distinction::positive()->first();
+        return null;
+    }
+
+    private function trimesterRank($classGroup, $enrollment, $trimester): array
+    {
+        $enrollments = StudentEnrollment::where([
+            'class_group_id'   => $classGroup->id,
+            'academic_year_id' => $classGroup->academic_year_id,
+            'status'           => 'active',
+        ])->get();
+
+        $averages = $enrollments->map(fn($e) => [
+            'id'  => $e->id,
+            'avg' => $this->calc->trimesterAverage($e, $trimester),
+        ])->filter(fn($a) => $a['avg'] !== null)->sortByDesc('avg')->values();
+
+        $rank = $averages->search(fn($a) => $a['id'] === $enrollment->id);
+
+        $successCount = $averages->filter(fn($a) => $a['avg'] >= 10)->count();
+        $successRate = $averages->count() > 0 ? round(($successCount / $averages->count()) * 100, 2) : 0;
+
+        return [
+            'rank'          => $rank !== false ? $rank + 1 : null,
+            'class_size'    => $enrollments->count(),
+            'class_average' => $averages->avg('avg') ? round($averages->avg('avg'), 2) : null,
+            'highest'       => $averages->max('avg'),
+            'lowest'        => $averages->min('avg'),
+            'averages_count'=> $averages->count(),
+            'success_rate'  => $successRate,
+        ];
+    }
+
+    private function yearRank($classGroup, $enrollment): array
+    {
+        $enrollments = StudentEnrollment::where([
+            'class_group_id'   => $classGroup->id,
+            'academic_year_id' => $classGroup->academic_year_id,
+            'status'           => 'active',
+        ])->get();
+
+        $averages = $enrollments->map(fn($e) => [
+            'id'  => $e->id,
+            'avg' => $this->calc->yearAverage($e),
+        ])->filter(fn($a) => $a['avg'] !== null)->sortByDesc('avg')->values();
+
+        $rank = $averages->search(fn($a) => $a['id'] === $enrollment->id);
+
+        $successCount = $averages->filter(fn($a) => $a['avg'] >= 10)->count();
+        $successRate = $averages->count() > 0 ? round(($successCount / $averages->count()) * 100, 2) : 0;
+
+        return [
+            'rank'          => $rank !== false ? $rank + 1 : null,
+            'class_size'    => $enrollments->count(),
+            'class_average' => $averages->avg('avg') ? round($averages->avg('avg'), 2) : null,
+            'highest'       => $averages->max('avg'),
+            'lowest'        => $averages->min('avg'),
+            'averages_count'=> $averages->count(),
+            'success_rate'  => $successRate,
+        ];
+    }
+
+    private function getSequenceOfficialTitleEn(string $label): string
+    {
+        $labelUpper = strtoupper(trim($label));
+        if (preg_match('/CC\s*([1-3])/', $labelUpper, $matches)) {
+            return "CONTINUOUS ASSESSMENT " . $matches[1];
+        }
+        if (preg_match('/DS\s*([1-5])/', $labelUpper, $matches)) {
+            return "SUPERVISED TEST " . $matches[1];
+        }
+        if (preg_match('/SEQ(?:UENCE)?\s*([1-5])/', $labelUpper, $matches)) {
+            return "SEQUENCE " . $matches[1];
+        }
+        return $labelUpper;
+    }
+
+    private function formatTeacherName(?Staff $staff): ?string
+    {
+        if (!$staff) {
+            return null;
+        }
+
+        $genderPrefix = '';
+        if ($staff->gender) {
+            $gender = strtoupper(trim($staff->gender));
+            if ($gender === 'F' || $gender === 'FEMALE' || $gender === 'FEMME') {
+                $genderPrefix = 'Mme ';
+            } else {
+                $genderPrefix = 'M. ';
+            }
+        }
+
+        $fullName = trim($staff->last_name . ' ' . $staff->first_name);
+        return strtoupper($genderPrefix . $fullName);
+    }
+
+    private function absenceTotalsForPeriod($enrollment, $start, $end): array
+    {
+        $query = \App\Models\Absence::where('student_enrollment_id', $enrollment->id);
+        if ($start && $end) $query->whereBetween('absence_date', [$start, $end]);
+        $absences = $query->get();
+
+        return [
+            'justified'   => (float)$absences->where('is_justified', true)->sum('hours'),
+            'unjustified' => (float)$absences->where('is_justified', false)->sum('hours'),
+            'total'       => (float)$absences->sum('hours'),
+        ];
+    }
+
+    // ── API : Élèves d'une classe (utilisée par la page de génération) ───────
+    public function apiStudents(Request $request)
+    {
+        $classId    = (int)$request->input('class_id');
+        $activeYear = AcademicYear::active();
+
+        if (!$classId || !$activeYear) {
+            return response()->json(['students' => []]);
+        }
+
+        $enrollments = StudentEnrollment::where([
+            'class_group_id'   => $classId,
+            'academic_year_id' => $activeYear->id,
+            'status'           => 'active',
+        ])->with('student')
+        ->get()
+        ->sortBy('student.last_name')
+        ->map(fn($e) => [
+            'id'        => $e->id,
+            'full_name' => $e->student->full_name,
+            'matricule' => $e->student->matricule,
+            'gender'    => $e->student->gender,
+        ])->values();
+
+        return response()->json(['students' => $enrollments]);
     }
 }

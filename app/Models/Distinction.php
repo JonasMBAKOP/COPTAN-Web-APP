@@ -37,4 +37,9 @@ class Distinction extends Model
     {
         return $query->where('type', 'negative')->orderBy('order_index');
     }
+
+    public function getLabelAttribute(): string
+    {
+        return $this->label_fr ?? '';
+    }
 }

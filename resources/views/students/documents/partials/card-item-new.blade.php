@@ -8,8 +8,8 @@
     <div class="card-header-bilingual">
         <div class="card-header-left">
             <div class="card-header-line">RÉPUBLIQUE DU CAMEROUN</div>
-            <div class="card-header-line">MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES</div>
             <div class="card-header-line">PAIX - TRAVAIL - PATRIE</div>
+            <div class="card-header-line">MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES</div>
         </div>
         <div class="card-header-center">
             @if($school->cameroon_flag_image)
@@ -20,8 +20,8 @@
         </div>
         <div class="card-header-right">
             <div class="card-header-line">REPUBLIC OF CAMEROON</div>
-            <div class="card-header-line">MINISTRY OF SECONDARY EDUCATION</div>
             <div class="card-header-line">PEACE - WORK - FATHERLAND</div>
+            <div class="card-header-line">MINISTRY OF SECONDARY EDUCATION</div>
         </div>
     </div>
 
@@ -66,7 +66,7 @@
             <div class="card-info-row">
                 <span class="card-info-label">Prénom /</span>
                 <span class="card-info-label-en">Firstname:</span>
-                <span class="card-info-value">{{ $student->first_name }}</span>
+                <span class="card-info-value">{{ strtoupper($student->first_name) }}</span>
             </div>
             <div class="card-info-row">
                 <span class="card-info-label">Né le /</span>
