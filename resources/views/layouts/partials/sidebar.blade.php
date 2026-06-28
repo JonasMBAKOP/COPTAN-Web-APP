@@ -318,16 +318,23 @@
     </nav>
 
     {{-- ── INFOS UTILISATEUR (bas de sidebar) ─────────────────── --}}
+    @php $sideUser = auth()->user(); @endphp
     <div class="border-t border-white/10 px-3 py-3">
         <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-full flex items-center justify-center
-                        flex-shrink-0 font-bold text-sm"
-                 style="background-color: #C8A415; color: #1A3A6B;">
-                {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
-            </div>
+            @if($sideUser->photo || $sideUser->staff?->photo)
+                <img src="{{ $sideUser->photo_url }}"
+                     alt="{{ $sideUser->name }}"
+                     class="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-white/20">
+            @else
+                <div class="w-9 h-9 rounded-full flex items-center justify-center
+                            flex-shrink-0 font-bold text-sm"
+                     style="background-color: #C8A415; color: #1A3A6B;">
+                    {{ strtoupper(substr($sideUser->name, 0, 2)) }}
+                </div>
+            @endif
             <div class="flex-1 min-w-0">
                 <p class="text-white text-sm font-medium truncate">
-                    {{ auth()->user()->name }}
+                    {{ $sideUser->name }}
                 </p>
                 <p class="text-white/50 text-xs truncate">
                     {{ ucfirst(auth()->user()->getRoleNames()->first() ?? '') }}

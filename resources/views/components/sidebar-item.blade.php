@@ -77,6 +77,27 @@
                              3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                 </svg>
                 @break
+            @case('eye')
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M1.5 12C1.5 12 5.5 4 12 4s10.5 8 10.5 8-4 8-10.5 8S1.5 12 1.5 12z"/>
+                    <circle cx="12" cy="12" r="3" />
+                </svg>
+                @break
+            @case('search')
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M21 21l-4.35-4.35m1.82-5.15A7 7 0 1110 3a7 7 0 018.47 8.47z"/>
+                </svg>
+                @break
+            @case('currency-dollar')
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3 1.343 3 3-1.343 3-3 3m0-16v2m0 12v2"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 10h6m-6 4h6"/>
+                </svg>
+                @break
             @case('check-circle')
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

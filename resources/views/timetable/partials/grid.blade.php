@@ -114,7 +114,7 @@
                                 @else
                                     <div class="{{ $printable ? 'slot' : 'flex h-full min-h-[34px] flex-col items-center justify-center rounded-xl border p-1 text-center shadow-sm ' . ($isConflict ? 'border-red-300 bg-red-50' : 'border-blue-100 bg-blue-50') }}" @if(!$printable) style="min-height: {{ $blockMinHeight }}px;" @can('manage-timetable') role="button" @click="openEdit({{ $slot->id }}, {{ $slot->class_subject_id }}, {{ $slot->day_of_week }}, {{ $slot->period_index }}, {{ $slot->periods_count }}, @js($slot->room))" @endcan @endif>
                                         <strong class="{{ $printable ? '' : 'block text-xs font-black ' . ($isConflict ? 'text-red-800' : 'text-[#1A3A6B]') }}">{{ $subject?->name_fr ?? 'Matière' }}</strong>
-                                        <span class="{{ $printable ? '' : 'mt-1 block text-[11px] font-semibold text-gray-600' }}">{{ $teacher?->full_name ?? 'Enseignant non assigné' }}</span>
+                                        <span class="{{ $printable ? '' : 'mt-1 block text-[11px] font-semibold text-gray-600' }}">{{ $teacher?->honorific_full_name ?? 'Enseignant non assigné' }}</span>
                                         @if(!$printable && $slot->room)<p class="mt-1 text-[10px] font-bold text-gray-500">{{ $slot->room }}</p>@endif
                                     </div>
                                 @endif

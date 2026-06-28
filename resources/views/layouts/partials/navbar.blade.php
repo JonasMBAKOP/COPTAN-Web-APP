@@ -63,17 +63,24 @@
         </button>
 
         {{-- Avatar utilisateur --}}
+        @php $navUser = auth()->user(); @endphp
         <div class="relative" x-data="{ open: false }">
             <button @click="open = !open"
                     class="flex items-center gap-2 p-1.5 rounded-lg
                            hover:bg-gray-100 transition-colors">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center
-                            font-bold text-xs flex-shrink-0"
-                     style="background-color: #1A3A6B; color: white;">
-                    {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
-                </div>
+                @if($navUser->photo || $navUser->staff?->photo)
+                    <img src="{{ $navUser->photo_url }}"
+                         alt="{{ $navUser->name }}"
+                         class="w-8 h-8 rounded-full object-cover flex-shrink-0">
+                @else
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center
+                                font-bold text-xs flex-shrink-0"
+                         style="background-color: #1A3A6B; color: white;">
+                        {{ strtoupper(substr($navUser->name, 0, 2)) }}
+                    </div>
+                @endif
                 <span class="hidden sm:block text-sm font-medium text-gray-700 max-w-24 truncate">
-                    {{ explode(' ', auth()->user()->name)[0] }}
+                    {{ explode(' ', $navUser->name)[0] }}
                 </span>
                 <svg class="w-4 h-4 text-gray-400 hidden sm:block" fill="none"
                      stroke="currentColor" viewBox="0 0 24 24">

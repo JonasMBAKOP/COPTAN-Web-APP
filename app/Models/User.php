@@ -46,6 +46,20 @@ class User extends Authenticatable
         };
     }
 
+    // URL de la photo utilisateur (user.photo ou staff.photo)
+    public function getPhotoUrlAttribute(): string
+    {
+        if ($this->photo) {
+            return asset('storage/' . $this->photo);
+        }
+
+        if ($this->staff?->photo) {
+            return asset('storage/' . $this->staff->photo);
+        }
+
+        return asset('images/default-avatar.png');
+    }
+
     // Tableau de hiérarchie des rôles (plus le nombre est élevé, plus le rôle est puissant)
     private static array $roleHierarchy = [
         'super-admin'         => 6,

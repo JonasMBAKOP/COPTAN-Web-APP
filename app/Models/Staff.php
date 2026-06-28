@@ -85,6 +85,15 @@ class Staff extends Model
         return "{$this->last_name} {$this->first_name}";
     }
 
+    // Nom complet avec civilité
+    public function getHonorificFullNameAttribute(): string
+    {
+        $gender = strtolower((string) $this->gender);
+        $prefix = in_array($gender, ['female', 'femme', 'f'], true) ? 'Mme' : 'M.';
+
+        return $prefix . ' ' . mb_strtoupper($this->full_name);
+    }
+
     // Poste principal
     public function getPrimaryPositionAttribute(): ?StaffPosition
     {
