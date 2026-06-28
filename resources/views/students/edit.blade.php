@@ -103,19 +103,13 @@
                     <p class="text-xs font-semibold text-gray-700">{{ $student->full_name }}</p>
                     <p class="text-xs text-gray-400 mt-0.5">Cliquer pour changer</p>
                 </div>
-
                 @if($student->photo)
-                <form method="POST" action="{{ route('students.photo.delete', $student) }}"
-                      class="mt-3" onsubmit="return confirm('Supprimer la photo ?')">
-                    @csrf @method('DELETE')
-                    <button type="submit"
-                            class="w-full py-2 rounded-lg text-xs font-medium text-red-500 border border-red-100 bg-red-50 hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button type="submit" form="delete-student-photo-form" onclick="return confirm('Supprimer la photo ?')"
+                            class="w-full py-2 rounded-lg text-xs font-medium text-red-500 border border-red-100 bg-red-50 hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                         </svg>
                         Supprimer la photo
                     </button>
-                </form>
                 @endif
             </div>
 
@@ -479,4 +473,10 @@ function editStudentForm() {
 }
 </script>
 
+@if($student->photo)
+<form id="delete-student-photo-form" method="POST" action="{{ route('students.photo.delete', $student) }}" class="hidden">
+    @csrf
+    @method('DELETE')
+</form>
+@endif
 @endsection

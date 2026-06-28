@@ -53,7 +53,7 @@
         .kpi-box .value {
             font-size: 10px;
             font-weight: 900;
-            color: #1A3A6B;
+            color: #7FA6C4;
             margin-top: 2px;
         }
 
@@ -73,7 +73,7 @@
         .bar-row { margin-bottom: 5px; }
         .bar-meta { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 8.5px; }
         .bar-label { font-weight: 700; }
-        .bar-value { font-weight: 800; color: #1A3A6B; }
+        .bar-value { font-weight: 800; color: #7FA6C4; }
         .bar-track { height: 6px; background: #EEF2F7; border-radius: 3px; overflow: hidden; }
         .bar-fill { height: 6px; background: #4A6FA5; border-radius: 3px; }
 
@@ -95,7 +95,7 @@
         tbody td.right { text-align: right; font-weight: 700; }
         tfoot tr { background: #F3F4F6; }
         tfoot td { padding: 4px 5px; font-weight: 900; border: 1px solid #E5E7EB; }
-        tfoot td.right { text-align: right; color: #1A3A6B; }
+        tfoot td.right { text-align: right; color: #7FA6C4; }
 
         .footer-note {
             text-align: center;

@@ -213,17 +213,17 @@
 
             // Critères visuels
             document.getElementById('c1').innerHTML =
-                `<span>${c1 ? '✓' : '○'}</span> Au moins 8 caractères`;
+                `<span>${c1 ? 'Valide' : 'En attente'}</span> Au moins 8 caractères`;
             document.getElementById('c1').className =
                 `text-xs flex items-center gap-1 ${c1 ? 'text-green-600' : 'text-gray-400'}`;
 
             document.getElementById('c2').innerHTML =
-                `<span>${c2 ? '✓' : '○'}</span> Une majuscule`;
+                `<span>${c2 ? 'Valide' : 'En attente'}</span> Une majuscule`;
             document.getElementById('c2').className =
                 `text-xs flex items-center gap-1 ${c2 ? 'text-green-600' : 'text-gray-400'}`;
 
             document.getElementById('c3').innerHTML =
-                `<span>${c3 ? '✓' : '○'}</span> Un chiffre`;
+                `<span>${c3 ? 'Valide' : 'En attente'}</span> Un chiffre`;
             document.getElementById('c3').className =
                 `text-xs flex items-center gap-1 ${c3 ? 'text-green-600' : 'text-gray-400'}`;
 

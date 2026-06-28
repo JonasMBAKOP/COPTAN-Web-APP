@@ -57,7 +57,7 @@
 <div class="anim-1 flex items-center justify-between mb-6">
     <div>
         <h2 class="text-xl font-black" style="color:#1A3A6B;">
-            Bonjour, {{ auth()->user()->name }} 👋
+            Bonjour, {{ auth()->user()->name }} 
         </h2>
         <p class="text-sm text-gray-500 mt-0.5">
             {{ now()->isoFormat('dddd D MMMM YYYY · HH:mm') }}
@@ -233,7 +233,7 @@
             </a>
             @else
             <span class="text-xs font-semibold text-green-600">
-                ✓ Tous réinscrits
+                <svg class="inline h-4 w-4 mr-1 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Tous réinscrits
             </span>
             @endif
         </div>

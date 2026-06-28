@@ -14,8 +14,8 @@
         font-family: Arial, Helvetica, sans-serif;
         font-size: 11px;
         font-weight: 700;
-        color: #050E1F;
-        background: #f0f2f5;
+        color: #334155;
+        background: #F7FAFC;
         padding: 14px;
     }
 
@@ -24,14 +24,14 @@
         max-width: 277mm;
         margin: 0 auto;
         background: #fff;
-        border: 3px solid #0B2545;
+        border: 3px solid #7FA6C4;
         border-radius: 4px;
         overflow: hidden;
     }
 
     /* ── HEADER ─────────────────────────────────────────────────────────── */
     .header {
-        background: #0B2545;
+        background: #7FA6C4;
         display: flex;
         align-items: stretch;
     }
@@ -41,19 +41,19 @@
         align-items: center;
         gap: 10px;
         padding: 10px 14px;
-        border-right: 2px solid #1A4070;
+        border-right: 2px solid #DDECF6;
         min-width: 0;
     }
     .logo-circle {
         width: 46px; height: 46px;
-        background: #1A4070;
+        background: #DDECF6;
         border-radius: 50%;
         display: flex; align-items: center; justify-content: center;
-        font-size: 17px; font-weight: 900; color: #FFD080;
+        font-size: 17px; font-weight: 900; color: #A87B24;
         flex-shrink: 0;
     }
     .school-name { font-size: 13.5px; font-weight: 900; color: #fff; }
-    .school-sub  { font-size: 9.5px; font-weight: 700; color: #8BAFD4; margin-top: 2px; }
+    .school-sub  { font-size: 9.5px; font-weight: 700; color: #F6FAFD; margin-top: 2px; }
     .header-right {
         flex: 1.3;                  /* ← proportionnel, plus compact */
         padding: 10px 13px;
@@ -65,35 +65,35 @@
     }
     .doc-title {
         font-size: 13px; font-weight: 900;
-        color: #FFD080; text-transform: uppercase; letter-spacing: 1px;
+        color: #A87B24; text-transform: uppercase; letter-spacing: 1px;
     }
-    .doc-sub  { font-size: 9.5px; font-weight: 700; color: #8BAFD4; }
+    .doc-sub  { font-size: 9.5px; font-weight: 700; color: #F6FAFD; }
     .doc-date { font-size: 10.5px; font-weight: 900; color: #fff; }
 
     /* ── BLOC ÉLÈVE ──────────────────────────────────────────────────────── */
     .student-block {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
-        border-bottom: 2.5px solid #0B2545;
+        border-bottom: 2.5px solid #7FA6C4;
     }
     .student-col {
         padding: 8px 13px;
-        border-right: 1.5px solid #C8D8EC;
+        border-right: 1.5px solid #E4EEF7;
     }
     .student-col:last-child { border-right: none; }
     .col-badge {
         font-size: 8px; font-weight: 900; text-transform: uppercase;
-        letter-spacing: 1.5px; color: #0B2545; background: #E8EFF8;
+        letter-spacing: 1.5px; color: #7FA6C4; background: #F4F9FD;
         padding: 2px 6px; border-radius: 2px;
         display: inline-block; margin-bottom: 5px;
     }
     .col-row { display: flex; gap: 6px; margin-bottom: 3px; align-items: baseline; }
-    .col-lbl { font-size: 9px; font-weight: 900; color: #4A5568; min-width: 70px; }
-    .col-val { font-size: 11px; font-weight: 900; color: #050E1F; }
+    .col-lbl { font-size: 9px; font-weight: 900; color: #64748B; min-width: 70px; }
+    .col-val { font-size: 11px; font-weight: 900; color: #334155; }
 
     /* ── SECTION TITRE ──────────────────────────────────────────────────── */
     .section-title {
-        background: #0B2545;
+        background: #7FA6C4;
         color: #fff;
         font-size: 11px;
         font-weight: 900;
@@ -109,18 +109,18 @@
         font-size: 10.5px;
     }
     .t-versements thead tr {
-        background: #E8EFF8;
+        background: #F4F9FD;
     }
     .t-versements thead th {
         padding: 6px 8px;
         text-align: left;
         font-size: 9.5px;
         font-weight: 900;
-        color: #0B2545;
+        color: #7FA6C4;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        border-bottom: 2px solid #0B2545;
-        border-right: 1px solid #C8D8EC;
+        border-bottom: 2px solid #7FA6C4;
+        border-right: 1px solid #E4EEF7;
     }
     .t-versements thead th:last-child { border-right: none; }
     .t-versements tbody tr { border-bottom: 1px solid #D8E4F0; }
@@ -128,7 +128,7 @@
     .t-versements tbody td {
         padding: 5px 8px;
         font-weight: 800;
-        color: #050E1F;
+        color: #334155;
         border-right: 1px solid #D8E4F0;
         vertical-align: middle;
     }
@@ -138,7 +138,7 @@
         font-weight: 900;
         font-family: 'Courier New', monospace;
         font-size: 11px;
-        color: #0B2545;
+        color: #7FA6C4;
     }
     .receipt-id {
         font-family: 'Courier New', monospace;
@@ -152,23 +152,23 @@
     .mode-badge {
         font-size: 9px; font-weight: 900;
         padding: 2px 6px; border-radius: 3px;
-        background: #E8EFF8; color: #0B2545;
+        background: #F4F9FD; color: #7FA6C4;
     }
     .t-versements tfoot tr {
-        background: #0B2545;
-        border-top: 2px solid #0B2545;
+        background: #7FA6C4;
+        border-top: 2px solid #7FA6C4;
     }
     .t-versements tfoot td {
         padding: 6px 8px;
         font-size: 11px;
         font-weight: 900;
         color: #fff;
-        border-right: 1px solid #1A4070;
+        border-right: 1px solid #DDECF6;
     }
     .t-versements tfoot td:last-child {
         border-right: none;
         text-align: right;
-        color: #FFD080;
+        color: #A87B24;
         font-size: 13px;
         font-family: 'Courier New', monospace;
     }
@@ -179,17 +179,17 @@
         border-collapse: collapse;
         font-size: 11px;
     }
-    .t-etat thead tr { background: #E8EFF8; }
+    .t-etat thead tr { background: #F4F9FD; }
     .t-etat thead th {
         padding: 6px 10px;
         text-align: left;
         font-size: 10px;
         font-weight: 900;
-        color: #0B2545;
+        color: #7FA6C4;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        border-bottom: 2px solid #0B2545;
-        border-right: 1px solid #C8D8EC;
+        border-bottom: 2px solid #7FA6C4;
+        border-right: 1px solid #E4EEF7;
     }
     .t-etat thead th:last-child { border-right: none; }
     .t-etat thead th.right,
@@ -200,7 +200,7 @@
     .t-etat tbody td {
         padding: 6px 10px;
         font-weight: 800;
-        color: #050E1F;
+        color: #334155;
         border-right: 1px solid #D8E4F0;
     }
     .t-etat tbody td.right {
@@ -209,18 +209,18 @@
         font-weight: 900;
     }
     .t-etat tbody td:last-child { border-right: none; }
-    .status-ok  { color: #1A6B2A; font-weight: 900; }
-    .status-due { color: #B22222; font-weight: 900; }
+    .status-ok  { color: #60906F; font-weight: 900; }
+    .status-due { color: #B76E79; font-weight: 900; }
     .t-etat tfoot tr {
-        background: #0B2545;
-        border-top: 2.5px solid #0B2545;
+        background: #7FA6C4;
+        border-top: 2.5px solid #7FA6C4;
     }
     .t-etat tfoot td {
         padding: 7px 10px;
         font-size: 11.5px;
         font-weight: 900;
         color: #fff;
-        border-right: 1px solid #1A4070;
+        border-right: 1px solid #DDECF6;
     }
     .t-etat tfoot td:last-child { border-right: none; }
     .t-etat tfoot td.right {
@@ -228,43 +228,43 @@
         font-size: 13px;
         text-align: right;
     }
-    .t-etat tfoot td.right.green { color: #80FFB0; }
-    .t-etat tfoot td.right.red   { color: #FFAAAA; }
-    .t-etat tfoot td.right.gold  { color: #FFD080; }
+    .t-etat tfoot td.right.green { color: #D6F2DF; }
+    .t-etat tfoot td.right.red   { color: #F5D5D9; }
+    .t-etat tfoot td.right.gold  { color: #A87B24; }
 
     /* ── FOOTER ──────────────────────────────────────────────────────────── */
     .footer-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        background: #0B2545;
+        background: #7FA6C4;
         padding: 7px 14px;
-        border-top: 2px solid #0B2545;
+        border-top: 2px solid #7FA6C4;
     }
     .footer-cashier {
-        font-size: 10px; font-weight: 900; color: #8BAFD4;
+        font-size: 10px; font-weight: 900; color: #F6FAFD;
     }
     .footer-cashier span { color: #fff; font-size: 11px; }
     .footer-sig {
-        font-size: 9.5px; font-weight: 800; color: #8BAFD4;
-        border-top: 1px solid #8BAFD4;
+        font-size: 9.5px; font-weight: 800; color: #F6FAFD;
+        border-top: 1px solid #F6FAFD;
         padding-top: 3px; min-width: 120px; text-align: center;
     }
     .nb-bar {
-        background: #FFF3CD;
-        border-top: 2.5px solid #C8A415;
+        background: #FFF9EC;
+        border-top: 2.5px solid #E4C978;
         padding: 6px 14px;
         text-align: center;
         font-size: 11.5px;
         font-weight: 900;
-        color: #5C3D00;
+        color: #7A5F20;
         letter-spacing: 0.5px;
     }
 
     /* ── BOUTON ──────────────────────────────────────────────────────────── */
     .print-btn { text-align:center; margin-bottom: 14px; }
     .print-btn button {
-        background: #0B2545; color: #fff; border: none;
+        background: #7FA6C4; color: #fff; border: none;
         padding: 10px 28px; border-radius: 8px; cursor: pointer;
         font-size: 13px; font-weight: 800;
     }
@@ -273,7 +273,7 @@
 <body>
 
 <div class="print-btn no-print">
-    <button onclick="window.print()">🖨 Imprimer le reçu global</button>
+    <button onclick="window.print()"><svg style="width:14px;height:14px;vertical-align:-2px;margin-right:6px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V4h12v5M6 18H5a2 2 0 01-2-2v-5a2 2 0 012-2h14a2 2 0 012 2v5a2 2 0 01-2 2h-1M7 14h10v6H7z"/></svg>Imprimer le reçu global</button>
 </div>
 
 <div class="page">
@@ -287,7 +287,7 @@
                             flex-shrink:0;">
                 {{-- <img src="{{ asset('storage/' . $school->logo) }}"
                      style="height:46px;width:46px;object-fit:contain;
-                            border-radius:50%;background:#1A4070;flex-shrink:0;"> --}}
+                            border-radius:50%;background:#DDECF6;flex-shrink:0;"> --}}
             @else
                 <div class="logo-circle">
                     {{ strtoupper(substr($school->short_name ?? 'C', 0, 1)) }}
@@ -425,7 +425,7 @@
     @endif
 
     {{-- ── ÉTAT GÉNÉRAL DES FRAIS ──────────────────────────────────────── --}}
-    <div class="section-title" style="margin-top:0; border-top:2px solid #1A4070;">
+    <div class="section-title" style="margin-top:0; border-top:2px solid #DDECF6;">
         État Général des Frais
     </div>
 
@@ -495,7 +495,7 @@
         <div class="footer-sig">Signature &amp; Cachet Établissement</div>
     </div>
     <div class="nb-bar">
-        ⚠&nbsp;&nbsp; NB : AUCUN FRAIS N'EST REMBOURSABLE !
+        <svg style="width:13px;height:13px;vertical-align:-2px;margin-right:5px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg> NB : AUCUN FRAIS N'EST REMBOURSABLE !
     </div>
 
 </div>

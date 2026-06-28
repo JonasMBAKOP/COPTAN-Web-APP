@@ -124,7 +124,7 @@
                                     <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:#1A5C2A;"></span>
                                     <span class="text-xs font-semibold text-gray-600 truncate">
                                         {{ $seq->label }}
-                                        <span class="text-green-600 font-bold ml-1">✓ {{ $count }}/{{ $classGroup->enrolled ?? 0 }}</span>
+                                        <span class="text-green-600 font-bold ml-1"><svg class="inline h-4 w-4 mr-1 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>{{ $count }}/{{ $classGroup->enrolled ?? 0 }}</span>
                                     </span>
                                 @elseif($isPartial)
                                     <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:#C8A415;"></span>

@@ -199,7 +199,7 @@
                         </p>
                     @else
                         <p class="text-sm font-semibold text-green-600">
-                            ✓ Toutes les séquences validées
+                            <svg class="inline h-4 w-4 mr-1 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Toutes les séquences validées
                         </p>
                     @endif
                 </div>

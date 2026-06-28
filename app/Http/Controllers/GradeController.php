@@ -12,8 +12,12 @@ use App\Models\Grade;
 use App\Models\GradeLock;
 use App\Models\Section;
 use App\Models\Sequence;
+use App\Models\SchoolAgreement;
+use App\Models\SchoolPhone;
+use App\Models\SchoolSetting;
 use App\Models\StudentEnrollment;
 use App\Models\TeacherAssignment;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -719,6 +723,164 @@ class GradeController extends Controller
             'subjects', 'displaySubjects', 'filterSubjectId',
             'allGrades', 'lock'
         ));
+    }
+
+    public function bordereau(ClassGroup $classGroup, Sequence $sequence)
+    {
+        $data = $this->buildBordereauData($classGroup, $sequence);
+        $data['school'] = SchoolSetting::instance();
+        $data['phones'] = SchoolPhone::orderByDesc('is_primary')->get();
+        $data['agreements'] = SchoolAgreement::orderBy('id')->get();
+        $data['forPdf'] = false;
+        $data['showCertificateTitle'] = false;
+
+        return view('grades.bordereau', $data);
+    }
+
+    public function bordereauPdf(ClassGroup $classGroup, Sequence $sequence)
+    {
+        $data = $this->buildBordereauData($classGroup, $sequence);
+        $data['school'] = SchoolSetting::instance();
+        $data['phones'] = SchoolPhone::orderByDesc('is_primary')->get();
+        $data['agreements'] = SchoolAgreement::orderBy('id')->get();
+        $data['forPdf'] = true;
+        $data['showCertificateTitle'] = false;
+
+        $filename = 'bordereau-' . str_replace(' ', '-', $classGroup->full_name)
+                  . '-' . str_replace(' ', '-', $sequence->label) . '.pdf';
+
+        $pdf = Pdf::loadView('grades.bordereau-pdf', $data)
+                  ->setPaper('a4', 'landscape');
+
+        return $pdf->stream($filename);
+    }
+
+    private function buildBordereauData(ClassGroup $classGroup, Sequence $sequence): array
+    {
+        $classGroup->load([
+            'level.section',
+            'academicYear',
+            'classSubjects' => fn($q) =>
+                $q->where('is_active', true)
+                  ->with('subject')
+                  ->orderBy('subject_id'),
+        ]);
+
+        $enrollments = StudentEnrollment::where([
+            'class_group_id'   => $classGroup->id,
+            'academic_year_id' => $classGroup->academic_year_id,
+            'status'           => 'active',
+        ])->with('student')
+          ->get()
+          ->sortBy(fn($enr) => $enr->student->last_name)
+          ->values();
+
+        $subjects = $classGroup->classSubjects;
+
+        $allGrades = Grade::whereIn(
+            'student_enrollment_id', $enrollments->pluck('id')
+        )->where('sequence_id', $sequence->id)
+         ->whereIn('class_subject_id', $subjects->pluck('id'))
+         ->get()
+         ->groupBy('student_enrollment_id')
+         ->map(fn($g) => $g->keyBy('class_subject_id'));
+
+        $studentAverages = $enrollments->mapWithKeys(function ($enr) use ($subjects, $allGrades) {
+            $grades = $allGrades->get($enr->id);
+            $totalPoints = 0;
+            $totalCoef = 0;
+
+            foreach ($subjects as $cs) {
+                $grade = $grades?->get($cs->id)?->grade;
+                if ($grade !== null) {
+                    $totalPoints += $grade * $cs->coefficient;
+                    $totalCoef += $cs->coefficient;
+                }
+            }
+
+            return [
+                $enr->id => [
+                    'average' => $totalCoef > 0 ? round($totalPoints / $totalCoef, 2) : null,
+                    'total_coef' => $totalCoef,
+                ],
+            ];
+        });
+
+        $rankOrder = $studentAverages
+            ->sortByDesc(fn($row) => $row['average'] ?? -1)
+            ->keys()
+            ->values();
+
+        $studentRanks = [];
+        foreach ($rankOrder as $index => $enrollmentId) {
+            $studentRanks[$enrollmentId] = $index + 1;
+        }
+
+        $enrollments = $enrollments->sortBy(fn($enr) => $studentRanks[$enr->id] ?? PHP_INT_MAX)
+                                   ->values();
+
+        $boys = $enrollments->filter(fn($enr) => strtoupper($enr->student->gender) === 'M')->count();
+        $girls = $enrollments->filter(fn($enr) => strtoupper($enr->student->gender) === 'F')->count();
+
+        $subjectSummaries = $subjects->mapWithKeys(function ($subject) use ($enrollments, $allGrades) {
+            $sum = 0;
+            $count = 0;
+            $passed = 0;
+            $passedBoys = 0;
+            $passedGirls = 0;
+            $boysGraded = 0;
+            $girlsGraded = 0;
+            $minGrade = null;
+            $maxGrade = null;
+
+            foreach ($enrollments as $enrollment) {
+                $grade = $allGrades->get($enrollment->id)?->get($subject->id)?->grade;
+                if ($grade === null) {
+                    continue;
+                }
+
+                $count++;
+                $sum += $grade;
+                if ($grade >= 10) {
+                    $passed++;
+                }
+
+                if (strtoupper($enrollment->student->gender) === 'M') {
+                    $boysGraded++;
+                    if ($grade >= 10) {
+                        $passedBoys++;
+                    }
+                } else {
+                    $girlsGraded++;
+                    if ($grade >= 10) {
+                        $passedGirls++;
+                    }
+                }
+
+                $minGrade = $minGrade === null ? $grade : min($minGrade, $grade);
+                $maxGrade = $maxGrade === null ? $grade : max($maxGrade, $grade);
+            }
+
+            return [
+                $subject->id => [
+                    'average' => $count > 0 ? round($sum / $count, 2) : null,
+                    'success_rate' => $count > 0 ? round($passed * 100 / $count, 2) : null,
+                    'success_rate_boys' => $boysGraded > 0 ? round($passedBoys * 100 / $boysGraded, 2) : null,
+                    'success_rate_girls' => $girlsGraded > 0 ? round($passedGirls * 100 / $girlsGraded, 2) : null,
+                    'min' => $minGrade,
+                    'max' => $maxGrade,
+                ],
+            ];
+        });
+
+        $totalCoefficient = $subjects->sum('coefficient');
+
+        return compact(
+            'classGroup', 'sequence', 'enrollments',
+            'subjects', 'allGrades', 'studentAverages',
+            'studentRanks', 'boys', 'girls',
+            'subjectSummaries', 'totalCoefficient'
+        );
     }
 
     // // ── VERROUILLER / DÉVERROUILLER ──────────────────────────────────────

@@ -96,7 +96,7 @@
                             <td class="px-4 py-3 text-sm text-gray-600">M. FOUDA</td>
                             <td class="px-4 py-3">
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-green-700" style="background-color: #D4EDDA;">
-                                    ✓ Fait
+                                    <svg class="inline h-4 w-4 mr-1 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Fait
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-center">

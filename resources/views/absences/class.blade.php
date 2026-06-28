@@ -174,9 +174,9 @@
                             </td>
                             <td class="px-4 py-3 text-center">
                                 @if($unjustH >= 30)
-                                <span class="text-xs font-bold text-red-600">🚨 Conseil</span>
+                                <span class="text-xs font-bold text-red-600"><svg class="inline h-4 w-4 mr-1 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Conseil</span>
                                 @elseif($unjustH >= 10)
-                                <span class="text-xs font-bold text-yellow-600">⚠️ Convocation</span>
+                                <span class="text-xs font-bold text-yellow-600"><svg class="inline h-4 w-4 mr-1 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Convocation</span>
                                 @else
                                 <span class="text-gray-300">—</span>
                                 @endif
@@ -244,10 +244,10 @@
                             <td class="px-4 py-3 text-center">
                                 @if($abs->is_justified)
                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-3xs font-bold"
-                                      style="background:rgba(26,92,42,0.1);color:#1A5C2A;">✓ Justifiée</span>
+                                      style="background:rgba(26,92,42,0.1);color:#1A5C2A;"><svg class="inline h-4 w-4 mr-1 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Justifiée</span>
                                 @else
                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-3xs font-bold bg-red-50 text-red-500">
-                                    ✗ Non justifiée
+                                    <svg class="inline h-4 w-4 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>Non justifiée
                                 </span>
                                 @endif
                             </td>

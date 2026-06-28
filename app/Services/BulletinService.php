@@ -146,7 +146,7 @@ class BulletinService
                         'average'            => $subjectAvg,
                         'total'              => $total,
                         'rank_in_subject'    => $subjectRanks[$key] ?? null,
-                        // ✅ On stocke le CODE court (CNA, CMA, CA, CBA, CTBA)
+                        // On stocke le CODE court (CNA, CMA, CA, CBA, CTBA)
                         // VARCHAR(20) est suffisant, pas de troncature possible
                         'appreciation'       => $subjectAppreciation?->code,
                     ]);

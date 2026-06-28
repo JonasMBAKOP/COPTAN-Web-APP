@@ -13,7 +13,7 @@
         <path stroke-linecap="round" stroke-linejoin="round"
               stroke-width="2" d="M9 5l7 7-7 7"/>
     </svg>
-    <span style="color:#1A3A6B;" class="font-medium">
+    <span style="color:#7FA6C4;" class="font-medium">
         {{ $classGroup->full_name }}
     </span>
 @endsection
@@ -27,11 +27,11 @@
         <div class="flex items-center gap-4">
             <div class="w-14 h-14 rounded-2xl flex items-center justify-center
                         text-white font-black text-xl flex-shrink-0"
-                 style="background-color:#1A3A6B;">
+                 style="background-color:#7FA6C4;">
                 {{ strtoupper(substr($classGroup->name, 0, 2)) }}
             </div>
             <div>
-                <p class="font-black text-lg" style="color:#1A3A6B;">
+                <p class="font-black text-lg" style="color:#7FA6C4;">
                     {{ $classGroup->full_name }}
                 </p>
                 <p class="text-sm text-gray-500">
@@ -46,7 +46,7 @@
         <div class="flex items-center gap-4">
             <div class="text-center">
                 <p class="text-xs text-gray-400">Attendu</p>
-                <p class="font-bold text-sm" style="color:#1A3A6B;">
+                <p class="font-bold text-sm" style="color:#7FA6C4;">
                     {{ number_format($totalDue) }}
                 </p>
             </div>
@@ -80,8 +80,8 @@
             <div class="h-full rounded-full transition-all"
                  style="width:{{ $globalRate }}%;
                         background-color:{{ $globalRate >= 80
-                            ? '#1A5C2A' : ($globalRate >= 50
-                            ? '#C8A415' : '#EF4444') }}">
+                            ? '#60906F' : ($globalRate >= 50
+                            ? '#D8B75F' : '#B76E79') }}">
             </div>
         </div>
     </div>
@@ -108,7 +108,7 @@
         @can('configure-fees')
         <a href="{{ route('finances.fees', $classGroup) }}"
            class="inline-block mt-1 text-xs font-medium hover:underline"
-           style="color:#E87722;">
+           style="color:#D9A273;">
             → Configurer maintenant
         </a>
         @endcan
@@ -214,8 +214,8 @@
                     ])->sum('amount_paid');
                     $instStatus = $instPaid <= 0 ? 'unpaid'
                         : ($instPaid >= $inst->amount ? 'paid' : 'partial');
-                    $icons = ['paid' => '✓', 'partial' => '◑', 'unpaid' => '—'];
-                    $colors = ['paid' => '#1A5C2A', 'partial' => '#C8A415',
+                    $icons = ['paid' => 'Payé', 'partial' => '◑', 'unpaid' => '—'];
+                    $colors = ['paid' => '#60906F', 'partial' => '#D8B75F',
                                'unpaid' => '#D1D5DB'];
                 @endphp
                 <td class="px-3 py-3.5 text-center">
@@ -260,7 +260,7 @@
                               transition-all hover:shadow-md"
                        style="background-color:
                            {{ $row['status'] === 'paid'
-                               ? '#6B7280' : '#1A5C2A' }};">
+                               ? '#6B7280' : '#60906F' }};">
                         @if($row['status'] === 'paid')
                         <svg class="w-3 h-3" fill="none" stroke="currentColor"
                              viewBox="0 0 24 24">
@@ -306,7 +306,7 @@
                 @else
                 <div class="w-9 h-9 rounded-full flex items-center justify-center
                             text-white text-xs font-bold flex-shrink-0"
-                     style="background-color:#1A3A6B;">
+                     style="background-color:#7FA6C4;">
                     {{ strtoupper(substr($enr->student->last_name, 0, 1))
                        . strtoupper(substr($enr->student->first_name, 0, 1)) }}
                 </div>
@@ -344,7 +344,7 @@
                class="flex items-center gap-1 px-3 py-1.5 rounded-lg
                       text-white text-xs font-medium"
                style="background-color:
-                   {{ $row['status'] === 'paid' ? '#6B7280' : '#1A5C2A' }};">
+                   {{ $row['status'] === 'paid' ? '#6B7280' : '#60906F' }};">
                 {{ $row['status'] === 'paid' ? 'Voir' : '+ Payer' }}
             </a>
         </div>

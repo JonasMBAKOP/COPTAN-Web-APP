@@ -156,8 +156,8 @@
                                         @click="matriculeMode = matriculeMode === 'auto' ? 'manual' : 'auto'"
                                         :class="matriculeMode === 'auto' ? 'border-[#9c4005] bg-orange-50' : 'border-gray-200 bg-white'"
                                         class="px-3 py-2 border rounded-lg text-xs font-semibold whitespace-nowrap transition-all">
-                                    <span x-show="matriculeMode === 'auto'">🔄 Généré</span>
-                                    <span x-show="matriculeMode === 'manual'">✋ Saisir</span>
+                                    <span x-show="matriculeMode === 'auto'">Généré</span>
+                                    <span x-show="matriculeMode === 'manual'">Saisir</span>
                                 </button>
                                 <template x-if="matriculeMode === 'auto'">
                                     <div class="flex-1 flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">

@@ -14,7 +14,7 @@
             <select name="year_id" onchange="this.form.submit()"
                     class="px-3 py-2 border border-gray-200 rounded-lg text-sm
                         focus:outline-none bg-white"
-                    style="color:#1A3A6B;">
+                    style="color:#7FA6C4;">
                 @foreach($years as $year)
                     <option value="{{ $year->id }}"
                             {{ $selectedYear?->id == $year->id ? 'selected' : '' }}>
@@ -35,7 +35,7 @@
         @foreach($classes->groupBy('level.section.name') as $sectionName => $sectionClasses)
             <div class="mb-6">
                 <h3 class="text-sm font-semibold uppercase tracking-wider mb-3"
-                    style="color:#1A3A6B;">
+                    style="color:#7FA6C4;">
                     {{ $sectionName }}
                 </h3>
 
@@ -50,7 +50,7 @@
                                     flex flex-col gap-3">
                             <div class="flex items-start justify-between gap-2">
                                 <div>
-                                    <p class="font-bold text-sm" style="color:#1A3A6B;">
+                                    <p class="font-bold text-sm" style="color:#7FA6C4;">
                                         {{ $class->full_name }}
                                     </p>
                                     <p class="text-xs text-gray-400">
@@ -76,7 +76,7 @@
                                     @foreach($fee->installments->sortBy('installment_number') as $inst)
                                         <div class="flex justify-between text-xs">
                                             <span class="text-gray-500">{{ $inst->label }}</span>
-                                            <span class="font-semibold" style="color:#1A3A6B;">
+                                            <span class="font-semibold" style="color:#7FA6C4;">
                                                 {{ number_format($inst->amount) }} FCFA
                                             </span>
                                         </div>
@@ -84,7 +84,7 @@
                                     <div class="pt-1 border-t border-gray-100 flex justify-between
                                                 text-xs font-bold">
                                         <span class="text-gray-600">Total / élève</span>
-                                        <span style="color:#1A5C2A;">
+                                        <span style="color:#60906F;">
                                             {{ number_format($total) }} FCFA
                                         </span>
                                     </div>
@@ -104,8 +104,8 @@
                                             {{ $fee
                                                 ? 'border-blue-200 text-blue-700 hover:bg-blue-50'
                                                 : 'text-white hover:shadow-md' }}"
-                                    style="{{ !$fee ? 'background-color:#1A5C2A;' : '' }}">
-                                        {{ $fee ? '✏ Modifier les frais' : '+ Configurer les frais' }}
+                                    style="{{ !$fee ? 'background-color:#60906F;' : '' }}">
+                                        {{ $fee ? '<svg class="inline h-4 w-4 mr-1 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Modifier les frais' : '+ Configurer les frais' }}
                                     </a>
                                 @else
                                     <span class="w-full py-2 rounded-lg text-center text-xs

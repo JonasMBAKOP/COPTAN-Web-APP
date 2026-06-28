@@ -108,6 +108,48 @@
         });
     </script>
 
+
+    @if(request()->routeIs('finances.*'))
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (prefersReduced) return;
+
+        const suffixPattern = /(FCFA|paiement\(s\)|paiements|reçu\(s\)|reçus|élève\(s\)|élèves|payeur\(s\)|débiteur\(s\))/i;
+        const parseNumber = (raw) => Number(String(raw).replace(/[\s,.]/g, '')) || 0;
+        const formatNumber = (value) => Math.round(value).toLocaleString('fr-FR');
+
+        function financeCountUp(node, match) {
+            const original = node.textContent;
+            const target = parseNumber(match[1]);
+            if (!target || target < 2) return;
+
+            const prefix = original.slice(0, match.index);
+            const suffix = original.slice(match.index + match[1].length);
+            const duration = 1050;
+            const start = performance.now();
+
+            const tick = (now) => {
+                const progress = Math.min((now - start) / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                node.textContent = prefix + formatNumber(target * eased) + suffix;
+                if (progress < 1) requestAnimationFrame(tick);
+                else node.textContent = original;
+            };
+            requestAnimationFrame(tick);
+        }
+
+        document.querySelectorAll('main *').forEach((el) => {
+            if (el.children.length || ['SCRIPT','STYLE','SVG','OPTION','INPUT','TEXTAREA','SELECT'].includes(el.tagName)) return;
+            const text = el.textContent.trim();
+            if (!suffixPattern.test(text)) return;
+            const match = text.match(/([0-9][0-9\s,.]*)/);
+            if (match) financeCountUp(el, match);
+        });
+    });
+    </script>
+    @endif
+
     @stack('scripts')
 
 </body>

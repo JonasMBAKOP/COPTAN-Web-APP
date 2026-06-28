@@ -40,7 +40,7 @@
             </div>
             <div class="flex-1">
                 <h3 class="font-bold text-blue-900 mb-1 text-lg">
-                    🔄 Renouvellement pour {{ $activeYear?->label }}
+                    Renouvellement pour {{ $activeYear?->label }}
                 </h3>
                 <div class="text-sm text-blue-800 space-y-2">
                     <p>
@@ -85,7 +85,7 @@
             </div>
             <div class="flex-1">
                 <h3 class="font-bold text-amber-900 mb-1 text-lg">
-                    ⚠️ Déjà inscrit(e) cette année
+                    <svg class="inline h-4 w-4 mr-1 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Déjà inscrit(e) cette année
                 </h3>
                 <div class="text-sm text-amber-800 space-y-2">
                     <p>
@@ -317,7 +317,7 @@
                                         text-center font-semibold text-sm text-gray-700
                                         peer-checked:border-blue-500 peer-checked:bg-blue-50
                                         transition-all">
-                                ✅ Nouveau / Promu(e)
+                                <svg class="inline h-4 w-4 mr-1 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Nouveau / Promu(e)
                             </div>
                         </label>
                         <label class="flex-1 relative">
@@ -328,7 +328,7 @@
                                         text-center font-semibold text-sm text-gray-700
                                         peer-checked:border-amber-500 peer-checked:bg-amber-50
                                         transition-all">
-                                🔄 Redoublant(e)
+                                Redoublant(e)
                             </div>
                         </label>
                     </div>

@@ -1,0 +1,1 @@
+\Illuminate\Session\Middleware\AuthenticateSession::class,

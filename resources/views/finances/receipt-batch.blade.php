@@ -16,8 +16,8 @@ body {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 10px;
     font-weight: 700;
-    color: #050E1F;
-    background: #e8edf2;
+    color: #334155;
+    background: #F7FAFC;
     padding: 10px;
 }
 
@@ -25,7 +25,7 @@ body {
  * UNE PAGE A4 PORTRAIT = DEUX REÇUS EMPILÉS
  * A4 portrait utile : 190mm × 277mm
  * Chaque reçu : ~190mm large × ~132mm haut  (forme paysage)
- * 2 reçus + gap 5mm = 132 + 5 + 132 = 269mm  ✓ (< 277mm)
+ * 2 reçus + gap 5mm = 132 + 5 + 132 = 269mm  OK (< 277mm)
  */
 
 /* ── CONTENEUR D'UNE PAGE (2 reçus empilés) ─────────────────────────── */
@@ -44,7 +44,7 @@ body {
 .receipt-card {
     width: 100%;
     background: #fff;
-    border: 2.5px solid #0B2545;
+    border: 2.5px solid #7FA6C4;
     border-radius: 3px;
     overflow: hidden;
     display: flex;
@@ -52,19 +52,19 @@ body {
 }
 .receipt-card.empty {
     height: 132mm;
-    border: 2px dashed #C8D8EC;
+    border: 2px dashed #E4EEF7;
     background: #f8fafc;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #C8D8EC;
+    color: #E4EEF7;
     font-size: 11px;
     font-style: italic;
 }
 
 /* ── HEADER ───────────────────────────────────────────────────────────── */
 .card-header {
-    background: #0B2545;
+    background: #7FA6C4;
     color: #fff;
     display: flex;
     align-items: stretch;
@@ -73,7 +73,7 @@ body {
 .card-header-left {
     flex: 3;
     padding: 7px 10px;
-    border-right: 2px solid #1A4070;
+    border-right: 2px solid #EDF6FC;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -81,14 +81,14 @@ body {
 }
 .logo-sm {
     width: 34px; height: 34px;
-    background: #1A4070;
+    background: #EDF6FC;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-size: 13px; font-weight: 900;
-    color: #FFD080; flex-shrink: 0;
+    color: #A87B24; flex-shrink: 0;
 }
 .school-nm { font-size: 10px; font-weight: 900; line-height: 1.3; }
-.school-sm { font-size: 8px; font-weight: 700; color: #8BAFD4; margin-top: 1px; }
+.school-sm { font-size: 8px; font-weight: 700; color: #F6FAFD; margin-top: 1px; }
 
 .card-header-right {
     flex: 1.3;
@@ -97,45 +97,45 @@ body {
     justify-content: center; gap: 3px;
     min-width: 0;
 }
-.card-title { font-size: 9.5px; font-weight: 900; color: #FFD080; text-transform: uppercase; }
+.card-title { font-size: 9.5px; font-weight: 900; color: #A87B24; text-transform: uppercase; }
 .card-num   { font-size: 9.5px; font-weight: 900; color: #fff; font-family: 'Courier New', monospace; }
-.card-year  { font-size: 8px; font-weight: 700; color: #8BAFD4; }
+.card-year  { font-size: 8px; font-weight: 700; color: #F6FAFD; }
 
 /* ── INFORMATIONS ÉLÈVE ──────────────────────────────────────────────── */
 .card-student {
     display: grid;
     grid-template-columns: 1fr 1fr;  /* ← 2 colonnes côte à côte */
-    border-bottom: 1.5px solid #0B2545;
+    border-bottom: 1.5px solid #7FA6C4;
     flex-shrink: 0;
 }
 .card-stu-col {
     padding: 6px 10px;
-    border-right: 1.5px solid #C8D8EC;
+    border-right: 1.5px solid #E4EEF7;
 }
 .card-stu-col:last-child { border-right: none; }
 
 .mini-badge {
     font-size: 7px; font-weight: 900; text-transform: uppercase;
-    letter-spacing: 1px; color: #0B2545; background: #E8EFF8;
+    letter-spacing: 1px; color: #7FA6C4; background: #F4F9FD;
     padding: 1px 5px; border-radius: 2px;
     display: inline-block; margin-bottom: 4px;
 }
 .mini-row  { display: flex; gap: 4px; margin-bottom: 2px; align-items: baseline; }
-.mini-lbl  { font-size: 7.5px; font-weight: 900; color: #4A5568; min-width: 60px; text-transform: uppercase; }
-.mini-val  { font-size: 9px; font-weight: 900; color: #050E1F; }
+.mini-lbl  { font-size: 7.5px; font-weight: 900; color: #64748B; min-width: 60px; text-transform: uppercase; }
+.mini-val  { font-size: 9px; font-weight: 900; color: #334155; }
 
 /* ── OBJET ────────────────────────────────────────────────────────────── */
 .card-object {
-    background: #E8EFF8; border-bottom: 1.5px solid #0B2545;
+    background: #F4F9FD; border-bottom: 1.5px solid #7FA6C4;
     padding: 5px 10px; display: flex;
     align-items: center; gap: 10px;
     flex-shrink: 0;
 }
-.obj-lbl { font-size: 7.5px; font-weight: 900; text-transform: uppercase; color: #4A5568; }
-.obj-val { font-size: 10.5px; font-weight: 900; color: #0B2545; text-transform: uppercase; }
+.obj-lbl { font-size: 7.5px; font-weight: 900; text-transform: uppercase; color: #64748B; }
+.obj-val { font-size: 10.5px; font-weight: 900; color: #7FA6C4; text-transform: uppercase; }
 .mode-sm {
     margin-left: auto;
-    background: #0B2545; color: #fff;
+    background: #7FA6C4; color: #fff;
     font-size: 8.5px; font-weight: 900;
     padding: 2px 8px; border-radius: 2px; text-transform: uppercase;
 }
@@ -146,39 +146,39 @@ body {
     display: flex; justify-content: space-between;
     align-items: center;
     padding: 5px 10px;
-    border-bottom: 1px solid #C8D8EC;
+    border-bottom: 1px solid #E4EEF7;
 }
 .amt-row:last-child { border-bottom: none; }
 .amt-lbl { font-size: 9px; font-weight: 800; color: #374151; }
 .amt-val {
     font-size: 11.5px; font-weight: 900;
     font-family: 'Courier New', monospace;
-    color: #0B2545;
+    color: #7FA6C4;
 }
-.amt-row.highlight { background: #0B2545; }
+.amt-row.highlight { background: #7FA6C4; }
 .amt-row.highlight .amt-lbl { color: #fff; font-size: 9px; }
 .amt-row.highlight .amt-lbl::before { content: '▶ '; }
-.amt-row.highlight .amt-val { color: #FFD080; font-size: 14px; }
+.amt-row.highlight .amt-val { color: #A87B24; font-size: 14px; }
 
 /* ── PIED DE CARTE ───────────────────────────────────────────────────── */
 .card-footer {
-    background: #0B2545;
+    background: #7FA6C4;
     padding: 5px 10px;
     display: flex; align-items: center;
     justify-content: space-between;
     flex-shrink: 0;
 }
-.foot-cashier { font-size: 8.5px; font-weight: 900; color: #8BAFD4; }
+.foot-cashier { font-size: 8.5px; font-weight: 900; color: #F6FAFD; }
 .foot-cashier span { color: #fff; }
 .foot-sig {
-    font-size: 8px; font-weight: 800; color: #8BAFD4;
-    border-top: 1px solid #8BAFD4; padding-top: 2px;
+    font-size: 8px; font-weight: 800; color: #F6FAFD;
+    border-top: 1px solid #F6FAFD; padding-top: 2px;
     min-width: 90px; text-align: center;
 }
 .card-nb {
-    background: #FFF3CD; border-top: 2px solid #C8A415;
+    background: #FFF9EC; border-top: 2px solid #E4C978;
     padding: 4px 10px; text-align: center;
-    font-size: 9px; font-weight: 900; color: #5C3D00;
+    font-size: 9px; font-weight: 900; color: #7A5A16;
     flex-shrink: 0;
 }
 
@@ -195,7 +195,7 @@ body {
 /* ── BOUTON IMPRIMER ─────────────────────────────────────────────────── */
 .print-btn { text-align: center; margin-bottom: 12px; }
 .print-btn button {
-    background: #0B2545; color: #fff; border: none;
+    background: #7FA6C4; color: #fff; border: none;
     padding: 10px 28px; border-radius: 8px;
     cursor: pointer; font-size: 13px; font-weight: 800;
 }
@@ -214,7 +214,7 @@ body {
         (2 reçus par page, empilés)
     </div>
     <button onclick="window.print()">
-        🖨 Imprimer {{ $receiptsData->count() }} reçu(s)
+        <svg style="width:14px;height:14px;vertical-align:-2px;margin-right:6px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V4h12v5M6 18H5a2 2 0 01-2-2v-5a2 2 0 012-2h14a2 2 0 012 2v5a2 2 0 01-2 2h-1M7 14h10v6H7z"/></svg>Imprimer {{ $receiptsData->count() }} reçu(s)
     </button>
 </div>
 
@@ -358,11 +358,11 @@ body {
             </div>
             <div class="amt-row">
                 <span class="amt-lbl"
-                      style="color:{{ $rem > 0 ? '#B22222' : '#1A6B2A' }};">
+                      style="color:{{ $rem > 0 ? '#B76E79' : '#60906F' }};">
                     Reste à payer après ce paiement
                 </span>
                 <span class="amt-val"
-                      style="color:{{ $rem > 0 ? '#B22222' : '#1A6B2A' }};">
+                      style="color:{{ $rem > 0 ? '#B76E79' : '#60906F' }};">
                     {{ number_format($rem, 0, ',', ' ') }} FCFA
                 </span>
             </div>
@@ -377,7 +377,7 @@ body {
             <div class="foot-sig">Signature &amp; Cachet</div>
         </div>
         <div class="card-nb">
-            ⚠&nbsp; NB : AUCUN FRAIS N'EST REMBOURSABLE !
+            <svg style="width:13px;height:13px;vertical-align:-2px;margin-right:5px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg> NB : AUCUN FRAIS N'EST REMBOURSABLE !
         </div>
 
     </div>{{-- fin receipt-card --}}

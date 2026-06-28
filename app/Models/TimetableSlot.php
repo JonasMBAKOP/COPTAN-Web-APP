@@ -11,6 +11,8 @@ class TimetableSlot extends Model
         'class_group_id',
         'class_subject_id',
         'day_of_week',
+        'period_index',
+        'periods_count',
         'start_time',
         'end_time',
         'room',
@@ -20,10 +22,13 @@ class TimetableSlot extends Model
     {
         return [
             'day_of_week' => 'integer',
+            'period_index' => 'integer',
+            'periods_count' => 'integer',
+            'start_time' => 'datetime:H:i',
+            'end_time' => 'datetime:H:i',
         ];
     }
 
-    // ── Relations ──────────────────────────────────────────────────────────
     public function academicYear()
     {
         return $this->belongsTo(AcademicYear::class);
@@ -39,10 +44,9 @@ class TimetableSlot extends Model
         return $this->belongsTo(ClassSubject::class);
     }
 
-    // ── Méthodes utilitaires ───────────────────────────────────────────────
     public function getDayNameAttribute(): string
     {
-        return match($this->day_of_week) {
+        return match ($this->day_of_week) {
             1 => 'Lundi',
             2 => 'Mardi',
             3 => 'Mercredi',
@@ -51,5 +55,10 @@ class TimetableSlot extends Model
             6 => 'Samedi',
             default => '?',
         };
+    }
+
+    public function getEndPeriodAttribute(): int
+    {
+        return (int) $this->period_index + (int) $this->periods_count - 1;
     }
 }

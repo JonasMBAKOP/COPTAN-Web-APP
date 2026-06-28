@@ -15,8 +15,11 @@
                 border-b border-white/10">
         <img src="{{ asset('images/logo.jpg') }}"
              alt="COPTAN"
+             class="w-10 h-10 flex-shrink-0">
+        {{-- <img src="{{ asset('images/logo.jpg') }}"
+             alt="COPTAN"
              class="w-10 h-10 object-contain rounded-full
-                    ring-2 ring-white/30 flex-shrink-0">
+                    ring-2 ring-white/30 flex-shrink-0"> --}}
         <div class="overflow-hidden">
             <p class="text-white font-bold text-sm leading-tight truncate">
                 COPTAN
@@ -79,8 +82,14 @@
         <x-sidebar-item
             icon="clock"
             label="Emploi du temps"
-            href="#"
-            :active="request()->routeIs('timetable.*')" />
+            href="{{ route('timetable.index') }}"
+            :active="request()->routeIs('timetable.index')" />
+
+        <x-sidebar-item 
+            icon="calendar" 
+            label="Mon emploi du temps"
+            href="{{ route('timetable.teacher') }}"
+            :active="request()->routeIs('timetable.teacher')" />
         @endcanany
 
         {{-- ── ÉLÈVES ────────────────────────────────────────────── --}}

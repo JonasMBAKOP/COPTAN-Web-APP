@@ -15,7 +15,7 @@
         <select name="year_id" onchange="this.form.submit()"
                 class="px-3 py-2 border border-gray-200 rounded-lg text-sm
                        focus:outline-none bg-white"
-                style="color:#1A3A6B;">
+                style="color:#7FA6C4;">
             @foreach($years as $year)
             <option value="{{ $year->id }}"
                     {{ $selectedYear?->id == $year->id ? 'selected' : '' }}>
@@ -50,7 +50,7 @@
         <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">
             Attendu
         </p>
-        <p class="text-xl font-black" style="color:#1A3A6B;">
+        <p class="text-xl font-black" style="color:#7FA6C4;">
             {{ number_format($stats['expected']) }}
             <span class="text-sm font-normal text-gray-400">FCFA</span>
         </p>
@@ -94,7 +94,7 @@
         </p>
         <p class="text-xl font-black"
            style="color:{{ $stats['rate'] >= 80
-               ? '#1A5C2A' : ($stats['rate'] >= 50 ? '#C8A415' : '#EF4444') }}">
+               ? '#60906F' : ($stats['rate'] >= 50 ? '#D8B75F' : '#B76E79') }}">
             {{ $stats['rate'] }}%
         </p>
     </div>
@@ -114,7 +114,7 @@
 @foreach($classes->groupBy('level.section.name') as $sectionName => $sectionClasses)
 <div class="mb-6">
     <h3 class="text-sm font-semibold uppercase tracking-wider mb-3"
-        style="color:#1A3A6B;">
+        style="color:#7FA6C4;">
         {{ $sectionName }}
     </h3>
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100
@@ -174,7 +174,7 @@
                             </p>
                             @if(!$fee)
                             <span class="text-xs text-amber-600">
-                                ⚠ Frais non configurés
+                                <svg class="inline h-4 w-4 mr-1 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Frais non configurés
                             </span>
                             @endif
                         </div>
@@ -218,9 +218,9 @@
                                 <div class="h-full rounded-full"
                                      style="width:{{ $rate }}%;
                                             background-color:
-                                            {{ $rate >= 80 ? '#1A5C2A'
-                                               : ($rate >= 50 ? '#C8A415'
-                                               : '#EF4444') }}">
+                                            {{ $rate >= 80 ? '#60906F'
+                                               : ($rate >= 50 ? '#D8B75F'
+                                               : '#B76E79') }}">
                                 </div>
                             </div>
                         </div>
@@ -296,7 +296,7 @@
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
     <div class="px-5 py-4 border-b border-gray-100 flex items-center
                 justify-between">
-        <h3 class="font-semibold text-sm" style="color:#1A3A6B;">
+        <h3 class="font-semibold text-sm" style="color:#7FA6C4;">
             Paiements récents
         </h3>
         <a href="{{ route('finances.payments') }}"
@@ -311,7 +311,7 @@
                 <div class="w-8 h-8 rounded-full flex items-center
                             justify-center text-white text-xs font-bold
                             flex-shrink-0"
-                     style="background-color:#1A3A6B;">
+                     style="background-color:#7FA6C4;">
                     {{ strtoupper(substr(
                         $p->studentEnrollment?->student?->last_name ?? '?', 0, 1))
                     }}

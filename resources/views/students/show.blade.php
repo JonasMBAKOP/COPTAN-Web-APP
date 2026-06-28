@@ -905,7 +905,7 @@
                             @csrf @method('PATCH')
                             @foreach([
                                 'transferred' => '→ Marquer transféré(e)',
-                                'withdrawn'   => '✗ Marquer retiré(e)',
+                                'withdrawn'   => 'Marquer retiré(e)',
                                 'excluded'    => '⊘ Marquer exclu(e)',
                             ] as $val => $lbl)
                             <button type="submit" name="status"

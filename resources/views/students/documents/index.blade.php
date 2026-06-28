@@ -92,7 +92,7 @@
             ['route' => 'students.documents.cards', 'icon' => 'card', 'title' => 'Cartes scolaires', 'desc' => '8 cartes par page A4 (portrait), format identité.', 'scope' => 'Classe, section ou établissement'],
             ['route' => 'students.documents.certificates', 'icon' => 'certificate', 'title' => 'Certificats de scolarité', 'desc' => 'Un certificat par élève, une page chacun.', 'scope' => 'Classe, section ou établissement'],
             ['route' => 'students.documents.information-sheets', 'icon' => 'form', 'title' => 'Fiches de renseignement', 'desc' => 'Une fiche complète par élève, avec champs bilingues.', 'scope' => 'Classe, section ou établissement'],
-            ['route' => 'students.documents.booklets', 'icon' => 'book', 'title' => 'Livrets scolaires', 'desc' => 'Structure matières/séquences (notes à venir).', 'scope' => 'Classe, section ou établissement'],
+            ['route' => 'students.documents.booklets', 'icon' => 'book', 'title' => 'Livrets scolaires', 'desc' => 'Structure matières/séquences (notes à venir).', 'scope' => 'Classe uniquement', 'class_only' => true],
             ['route' => 'students.documents.lists', 'icon' => 'list', 'title' => 'Listes des élèves', 'desc' => 'Par classe, section ou établissement entier.', 'scope' => 'Classe, section ou établissement'],
             ['route' => 'students.documents.enrollment-totals-report', 'icon' => 'chart', 'title' => 'Rapport des effectifs', 'desc' => 'Totaux F, G et T par section et pour tout l’établissement.', 'scope' => 'Section ou établissement', 'section_only' => true],
         ] as $doc)
@@ -152,8 +152,7 @@
                     @click="openPrint('{{ route($doc['route']) }}', {{ ($doc['section_only'] ?? false) ? 'true' : 'false' }}, {{ ($doc['class_only'] ?? false) ? 'true' : 'false' }})"
                     class="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-all mt-auto inline-flex items-center justify-center gap-2"
                     style="background-color:#1A3A6B;"
-                    :class="{ 'opacity-60 cursor-not-allowed': scope !== 'class' && {{ ($doc['class_only'] ?? false) ? 'true' : 'false' }} }"
-                    :disabled="scope !== 'class' && {{ ($doc['class_only'] ?? false) ? 'true' : 'false' }}">
+                    :class="{ 'opacity-60 cursor-not-allowed': scope !== 'class' && {{ ($doc['class_only'] ?? false) ? 'true' : 'false' }} }">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V4h12v5M6 18H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1M7 14h10v6H7z"/>
                 </svg>

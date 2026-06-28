@@ -7,7 +7,7 @@
 
 @if(!$activeYear)
 <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
-    <p class="text-amber-700 font-semibold">⚠ Aucune année scolaire active.</p>
+    <p class="text-amber-700 font-semibold"><svg class="inline h-4 w-4 mr-1 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Aucune année scolaire active.</p>
 </div>
 @else
 
@@ -15,7 +15,7 @@
 @if($errors->any())
 <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-5">
     <p class="text-sm font-bold text-red-700 mb-1">
-        ⚠ Le formulaire contient des erreurs :
+        <svg class="inline h-4 w-4 mr-1 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Le formulaire contient des erreurs :
     </p>
     <ul class="text-sm text-red-600 list-disc list-inside">
         @foreach($errors->all() as $error)
@@ -134,7 +134,7 @@
         {{-- Message d'aide dynamique --}}
         <p class="mt-3 text-xs text-amber-600 font-medium"
            x-show="classId && !periodSelected">
-            ⚠ Veuillez sélectionner
+            <svg class="inline h-4 w-4 mr-1 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Veuillez sélectionner
             <span x-text="type === 'sequentiel' ? 'une séquence' : 'un trimestre'"></span>
             avant de générer.
         </p>

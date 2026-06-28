@@ -12,8 +12,8 @@ body {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 11.5px;
     font-weight: 700;
-    color: #050E1F;
-    background: #f0f2f5;
+    color: #334155;
+    background: #F7FAFC;
     padding: 16px;
 }
 
@@ -21,14 +21,14 @@ body {
     max-width: 268mm;
     margin: 0 auto;
     background: #fff;
-    border: 3px solid #0B2545;
+    border: 3px solid #7FA6C4;
     border-radius: 4px;
     overflow: hidden;
 }
 
 /* ── HEADER ─ fix point 2 : header-right rapproché ───────────────── */
 .header {
-    background: #0B2545;
+    background: #7FA6C4;
     color: #fff;
     display: flex;
     align-items: stretch;
@@ -36,7 +36,7 @@ body {
 .header-school {
     flex: 3;                    /* ← flex proportionnel au lieu de flex:1 */
     padding: 10px 14px;
-    border-right: 2px solid #1A4070;
+    border-right: 2px solid #EDF6FC;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -48,12 +48,12 @@ body {
 }
 .header-school-placeholder {
     width: 44px; height: 44px;
-    background: #1A4070; border-radius: 50%;
+    background: #EDF6FC; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-size: 16px; font-weight: 900; color: #fff; flex-shrink: 0;
 }
 .school-name { font-size: 13px; font-weight: 900; line-height: 1.3; }
-.school-sub  { font-size: 9.5px; font-weight: 700; color: #8BAFD4; margin-top: 3px; }
+.school-sub  { font-size: 9.5px; font-weight: 700; color: #F6FAFD; margin-top: 3px; }
 
 .header-right {
     flex: 1.3;                  /* ← flex proportionnel, plus compact */
@@ -66,23 +66,23 @@ body {
 }
 .receipt-title {
     font-size: 12px; font-weight: 900;
-    letter-spacing: 0.8px; color: #FFD080; text-transform: uppercase;
+    letter-spacing: 0.8px; color: #A87B24; text-transform: uppercase;
 }
 .receipt-num {
     font-size: 11px; font-weight: 900;
     color: #fff; font-family: 'Courier New', monospace;
 }
-.receipt-date-head { font-size: 9.5px; font-weight: 700; color: #8BAFD4; }
+.receipt-date-head { font-size: 9.5px; font-weight: 700; color: #F6FAFD; }
 
 /* ── SECTION ÉTUDIANT ─ fix point 3 : student-right beaucoup rapproché */
 .student-section {
     display: flex;
-    border-bottom: 2px solid #0B2545;
+    border-bottom: 2px solid #7FA6C4;
 }
 .student-left {
     flex: 2.5;                  /* ← ratio plus équilibré */
     padding: 9px 14px;
-    border-right: 2px solid #0B2545;
+    border-right: 2px solid #7FA6C4;
     min-width: 0;
 }
 .student-right {
@@ -93,7 +93,7 @@ body {
 .section-label {
     font-size: 8.5px; font-weight: 900;
     text-transform: uppercase; letter-spacing: 1.5px;
-    color: #0B2545; background: #E8EFF8;
+    color: #7FA6C4; background: #F4F9FD;
     padding: 2px 6px; border-radius: 2px;
     display: inline-block; margin-bottom: 6px;
 }
@@ -103,65 +103,65 @@ body {
 }
 .info-label {
     font-size: 9px; font-weight: 900;
-    color: #4A5568; text-transform: uppercase;
+    color: #64748B; text-transform: uppercase;
     white-space: nowrap; min-width: 75px;
 }
-.info-value { font-size: 11px; font-weight: 900; color: #050E1F; }
+.info-value { font-size: 11px; font-weight: 900; color: #334155; }
 
 /* ── BANDE OBJET ──────────────────────────────────────────────────── */
 .object-bar {
-    background: #E8EFF8; border-bottom: 2px solid #0B2545;
+    background: #F4F9FD; border-bottom: 2px solid #7FA6C4;
     padding: 7px 14px; display: flex; align-items: center; gap: 12px;
 }
-.object-label  { font-size: 9px; font-weight: 900; text-transform: uppercase; color: #4A5568; }
-.object-value  { font-size: 12px; font-weight: 900; color: #0B2545; text-transform: uppercase; }
+.object-label  { font-size: 9px; font-weight: 900; text-transform: uppercase; color: #64748B; }
+.object-value  { font-size: 12px; font-weight: 900; color: #7FA6C4; text-transform: uppercase; }
 .mode-pill {
-    margin-left: auto; background: #0B2545; color: #fff;
+    margin-left: auto; background: #7FA6C4; color: #fff;
     font-size: 10px; font-weight: 900; padding: 3px 10px;
     border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px;
 }
 
 /* ── MONTANTS ──────────────────────────────────────────────────────── */
 .amounts-table { width: 100%; border-collapse: collapse; }
-.amounts-table tr { border-bottom: 1.5px solid #C8D8EC; }
+.amounts-table tr { border-bottom: 1.5px solid #E4EEF7; }
 .amounts-table tr:last-child { border-bottom: none; }
 .amounts-table td { padding: 7px 14px; font-size: 11px; font-weight: 800; }
 .amounts-table td:last-child {
     text-align: right; font-size: 13px; font-weight: 900;
     font-family: 'Courier New', monospace;
 }
-.row-total td:last-child { color: #0B2545; }
-.row-paid { background: #0B2545; }
+.row-total td:last-child { color: #7FA6C4; }
+.row-paid { background: #7FA6C4; }
 .row-paid td { color: #fff !important; }
 .row-paid td:first-child::before { content: '▶ '; font-size: 9px; }
-.row-paid td:last-child { color: #FFD080 !important; font-size: 15px !important; }
+.row-paid td:last-child { color: #A87B24 !important; font-size: 15px !important; }
 .row-remaining td:last-child {
-    color: {{ $totalRemaining > 0 ? '#B22222' : '#1A6B2A' }} !important;
+    color: {{ $totalRemaining > 0 ? '#B76E79' : '#60906F' }} !important;
 }
 
 /* ── FOOTER ───────────────────────────────────────────────────────── */
 .footer-bar {
-    background: #0B2545; padding: 7px 14px;
+    background: #7FA6C4; padding: 7px 14px;
     display: flex; align-items: center;
-    justify-content: space-between; border-top: 2px solid #0B2545;
+    justify-content: space-between; border-top: 2px solid #7FA6C4;
 }
-.footer-cashier { font-size: 10px; font-weight: 900; color: #8BAFD4; }
+.footer-cashier { font-size: 10px; font-weight: 900; color: #F6FAFD; }
 .footer-cashier span { color: #fff; font-size: 11px; }
 .footer-signature {
-    font-size: 9.5px; font-weight: 800; color: #8BAFD4;
-    border-top: 1px solid #8BAFD4; padding-top: 2px;
+    font-size: 9.5px; font-weight: 800; color: #F6FAFD;
+    border-top: 1px solid #F6FAFD; padding-top: 2px;
     min-width: 120px; text-align: center;
 }
 .nb-bar {
-    background: #FFF3CD; border-top: 2.5px solid #C8A415;
+    background: #FFF9EC; border-top: 2.5px solid #E4C978;
     padding: 6px 14px; text-align: center;
-    font-size: 11.5px; font-weight: 900; color: #5C3D00; letter-spacing: 0.5px;
+    font-size: 11.5px; font-weight: 900; color: #7A5A16; letter-spacing: 0.5px;
 }
 
 /* ── BOUTON ───────────────────────────────────────────────────────── */
 .print-btn { display:block; text-align:center; margin-bottom:14px; }
 .print-btn button {
-    background: #0B2545; color: #fff; border: none;
+    background: #7FA6C4; color: #fff; border: none;
     padding: 10px 28px; border-radius: 8px; cursor: pointer;
     font-size: 13px; font-weight: 800;
 }
@@ -170,7 +170,7 @@ body {
 <body>
 
 <div class="print-btn no-print">
-    <button onclick="window.print()">🖨 Imprimer le reçu</button>
+    <button onclick="window.print()"><svg style="width:14px;height:14px;vertical-align:-2px;margin-right:6px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V4h12v5M6 18H5a2 2 0 01-2-2v-5a2 2 0 012-2h14a2 2 0 012 2v5a2 2 0 01-2 2h-1M7 14h10v6H7z"/></svg>Imprimer le reçu</button>
 </div>
 
 <div class="receipt">
@@ -311,7 +311,7 @@ body {
         <div class="footer-signature">Signature &amp; Cachet</div>
     </div>
     <div class="nb-bar">
-        ⚠&nbsp; NB : AUCUN FRAIS N'EST REMBOURSABLE !
+        <svg style="width:13px;height:13px;vertical-align:-2px;margin-right:5px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg> NB : AUCUN FRAIS N'EST REMBOURSABLE !
     </div>
 
 </div>

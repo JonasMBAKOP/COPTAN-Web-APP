@@ -288,10 +288,10 @@
     </h3>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         @foreach([
-            ['label' => 'Classes & Sections', 'icon' => '🏫'],
-            ['label' => 'Élèves & Inscriptions', 'icon' => '👨‍🎓'],
-            ['label' => 'Notes & Bulletins', 'icon' => '📝'],
-            ['label' => 'Finances', 'icon' => '💰'],
+            ['label' => 'Classes & Sections', 'icon' => 'classes'],
+            ['label' => 'Élèves & Inscriptions', 'icon' => 'students'],
+            ['label' => 'Notes & Bulletins', 'icon' => 'grades'],
+            ['label' => 'Finances', 'icon' => 'finances'],
         ] as $item)
         <div class="flex items-center gap-2 p-3 rounded-xl bg-gray-50
                     border border-dashed border-gray-200">

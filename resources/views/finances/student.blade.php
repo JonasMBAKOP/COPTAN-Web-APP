@@ -12,7 +12,7 @@
         <path stroke-linecap="round" stroke-linejoin="round"
               stroke-width="2" d="M9 5l7 7-7 7"/>
     </svg>
-    <span style="color:#1A3A6B;" class="font-medium">
+    <span style="color:#7FA6C4;" class="font-medium">
         {{ $enrollment->student->full_name }}
     </span>
 @endsection
@@ -30,13 +30,13 @@
         @else
         <div class="w-14 h-14 rounded-full flex items-center justify-center
                     text-white font-black text-xl flex-shrink-0"
-             style="background-color:#1A3A6B;">
+             style="background-color:#7FA6C4;">
             {{ strtoupper(substr($enrollment->student->last_name, 0, 1))
                . strtoupper(substr($enrollment->student->first_name, 0, 1)) }}
         </div>
         @endif
         <div>
-            <p class="font-black text-lg" style="color:#1A3A6B;">
+            <p class="font-black text-lg" style="color:#7FA6C4;">
                 {{ $enrollment->student->full_name }}
             </p>
             <p class="text-sm text-gray-500">
@@ -50,7 +50,7 @@
     <div class="flex items-center gap-4">
         <div class="text-center px-4">
             <p class="text-xs text-gray-400">Total dû</p>
-            <p class="font-bold" style="color:#1A3A6B;">
+            <p class="font-bold" style="color:#7FA6C4;">
                 {{ number_format($totalDue) }} FCFA
             </p>
         </div>
@@ -71,7 +71,7 @@
             target="_blank"
             class="flex items-center gap-2 px-4 py-2 rounded-lg text-white
                     text-sm font-bold transition-all hover:shadow-md"
-            style="background-color:#0B2545;">
+            style="background-color:#7FA6C4;">
             <svg class="w-4 h-4" fill="none" stroke="currentColor"
                 viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -86,12 +86,12 @@
 @if(!$feeStructure)
 <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-5">
     <p class="text-sm text-amber-700 font-medium">
-        ⚠ Aucune structure de frais n'est configurée pour cette classe.
+        <svg class="inline h-4 w-4 mr-1 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Aucune structure de frais n'est configurée pour cette classe.
     </p>
     @can('configure-fees')
     <a href="{{ route('finances.fees', $enrollment->classGroup) }}"
        class="inline-block mt-2 text-sm font-medium hover:underline"
-       style="color:#E87722;">
+       style="color:#D9A273;">
         → Configurer les frais de {{ $enrollment->classGroup->full_name }}
     </a>
     @endcan
@@ -114,11 +114,11 @@
 
             $statusConf = [
                 'paid'    => ['bg' => '#D1FAE5', 'text' => '#065F46',
-                              'label' => '✓ Soldée'],
+                              'label' => 'Soldée'],
                 'partial' => ['bg' => '#FEF3C7', 'text' => '#92400E',
                               'label' => '◑ Partielle'],
                 'unpaid'  => ['bg' => '#FEE2E2', 'text' => '#991B1B',
-                              'label' => '✗ Non payée'],
+                              'label' => 'Non payée'],
             ];
             $sc = $statusConf[$status];
         @endphp
@@ -146,7 +146,7 @@
                 </div>
                 <div class="text-right flex-shrink-0">
                     <p class="text-sm text-gray-400">Montant</p>
-                    <p class="font-bold text-lg" style="color:#1A3A6B;">
+                    <p class="font-bold text-lg" style="color:#7FA6C4;">
                         {{ number_format($inst->amount) }}
                         <span class="text-xs font-normal text-gray-400">FCFA</span>
                     </p>
@@ -163,8 +163,8 @@
                     <div class="h-full rounded-full transition-all"
                          style="width:{{ $pct }}%;
                                 background-color:{{ $status === 'paid'
-                                    ? '#1A5C2A' : ($status === 'partial'
-                                    ? '#C8A415' : '#EF4444') }}">
+                                    ? '#60906F' : ($status === 'partial'
+                                    ? '#D8B75F' : '#B76E79') }}">
                     </div>
                 </div>
             </div>
@@ -215,7 +215,7 @@
                 <button type="submit"
                         class="px-4 py-2 rounded-lg text-white text-sm
                                font-semibold whitespace-nowrap"
-                        style="background-color:#1A5C2A;">
+                        style="background-color:#60906F;">
                     Enregistrer
                 </button>
             </form>
@@ -243,7 +243,7 @@
             <div class="space-y-3">
                 <div class="flex justify-between text-sm">
                     <span class="text-gray-500">Total dû</span>
-                    <span class="font-semibold" style="color:#1A3A6B;">
+                    <span class="font-semibold" style="color:#7FA6C4;">
                         {{ number_format($totalDue) }} FCFA
                     </span>
                 </div>
@@ -270,8 +270,8 @@
                         <div class="h-full rounded-full"
                              style="width:{{ $globalPct }}%;
                                     background-color:{{ $globalPct >= 100
-                                        ? '#1A5C2A' : ($globalPct >= 50
-                                        ? '#C8A415' : '#EF4444') }}">
+                                        ? '#60906F' : ($globalPct >= 50
+                                        ? '#D8B75F' : '#B76E79') }}">
                         </div>
                     </div>
                 </div>
@@ -317,7 +317,7 @@
                             <a href="{{ route('finances.receipt', $p) }}"
                                target="_blank"
                                class="text-xs hover:underline"
-                               style="color:#1A3A6B;">
+                               style="color:#7FA6C4;">
                                 #{{ $p->receipt_number }}
                             </a>
                         </div>

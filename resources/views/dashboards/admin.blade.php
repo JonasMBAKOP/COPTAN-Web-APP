@@ -90,7 +90,7 @@
 {{-- Message de bienvenue --}}
 <div class="mt-6 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
     <h2 class="text-lg font-semibold mb-1" style="color: #1A3A6B;">
-        Bienvenue, {{ auth()->user()->name }} 👋
+        Bienvenue, {{ auth()->user()->name }} 
     </h2>
     <p class="text-gray-500 text-sm">
         Les modules fonctionnels seront disponibles prochainement.

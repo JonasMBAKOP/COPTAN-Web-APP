@@ -258,7 +258,7 @@
     <div class="flex items-center justify-between mb-6">
         <div>
             <h3 class="text-lg font-bold" style="color: #1A3A6B;">
-                📋 Bulletins — Avancement Trimestre 2
+                Bulletins — Avancement Trimestre 2
             </h3>
         </div>
         <p class="text-xs text-gray-500">Mise à jour: Il y a 10 min</p>

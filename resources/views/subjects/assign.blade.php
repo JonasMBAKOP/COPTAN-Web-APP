@@ -261,10 +261,10 @@
                             <label class="block text-xs text-gray-400 mb-1 sm:hidden">
                                 Coefficient
                             </label>
-                            <input type="number"
+                            <input type="text" inputmode="decimal"
                                 name="subjects[{{ $cs->subject_id }}][coefficient]"
                                 value="{{ $cs->coefficient }}"
-                                step="0.5" min="1" max="9"
+                                pattern="[0-9]+([.,][0-9]+)?"
                                 @input="updateTotals()"
                                 class="w-full px-2 py-2 border border-gray-200
                                         rounded-lg text-sm text-center font-semibold
@@ -417,7 +417,7 @@
                         <label class="block text-xs font-medium text-gray-600 mb-1">
                             Coef.
                         </label>
-                        <input type="number" id="newCoef" value="2" min="1" max="9"
+                        <input type="text" inputmode="decimal" id="newCoef" value="2" pattern="[0-9]+([.,][0-9]+)?"
                             class="w-full px-3 py-2.5 border border-gray-200
                                     rounded-lg text-sm text-center focus:outline-none">
                     </div>
@@ -551,7 +551,7 @@
                     <label class="block text-xs font-medium text-gray-600 mb-1">
                         Coefficient
                     </label>
-                    <input type="number" id="newCoef" value="2" min="1" max="9"
+                    <input type="text" inputmode="decimal" id="newCoef" value="2" pattern="[0-9]+([.,][0-9]+)?"
                            class="w-full px-3 py-2 border border-gray-200
                                   rounded-lg text-sm text-center focus:outline-none">
                 </div>
@@ -711,10 +711,10 @@ function assignManager(initCoef, initHours) {
             let coef = 0, hours = 0;
             document.querySelectorAll(
                 'input[name$="[coefficient]"]'
-            ).forEach(i => coef  += parseFloat(i.value) || 0);
+            ).forEach(i => coef  += parseFloat(String(i.value).replace(',', '.')) || 0);
             document.querySelectorAll(
                 'input[name$="[hours_per_week]"]'
-            ).forEach(i => hours += parseFloat(i.value) || 0);
+            ).forEach(i => hours += parseFloat(String(i.value).replace(',', '.')) || 0);
             this.totalCoef  = Math.round(coef * 10) / 10;
             this.totalHours = Math.round(hours * 10) / 10;
         }
@@ -776,7 +776,7 @@ function getTeacherOptions() {
 
 function confirmAddSubject() {
     const sel   = document.getElementById('newSubjectSelect');
-    const coef  = document.getElementById('newCoef').value  || 2;
+    const coef  = String(document.getElementById('newCoef').value || 2).replace(',', '.');
     const hours = document.getElementById('newHours').value || '';
 
     if (!sel.value) { alert('Sélectionnez une matière.'); return; }
@@ -850,8 +850,8 @@ function confirmAddSubject() {
                     <label class="block text-xs text-gray-400 mb-1 sm:hidden">
                         Coefficient
                     </label>
-                    <input type="number" name="subjects[${id}][coefficient]"
-                           value="${coef}" step="0.5" min="1" max="9"
+                    <input type="text" inputmode="decimal" name="subjects[${id}][coefficient]"
+                           value="${coef}" pattern="[0-9]+([.,][0-9]+)?"
                            class="w-full px-2 py-2 border border-gray-200
                                   rounded-lg text-sm text-center font-semibold
                                   focus:outline-none" style="color:#1A3A6B;">
@@ -978,7 +978,7 @@ function confirmAddSubject() {
 //                     </td>
 //                     <td class="px-3 py-4 text-center">
 //                         <input type="number" name="subjects[${id}][coefficient]"
-//                                value="${coef}" min="1" max="9"
+//                                value="${coef}" step="0.5" min="0.5" max="9"
 //                                class="w-14 px-2 py-1.5 border border-gray-200
 //                                       rounded-lg text-sm text-center font-semibold
 //                                       focus:outline-none"
@@ -1047,7 +1047,7 @@ function confirmAddSubject() {
 //                 <div>
 //                     <label class="text-xs text-gray-400">Coefficient</label>
 //                     <input type="number" name="subjects[${id}][coefficient]"
-//                            value="${coef}" min="1" max="9"
+//                            value="${coef}" step="0.5" min="0.5" max="9"
 //                            class="w-full px-3 py-2 border border-gray-200
 //                                   rounded-lg text-sm text-center focus:outline-none">
 //                     <input type="hidden" name="subjects[${id}][subject_id]"

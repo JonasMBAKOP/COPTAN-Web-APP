@@ -186,7 +186,7 @@ class AcademicYearController extends Controller
     // }
     public function edit(AcademicYear $academicYear)
     {
-        // ⛔ Année clôturée = non modifiable
+        // Année clôturée = non modifiable
         if ($academicYear->isClosed()) {
             return redirect()
                 ->route('academic-years.show', $academicYear)
@@ -201,7 +201,7 @@ class AcademicYearController extends Controller
     // ── ENREGISTREMENT UNIFIÉ (libellé + dates année + dates séquences) ───
     public function updateAll(Request $request, AcademicYear $academicYear)
     {
-        // ⛔ Protection clôture
+        // Protection clôture
         if ($academicYear->isClosed()) {
             return back()->with('error',
                 'Cette année est clôturée et ne peut plus être modifiée.');
@@ -366,7 +366,7 @@ class AcademicYearController extends Controller
     // ── VERROUILLAGE GLOBAL D'UNE SÉQUENCE ───────────────────────────────
     public function toggleSequenceLock(Sequence $sequence)
     {
-        // ⛔ Protection clôture
+        // Protection clôture
         if ($sequence->academicYear->isClosed()) {
             return back()->with('error',
                 'Cette année est clôturée. Impossible de modifier les verrous.');

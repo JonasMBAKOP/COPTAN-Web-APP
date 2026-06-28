@@ -147,7 +147,7 @@
                     <div>
                         <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Parents convoqués</p>
                         <p class="text-sm font-bold {{ $incident->parent_convoked ? 'text-green-600' : 'text-gray-400' }}">
-                            {{ $incident->parent_convoked ? '✓ Oui' : 'Non' }}
+                            {{ $incident->parent_convoked ? 'Oui' : 'Non' }}
                         </p>
                     </div>
                     <div>

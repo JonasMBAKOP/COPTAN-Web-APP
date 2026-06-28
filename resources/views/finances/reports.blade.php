@@ -48,7 +48,7 @@
                                type-btn {{ $type === $val ? 'active' : '' }}"
                         data-type="{{ $val }}"
                         style="{{ $type === $val
-                            ? 'background:#1A3A6B;color:#fff;'
+                            ? 'background:#7FA6C4;color:#fff;'
                             : 'background:white;color:#6B7280;' }}">
                     {{ $lbl }}
                 </button>
@@ -66,7 +66,7 @@
             <select name="year_id"
                     class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm
                            focus:outline-none bg-white font-medium"
-                    style="color:#1A3A6B;">
+                    style="color:#7FA6C4;">
                 @foreach($years as $yr)
                 <option value="{{ $yr->id }}"
                         {{ $selectedYear?->id == $yr->id ? 'selected' : '' }}>
@@ -85,7 +85,7 @@
             <select name="month"
                     class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm
                            focus:outline-none bg-white font-medium"
-                    style="color:#1A3A6B;">
+                    style="color:#7FA6C4;">
                 @foreach([
                     1=>'Janvier', 2=>'Février', 3=>'Mars', 4=>'Avril',
                     5=>'Mai', 6=>'Juin', 7=>'Juillet', 8=>'Août',
@@ -109,7 +109,7 @@
             <select name="who"
                     class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm
                            focus:outline-none bg-white font-medium"
-                    style="color:#1A3A6B;">
+                    style="color:#7FA6C4;">
                 <option value="global"  {{ $whoFilter === 'global'  ? 'selected' : '' }}>
                     Global (tous)
                 </option>
@@ -131,7 +131,7 @@
                     class="flex items-center gap-2 px-5 py-2.5 rounded-xl
                            text-white text-sm font-bold transition-all
                            hover:shadow-md"
-                    style="background-color:#1A3A6B;">
+                    style="background-color:#7FA6C4;">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor"
                      viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -150,7 +150,7 @@
                target="_blank"
                class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm
                       font-bold border-2 transition-all hover:shadow-md"
-               style="border-color:#E87722; color:#E87722;">
+               style="border-color:#D9A273; color:#D9A273;">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor"
                      viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -170,7 +170,7 @@
 {{-- ════════════════════════════════════════════════════════════════════ --}}
 <div class="flex items-center justify-between mb-5">
     <div>
-        <h3 class="font-black text-base" style="color:#1A3A6B;">
+        <h3 class="font-black text-base" style="color:#7FA6C4;">
             Rapport
             {{ $type === 'mensuel' ? 'Mensuel' : 'Annuel' }}
             @if($type === 'mensuel')
@@ -202,7 +202,7 @@
         <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
             Total collecté
         </p>
-        <p class="text-2xl font-black" style="color:#1A3A6B;">
+        <p class="text-2xl font-black" style="color:#7FA6C4;">
             {{ number_format($totalCollected) }}
             <span class="text-sm font-normal text-gray-400">FCFA</span>
         </p>
@@ -225,7 +225,7 @@
             Espèces
         </p>
         @php $cash = $allPayments->where('payment_method','cash')->sum('amount_paid'); @endphp
-        <p class="text-2xl font-black" style="color:#C8A415;">
+        <p class="text-2xl font-black" style="color:#D8B75F;">
             {{ number_format($cash) }}
             <span class="text-sm font-normal text-gray-400">FCFA</span>
         </p>
@@ -237,7 +237,7 @@
             Paiements Mobile
         </p>
         @php $mm = $allPayments->whereIn('payment_method',['orange_money','mtn_momo'])->sum('amount_paid'); @endphp
-        <p class="text-2xl font-black" style="color:#7C3AED;">
+        <p class="text-2xl font-black" style="color:#B8A6D9;">
             {{ number_format($mm) }}
             <span class="text-sm font-normal text-gray-400">FCFA</span>
         </p>
@@ -250,7 +250,7 @@
     {{-- ── Par tranche ───────────────────────────────────────────────── --}}
     <div class="r-card bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <h3 class="font-black text-sm mb-4 pb-2 border-b border-gray-100"
-            style="color:#1A3A6B;">
+            style="color:#7FA6C4;">
             Par tranche de paiement
         </h3>
         @php $maxInst = $byInstallment->max('total') ?: 1; @endphp
@@ -259,7 +259,7 @@
             <div class="flex justify-between text-sm mb-1">
                 <span class="font-semibold text-gray-700">{{ $inst['label'] }}</span>
                 <div class="text-right">
-                    <span class="font-black" style="color:#1A3A6B;">
+                    <span class="font-black" style="color:#7FA6C4;">
                         {{ number_format($inst['total']) }} FCFA
                     </span>
                     <span class="text-xs text-gray-400 ml-1.5">
@@ -270,7 +270,7 @@
             <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div class="bar-h h-full rounded-full"
                      style="--w:{{ round(($inst['total']/$maxInst)*100) }}%;
-                            background:linear-gradient(to right,#1A3A6B,#2D6FD4);
+                            background:linear-gradient(to right,#7FA6C4,#A9CBE4);
                             width:0; animation-delay:{{ $loop->index * 100 }}ms;">
                 </div>
             </div>
@@ -283,12 +283,12 @@
     {{-- ── Par mode de paiement ─────────────────────────────────────── --}}
     <div class="r-card bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <h3 class="font-black text-sm mb-4 pb-2 border-b border-gray-100"
-            style="color:#1A3A6B;">
+            style="color:#7FA6C4;">
             Par mode de paiement
         </h3>
         @php
             $maxMethod  = $byMethod->max('total') ?: 1;
-            $mColors    = ['#E87722','#7C3AED','#1A5C2A','#1A3A6B','#6B7280'];
+            $mColors    = ['#D9A273','#B8A6D9','#60906F','#7FA6C4','#6B7280'];
         @endphp
         @forelse($byMethod as $i => $m)
         <div class="mb-4 last:mb-0">
@@ -324,7 +324,7 @@
 <div class="r-card bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5">
     <div class="flex flex-wrap items-start justify-between gap-3 mb-5 pb-2 border-b border-gray-100">
         <div>
-            <h3 class="font-black text-sm" style="color:#1A3A6B;">
+            <h3 class="font-black text-sm" style="color:#7FA6C4;">
                 Évolution mensuelle — {{ $selectedYear?->label }}
             </h3>
             @if($selectedYear)
@@ -340,7 +340,7 @@
         @endphp
         <div class="text-right">
             <p class="text-xs text-gray-400">Total période</p>
-            <p class="text-sm font-black" style="color:#1A3A6B;">
+            <p class="text-sm font-black" style="color:#7FA6C4;">
                 {{ number_format($evoTotal) }} <span class="text-xs font-normal text-gray-400">FCFA</span>
             </p>
         </div>
@@ -370,7 +370,7 @@
                          data-pct="{{ $pct }}"
                          data-delay="{{ $i * 70 }}"
                          style="height:0;
-                                background:linear-gradient(to top,#0B2040,#2D6FD4);
+                                background:linear-gradient(to top,#0B2040,#A9CBE4);
                                 transition:height .65s cubic-bezier(.22,.68,0,1.2);">
                     </div>
                 </div>
@@ -390,7 +390,7 @@
             overflow-hidden">
     <div class="px-5 py-4 border-b border-gray-100 flex items-center
                 justify-between">
-        <h3 class="font-black text-sm" style="color:#1A3A6B;">
+        <h3 class="font-black text-sm" style="color:#7FA6C4;">
             Détail des paiements
             <span class="text-gray-400 font-normal text-xs ml-1">
                 ({{ $allPayments->count() }})
@@ -481,7 +481,7 @@
                     </td>
                     <td class="px-4 py-3 hidden xl:table-cell">
                         <span class="font-mono text-xs font-bold"
-                              style="color:#1A3A6B;">
+                              style="color:#7FA6C4;">
                             {{ $p->receipt_number }}
                         </span>
                     </td>
@@ -495,7 +495,7 @@
                         TOTAL
                     </td>
                     <td class="px-4 py-3 text-right">
-                        <span class="text-base font-black" style="color:#1A3A6B;">
+                        <span class="text-base font-black" style="color:#7FA6C4;">
                             {{ number_format($totalCollected) }}
                             <span class="text-xs font-normal text-gray-400">FCFA</span>
                         </span>
@@ -517,7 +517,7 @@ function setType(val) {
     document.getElementById('type-input').value = val;
     document.querySelectorAll('.type-btn').forEach(btn => {
         const active = btn.dataset.type === val;
-        btn.style.background = active ? '#1A3A6B' : 'white';
+        btn.style.background = active ? '#7FA6C4' : 'white';
         btn.style.color      = active ? '#fff'    : '#6B7280';
     });
     document.getElementById('month-filter').style.display =

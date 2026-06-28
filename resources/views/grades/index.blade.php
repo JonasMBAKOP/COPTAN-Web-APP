@@ -9,7 +9,7 @@
 @if(!$activeYear)
 <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
     <p class="text-amber-700 font-semibold">
-        ⚠ Aucune année scolaire active.
+        <svg class="inline h-4 w-4 mr-1 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Aucune année scolaire active.
     </p>
 </div>
 
@@ -182,7 +182,7 @@
                             <span class="absolute inset-0 flex items-center
                                          justify-center text-xs font-black"
                                   style="color:{{ $color }};">
-                                @if($isLocked) 🔒 @else {{ $pct }}% @endif
+                                @if($isLocked) <svg class="inline h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4"/></svg> @else {{ $pct }}% @endif
                             </span>
                         </div>
                         <span class="text-xs font-semibold group-hover:underline
