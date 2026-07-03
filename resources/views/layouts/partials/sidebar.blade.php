@@ -280,16 +280,28 @@
         </p>
 
         <x-sidebar-item
-            icon="bell"
+            {{-- icon="bell" --}}
+            {{-- icon="phone" --}}
+            icon="speakerphone"
             label="Annonces"
-            href="#"
-            :active="request()->routeIs('announcements.*')" />
+            href="{{ route('communication.announcements.index') }}"
+            {{-- :active="request()->routeIs('announcements.*')" /> --}}
+            :active="request()->routeIs('communication.announcements.*')" />
 
         <x-sidebar-item
             icon="mail"
             label="Messagerie"
-            href="#"
-            :active="request()->routeIs('messages.*')" />
+            href="{{ route('communication.messages.index') }}"
+            {{-- :active="request()->routeIs('messages.*')" /> --}}
+            :active="request()->routeIs('communication.messages.*')" />
+
+        @can('manage-parent-communication')
+        <x-sidebar-item
+            icon="chat"
+            label="Messages Parents"
+            href="{{ route('communication.parents.index') }}"
+            :active="request()->routeIs('communication.parents.*')" />
+        @endcan
 
         {{-- ── ADMINISTRATION ────────────────────────────────────── --}}
         @canany(['manage-settings', 'manage-users'])

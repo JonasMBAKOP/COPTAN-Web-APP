@@ -11,6 +11,7 @@ class AcademicYear extends Model
         'start_date',
         'end_date',
         'is_active',
+        'is_locked',
     ];
 
     protected function casts(): array
@@ -19,6 +20,7 @@ class AcademicYear extends Model
             'start_date' => 'date',
             'end_date'   => 'date',
             'is_active'  => 'boolean',
+            'is_locked'  => 'boolean',
         ];
     }
 
@@ -54,7 +56,13 @@ class AcademicYear extends Model
     public function activate(): void
     {
         static::query()->update(['is_active' => false]);
-        $this->update(['is_active' => true]);
+
+        $attributes = ['is_active' => true];
+        if (array_key_exists('is_locked', $this->attributes)) {
+            $attributes['is_locked'] = false;
+        }
+
+        $this->update($attributes);
     }
 
     // Scope : année active
@@ -66,7 +74,14 @@ class AcademicYear extends Model
     // Vérifie si l'année est clôturée (non modifiable)
     public function isClosed(): bool
     {
-        return !$this->is_active && $this->end_date?->isPast();
+        // Backwards compatible: if a dedicated 'is_locked' attribute exists, use it.
+        // Otherwise treat years as not closed so administrators can reactiver/fermer
+        // manuellement même si la date de fin est passée.
+        if (array_key_exists('is_locked', $this->attributes)) {
+            return (bool) $this->is_locked;
+        }
+
+        return false;
     }
 
     /** @return list<array{month: int, year: int, label: string, full_label: string}> */

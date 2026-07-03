@@ -17,6 +17,7 @@ use App\Models\Trimester;
 use App\Models\Staff;
 use App\Services\GradeCalculationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class BulletinController extends Controller
@@ -89,6 +90,15 @@ class BulletinController extends Controller
             . '-' . $data['periodLabel'] . '.pdf';
 
         return $pdf->download($filename);
+    }
+
+    public function signedPdf(Request $request, StudentEnrollment $enrollment)
+    {
+        if (! $request->hasValidSignature()) {
+            abort(403);
+        }
+
+        return $this->pdf($request, $enrollment);
     }
 
     // ── GÉNÉRATION EN MASSE (CLASSE ENTIÈRE) ───────────────────────────────

@@ -12,9 +12,20 @@
 
     $logoSrc = null;
     if ($school->logo) {
-        $storagePath = public_path('storage/' . $school->logo);
-        if (file_exists($storagePath)) {
-            $logoSrc = $forPdf ? $storagePath : asset('storage/' . $school->logo);
+        $logoPath = ltrim($school->logo, '/');
+        $candidates = [
+            public_path('storage/' . $logoPath),
+            public_path($logoPath),
+        ];
+        foreach ($candidates as $candidate) {
+            if (file_exists($candidate)) {
+                $candidateAssetPath = trim(str_replace('\\', '/', str_replace(public_path(), '', $candidate)), '/');
+                $logoSrc = $forPdf ? $candidate : asset($candidateAssetPath);
+                break;
+            }
+        }
+        if (! $logoSrc && str_starts_with($logoPath, 'storage/')) {
+            $logoSrc = $forPdf ? public_path($logoPath) : asset($logoPath);
         }
     }
     if (! $logoSrc && file_exists(public_path('images/logo.jpg'))) {

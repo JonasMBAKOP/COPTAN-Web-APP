@@ -150,18 +150,19 @@ class SchoolSettingController extends Controller
         // Si premier numéro ou marqué comme principal
         $isFirst = SchoolPhone::count() === 0;
 
-        SchoolPhone::create([
+        $phone = SchoolPhone::create([
             'number'     => $request->number,
             'label'      => $request->label,
             'is_primary' => $isFirst || $request->boolean('is_primary'),
         ]);
 
-        // S'assurer qu'il n'y a qu'un seul numéro principal
-        if ($request->boolean('is_primary')) {
-            SchoolPhone::where('id', '!=',
-                SchoolPhone::latest()->first()?->id)
-                ->update(['is_primary' => false]);
+        // S'assurer qu'il n'y a qu'un seul numéro principal (exclure le nouvel enregistrement)
+        if ($request->boolean('is_primary') || $isFirst) {
+            SchoolPhone::where('id', '!=', $phone->id)->update(['is_primary' => false]);
         }
+
+        // Audit
+        AuditLog::log('phone_created', $phone, [], $phone->toArray());
 
         return back()
             ->with('success', 'Numéro ajouté.')
@@ -176,6 +177,8 @@ class SchoolSettingController extends Controller
             'label'  => ['nullable', 'string', 'max:50'],
         ]);
 
+        $old = $phone->toArray();
+
         $phone->update([
             'number'     => $request->number,
             'label'      => $request->label,
@@ -183,9 +186,10 @@ class SchoolSettingController extends Controller
         ]);
 
         if ($request->boolean('is_primary')) {
-            SchoolPhone::where('id', '!=', $phone->id)
-                       ->update(['is_primary' => false]);
+            SchoolPhone::where('id', '!=', $phone->id)->update(['is_primary' => false]);
         }
+
+        AuditLog::log('phone_updated', $phone, $old, $phone->toArray());
 
         return back()
             ->with('success', 'Numéro mis à jour.')
@@ -195,12 +199,21 @@ class SchoolSettingController extends Controller
     // ── TÉLÉPHONES — SUPPRESSION ──────────────────────────────────────────
     public function destroyPhone(SchoolPhone $phone)
     {
+        $old = $phone->toArray();
+        $wasPrimary = $phone->is_primary;
+
         $phone->delete();
 
         // Si c'était le principal, définir le premier restant comme principal
-        if ($phone->is_primary) {
-            SchoolPhone::first()?->update(['is_primary' => true]);
+        if ($wasPrimary) {
+            $newPrimary = SchoolPhone::first();
+            if ($newPrimary) {
+                $newPrimary->update(['is_primary' => true]);
+                AuditLog::log('phone_set_primary', $newPrimary, [], $newPrimary->toArray());
+            }
         }
+
+        AuditLog::log('phone_deleted', null, $old, []);
 
         return back()
             ->with('success', 'Numéro supprimé.')
@@ -210,8 +223,12 @@ class SchoolSettingController extends Controller
     // ── TÉLÉPHONES — DÉFINIR COMME PRINCIPAL ─────────────────────────────
     public function setPrimaryPhone(SchoolPhone $phone)
     {
+        $oldAll = SchoolPhone::orderBy('id')->get()->map->toArray()->all();
+
         SchoolPhone::query()->update(['is_primary' => false]);
         $phone->update(['is_primary' => true]);
+
+        AuditLog::log('phone_primary_changed', $phone, $oldAll, $phone->toArray());
 
         return back()
             ->with('success', "{$phone->number} défini comme numéro principal.")

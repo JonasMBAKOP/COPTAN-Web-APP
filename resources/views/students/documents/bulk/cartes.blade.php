@@ -5,7 +5,7 @@
     <title>Cartes scolaires — impression groupée</title>
     @include('students.documents.partials.card-styles')
     <style>
-        @page { size: A4 portrait; margin: 5mm; }
+        @page { size: A4 portrait; margin: 4mm; }
         @media print {
             .no-print { display: none !important; }
             body { background: #fff !important; padding: 0 !important; margin: 0 !important; }
@@ -13,7 +13,7 @@
             .cards-sheet:last-child { page-break-after: auto; }
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #eef1f5; padding: 8px; }
+        body { font-family: Arial, sans-serif; background: #eef1f5; padding: 6px; }
         
         .cards-sheet {
             width: 210mm;

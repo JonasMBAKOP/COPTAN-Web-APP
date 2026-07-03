@@ -1,8 +1,29 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 @section('title', 'Emploi du temps')
 @section('page-title', 'Emploi du temps - Classes')
-@section('page-subtitle', 'Configuration des cours par périodes')
+@section('page-subtitle', 'Configuration des cours par periode, avec detection des conflits enseignants et structure commune des pauses')
 
+
+@push('styles')
+<style>
+.tt-shell { color:#1F2937; }
+.tt-hero { background:linear-gradient(135deg,#F8FBFE 0%,#EEF6FC 100%); border:1px solid #DCE8F3; box-shadow:0 12px 32px rgba(26,58,107,.07); }
+.tt-panel { background:#fff; border:1px solid #E5EDF5; box-shadow:0 10px 26px rgba(26,58,107,.055); }
+.tt-panel-soft { background:#F8FBFE; border:1px solid #DCE8F3; }
+.tt-field { border-color:#D6E2EE; background:#fff; transition:border-color .16s ease, box-shadow .16s ease; }
+.tt-field:focus { border-color:#1A3A6B; box-shadow:0 0 0 3px rgba(26,58,107,.10); outline:none; }
+.tt-btn-primary { background:#1A3A6B; color:#fff; box-shadow:0 8px 18px rgba(26,58,107,.16); }
+.tt-btn-primary:hover { background:#122B50; }
+.tt-btn-success { background:#1A5C2A; color:#fff; box-shadow:0 8px 18px rgba(26,92,42,.14); }
+.tt-btn-success:hover { background:#12451F; }
+.tt-btn-ghost { border:1px solid #DCE8F3; color:#334155; background:#fff; }
+.tt-btn-ghost:hover { background:#F8FBFE; border-color:#C8D9EA; }
+.tt-note { border:1px solid #CFE0EE; background:#F8FBFE; color:#1A3A6B; }
+.tt-grid-wrap table th { background:#F8FBFE; color:#334155; }
+.tt-grid-wrap table tbody tr:hover td { background-color:#FAFCFE; }
+.tt-grid-wrap table td, .tt-grid-wrap table th { border-color:#E8EEF5; }
+</style>
+@endpush
 @section('content')
 @if(!$activeYear)
     <div class="rounded-2xl border border-amber-200 bg-amber-50 p-8 text-center">
@@ -10,7 +31,7 @@
         <p class="mt-1 text-sm text-amber-700">Activez ou créez une année scolaire avant de gérer les emplois du temps.</p>
     </div>
 @else
-<div x-data="timetableManager()" class="space-y-5">
+<div x-data="timetableManager()" class="tt-shell space-y-6">
     <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
         <form method="GET" action="{{ route('timetable.index') }}" class="grid gap-4 lg:grid-cols-[1fr_1.5fr_auto] lg:items-end">
             <div>
@@ -58,14 +79,14 @@
         </form>
     </div>
 
-    <div class="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
+    <div class="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm font-semibold text-blue-900">
         <strong>Grille active :</strong> {{ $setting->period_duration_minutes }} min par période, {{ $setting->max_periods_per_day }} période(s) maximum par jour. Les pauses sont intégrées automatiquement dans les horaires.
     </div>
 
     @if(!$selectedClass)
         <div class="rounded-2xl border border-dashed border-gray-200 bg-white p-10 text-center shadow-sm">
             <p class="font-bold text-gray-700">Sélectionnez une classe pour gérer son emploi du temps.</p>
-            <p class="mt-1 text-sm text-gray-500">Les périodes, pauses, conflits et volumes horaires appara�tront ici.</p>
+            <p class="mt-1 text-sm text-gray-500">Les périodes, pauses, conflits et volumes horaires apparaîtront ici.</p>
         </div>
     @else
         <div class="grid gap-4 lg:grid-cols-[1.3fr_repeat(4,1fr)]">
@@ -81,13 +102,13 @@
         </div>
 
         @if($conflicts->isNotEmpty())
-            <div class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{{ $conflicts->count() }} conflit(s) d�enseignant détecté(s). Les créneaux concern�s sont surlignés en rouge.</div>
+            <div class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{{ $conflicts->count() }} conflit(s) d'enseignant détecté(s). Les créneaux concernés sont surlignés en rouge.</div>
         @endif
 
         <div class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
             <div class="border-b border-gray-100 px-5 py-4">
                 <h3 class="font-black text-[#1A3A6B]">Emploi du temps de la classe</h3>
-                <p class="text-xs text-gray-500">Chaque cellule correspond à une période configur�e pour l’école.</p>
+                <p class="text-xs text-gray-500">Chaque cellule correspond à une pÃ©riode configurée pour l'école.</p>
             </div>
             <div class="overflow-x-auto">
                 @include('timetable.partials.grid', [
@@ -115,7 +136,7 @@
                     <div class="space-y-4 px-6 py-5">
                         <div>
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Matière</label>
-                            <select name="class_subject_id" x-model="form.classSubjectId" required class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-[#1A3A6B] focus:outline-none">
+                            <select name="class_subject_id" x-model="form.classSubjectId" required class="tt-field w-full rounded-xl border px-3 py-2.5 text-sm">
                                 <option value="">Choisir une matière</option>
                                 @foreach($selectedClass->classSubjects as $classSubject)
                                     <option value="{{ $classSubject->id }}">{{ $classSubject->subject->code }} - {{ $classSubject->subject->name_fr }} ({{ $classSubject->teacherAssignments->first()?->staff?->full_name ?? 'Non assigné' }})</option>
@@ -125,13 +146,13 @@
                         <div class="grid gap-3 md:grid-cols-3">
                             <div>
                                 <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Jour</label>
-                                <select name="day_of_week" x-model="form.day" required class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-[#1A3A6B] focus:outline-none">
+                                <select name="day_of_week" x-model="form.day" required class="tt-field w-full rounded-xl border px-3 py-2.5 text-sm">
                                     @foreach($days as $number => $name)<option value="{{ $number }}">{{ $name }}</option>@endforeach
                                 </select>
                             </div>
                             <div>
                                 <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Début</label>
-                                <select name="period_index" x-model="form.periodIndex" required class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-[#1A3A6B] focus:outline-none">
+                                <select name="period_index" x-model="form.periodIndex" required class="tt-field w-full rounded-xl border px-3 py-2.5 text-sm">
                                     @foreach($periodOptions as $period => $label)<option value="{{ $period }}">{{ $label }}</option>@endforeach
                                 </select>
                             </div>

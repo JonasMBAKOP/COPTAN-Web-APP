@@ -1,5 +1,5 @@
 <style>
-@page { size: A4 portrait; margin: 10mm 12mm; }
+@page { size: A4 portrait; margin: 3mm 4mm; }
 @media print {
     .no-print { display: none !important; }
     body { background: #fff !important; padding: 0 !important; }
@@ -7,20 +7,20 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 11px;
+    font-size: 16px;
     color: #111827;
     background: #eef1f5;
-    padding: 12px;
+    padding: 4px;
 }
 .page {
     max-width: 186mm;
     margin: 0 auto;
     background: #fff;
-    padding: 10mm 12mm;
+    padding: 5mm 8mm;
 }
 .page.cert-page {
     max-width: 196mm;
-    padding: 6mm 7mm;
+    padding: 4mm 6mm;
 }
 .doc-header {
     border-bottom: 2.5px solid #1A3A6B;
@@ -37,36 +37,36 @@ body {
 }
 .doc-header img { height: 48px; width: 48px; object-fit: contain; }
 .doc-header__logo-placeholder {
-    width: 48px; height: 48px; border-radius: 50%;
+    width: 68px; height: 68px; border-radius: 50%;
     background: #1A3A6B; color: #fff;
     display: flex; align-items: center; justify-content: center;
-    font-weight: 900; font-size: 18px;
+    font-weight: 900; font-size: 26px;
 }
-.doc-header__name { font-size: 14px; font-weight: 900; color: #1A3A6B; line-height: 1.2; }
-.doc-header__motto { font-size: 9px; font-style: italic; color: #6B7280; margin-top: 2px; }
-.doc-header__meta { font-size: 8.5px; color: #4B5563; margin-top: 3px; }
-.doc-header__ministry { font-size: 8px; color: #6B7280; margin-top: 2px; }
+.doc-header__name { font-size: 24px; font-weight: 900; color: #1A3A6B; line-height: 1.1; }
+.doc-header__motto { font-size: 13px; font-style: italic; color: #6B7280; margin-top: 4px; }
+.doc-header__meta { font-size: 13px; color: #4B5563; margin-top: 3px; }
+.doc-header__ministry { font-size: 12px; color: #6B7280; margin-top: 2px; }
 .doc-header__title {
-    font-size: 13px; font-weight: 900; text-transform: uppercase;
-    color: #9c4005; letter-spacing: 0.5px; margin-top: 8px;
+    font-size: 24px; font-weight: 900; text-transform: uppercase;
+    color: #9c4005; letter-spacing: 0.08em; margin-top: 10px;
 }
-.doc-header__subtitle { font-size: 10px; color: #374151; margin-top: 3px; }
-.doc-header--compact .doc-header__name { font-size: 11px; }
+.doc-header__subtitle { font-size: 18px; color: #374151; margin-top: 4px; }
+.doc-header--compact .doc-header__name { font-size: 13px; }
 .doc-header--compact img, .doc-header--compact .doc-header__logo-placeholder {
     height: 32px; width: 32px; font-size: 12px;
 }
 .section-title {
-    font-size: 10px; font-weight: 900; text-transform: uppercase;
+    font-size: 16px; font-weight: 900; text-transform: uppercase;
     color: #1A3A6B; border-bottom: 1px solid #E5E7EB;
     padding-bottom: 4px; margin: 12px 0 8px;
 }
 .info-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px 16px;
+    gap: 8px 16px;
 }
-.info-row { display: flex; gap: 6px; font-size: 10px; line-height: 1.4; }
-.info-row .label { color: #6B7280; min-width: 110px; flex-shrink: 0; }
+.info-row { display: flex; gap: 8px; font-size: 14px; line-height: 1.5; }
+.info-row .label { color: #6B7280; min-width: 120px; flex-shrink: 0; }
 .info-row .value { font-weight: 700; color: #111827; }
 .info-row.full { grid-column: 1 / -1; }
 .photo-box {
@@ -202,6 +202,101 @@ body {
 .bilingual-header--compact .bilingual-header__meta {
     font-size: 7px;
 }
+
+.bordereau-header {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 18px;
+        align-items: start;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #CBD5E1;
+    }
+    .bordereau-header__brand {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+    }
+    .bordereau-header__logo {
+        width: 88px;
+        min-width: 88px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .bordereau-header__logo img {
+        max-height: 84px;
+        max-width: 84px;
+        object-fit: contain;
+    }
+    .bordereau-header__logo-placeholder {
+        width: 84px;
+        height: 84px;
+        border-radius: 18px;
+        background: #1A3A6B;
+        color: #fff;
+        display: grid;
+        place-items: center;
+        font-size: 32px;
+        font-weight: 900;
+    }
+    .bordereau-header__school-info {
+        display: grid;
+        gap: 4px;
+    }
+    .bordereau-header__school {
+        font-size: 14px;
+        font-weight: 900;
+        color: #1A3A6B;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+    }
+    .bordereau-header__meta {
+        font-size: 10px;
+        color: #475569;
+    }
+    .bordereau-header__doc {
+        display: grid;
+        gap: 4px;
+        justify-items: end;
+        text-align: right;
+    }
+    .bordereau-header__doc-title {
+        font-size: 11px;
+        font-weight: 900;
+        text-transform: uppercase;
+        color: #1A3A6B;
+        letter-spacing: .05em;
+    }
+    .bordereau-header__doc-copy {
+        font-size: 10px;
+        font-weight: 700;
+        color: #CC6000;
+    }
+    .bordereau-header__doc-year,
+    .bordereau-header__doc-date {
+        font-size: 10px;
+        color: #1A3A6B;
+        font-weight: 700;
+    }
+    .bordereau-header__title-row {
+        margin-top: 14px;
+        text-align: center;
+        grid-column: 1 / -1;
+    }
+    .bordereau-header__title {
+        font-size: 24px;
+        font-weight: 900;
+        color: #1A3A6B;
+        text-transform: uppercase;
+        letter-spacing: .1em;
+        text-decoration: underline;
+    }
+    .bordereau-header__subtitle {
+        font-size: 12px;
+        color: #475569;
+        margin-top: 4px;
+    }
 
 /* Certificate official header */
 .cert-official-header {

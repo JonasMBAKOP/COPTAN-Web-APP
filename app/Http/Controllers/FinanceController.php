@@ -12,6 +12,7 @@ use App\Models\FeeStructure;
 use App\Models\Section;
 use App\Models\StudentEnrollment;
 use App\Models\StudentPayment;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -650,9 +651,18 @@ class FinanceController extends Controller
         $isAdmin   = $user->hasAnyRole(['super-admin', 'directeur', 'fondateur']);
 
         // ── Filtres ─────────────────────────────────────────────────────────
-        $type       = $request->input('type', 'mensuel'); // mensuel | annuel
+        $allowedTypes = ['journalier', 'hebdomadaire', 'mensuel', 'annuel', 'entre-2-dates'];
+        $type       = $request->input('type', 'mensuel');
+        if (! in_array($type, $allowedTypes, true)) {
+            $type = 'mensuel';
+        }
+
         $yearId     = $request->input('year_id', $activeYear?->id);
-        $month      = $request->input('month', now()->month);
+        $month      = (int) $request->input('month', now()->month);
+        $date       = $request->input('date', now()->toDateString());
+        $week       = $request->input('week', now()->format('o-\WW'));
+        $startDate  = $request->input('start_date', now()->toDateString());
+        $endDate    = $request->input('end_date', now()->toDateString());
         $whoFilter  = $isAdmin
             ? $request->input('who', 'global') // global | me | econome
             : 'me'; // économe voit seulement ses propres données
@@ -686,16 +696,33 @@ class FinanceController extends Controller
         // 'global' = pas de filtre sur recorded_by
 
         // Filtrer par période
-        if ($type === 'mensuel') {
-            $yearNum = $selectedYear
-                ? (int)$selectedYear->start_date->format('Y')
-                : now()->year;
-
-            // Pour une année scolaire qui chevauche 2 années civiles
-            $paymentYear = $this->paymentCalendarYearForMonth($selectedYear, (int) $month);
+        if ($type === 'journalier') {
+            $paymentsQuery->whereDate('payment_date', $date);
+        } elseif ($type === 'hebdomadaire') {
+            try {
+                $weekStart = Carbon::parse($week . '-1')->startOfWeek(Carbon::MONDAY)->toDateString();
+            } catch (\Throwable $e) {
+                $weekStart = now()->startOfWeek(Carbon::MONDAY)->toDateString();
+            }
+            $weekEnd = Carbon::parse($weekStart)->endOfWeek(Carbon::SUNDAY)->toDateString();
+            $paymentsQuery->whereBetween('payment_date', [$weekStart, $weekEnd]);
+        } elseif ($type === 'mensuel') {
+            $paymentYear = $this->paymentCalendarYearForMonth($selectedYear, $month);
             $paymentsQuery
                 ->whereYear('payment_date', $paymentYear)
-                ->whereMonth('payment_date', (int) $month);
+                ->whereMonth('payment_date', $month);
+        } elseif ($type === 'entre-2-dates') {
+            try {
+                $start = Carbon::parse($startDate)->startOfDay();
+                $end   = Carbon::parse($endDate)->endOfDay();
+            } catch (\Throwable $e) {
+                $start = Carbon::parse($startDate)->startOfDay();
+                $end   = Carbon::parse($startDate)->endOfDay();
+            }
+            if ($end->lt($start)) {
+                [$start, $end] = [$end, $start];
+            }
+            $paymentsQuery->whereBetween('payment_date', [$start->toDateString(), $end->toDateString()]);
         }
 
         $allPayments = $paymentsQuery->orderByDesc('payment_date')->get();
@@ -703,15 +730,15 @@ class FinanceController extends Controller
         // ── Stats globales ────────────────────────────────────────────────
         $totalCollected = (int)$allPayments->sum('amount_paid');
 
-        // Par tranche
-        $byInstallment = $allPayments->groupBy('feeInstallment.label')
-            ->map(fn($g) => [
-                'label'  => $g->first()?->feeInstallment?->label ?? 'Non catégorisé',
-                'total'  => (int)$g->sum('amount_paid'),
-                'count'  => $g->count(),
-            ])->values();
-
-        // Par mode de paiement
+        $installmentExpectations = $this->buildInstallmentFinancialStats($selectedYear, $allPayments);
+        $byInstallment = $installmentExpectations->map(fn ($item) => [
+            'label' => $item->label,
+            'total' => (int) $item->collected,
+            'expected' => (int) $item->expected,
+            'remaining' => (int) $item->remaining,
+            'rate' => (int) $item->rate,
+            'count' => (int) $item->count,
+        ])->values();
         $byMethod = $allPayments->groupBy('payment_method')
             ->map(fn($g) => [
                 'method' => $g->first()?->payment_method,
@@ -741,11 +768,68 @@ class FinanceController extends Controller
 
         return view('finances.reports', compact(
             'user', 'isAdmin', 'selectedYear', 'years',
-            'type', 'month', 'whoFilter',
+            'type', 'month', 'date', 'week', 'startDate', 'endDate', 'whoFilter',
             'allPayments', 'totalCollected',
             'byInstallment', 'byMethod', 'bySection', 'evolution',
             'economes'
         ));
+    }
+
+
+    private function buildInstallmentFinancialStats(?AcademicYear $academicYear, $payments = null)
+    {
+        if (! $academicYear) {
+            return collect();
+        }
+
+        $payments = $payments ?: StudentPayment::whereHas('studentEnrollment', fn ($q) =>
+            $q->where('academic_year_id', $academicYear->id)
+        )->get();
+
+        $classes = ClassGroup::where('academic_year_id', $academicYear->id)
+            ->with(['feeStructures.installments'])
+            ->withCount([
+                'studentEnrollments as enrolled_count' => fn ($q) => $q->where('status', 'active'),
+            ])
+            ->get();
+
+        $stats = collect();
+
+        foreach ($classes as $class) {
+            $fee = $class->feeStructures->first();
+            if (! $fee) continue;
+
+            foreach ($fee->installments as $installment) {
+                $key = strtolower(trim((string) $installment->label));
+                $current = $stats->get($key, (object) [
+                    'label' => $installment->label,
+                    'installment_number' => $installment->installment_number,
+                    'expected' => 0.0,
+                    'collected' => 0.0,
+                    'payers' => 0,
+                    'count' => 0,
+                    'rate' => 0,
+                ]);
+
+                $installmentPayments = $payments->where('fee_installment_id', $installment->id);
+                $current->expected += (float) $installment->amount * (int) $class->enrolled_count;
+                $current->collected += (float) $installmentPayments->sum('amount_paid');
+                $current->payers += $installmentPayments->pluck('student_enrollment_id')->unique()->count();
+                $current->count += $installmentPayments->count();
+                $current->installment_number = min((int) $current->installment_number, (int) $installment->installment_number);
+
+                $stats->put($key, $current);
+            }
+        }
+
+        return $stats->values()
+            ->map(function ($item) {
+                $item->remaining = max(0, $item->expected - $item->collected);
+                $item->rate = $item->expected > 0 ? min(100, round(($item->collected / $item->expected) * 100)) : 0;
+                return $item;
+            })
+            ->sortBy('installment_number')
+            ->values();
     }
 
     private function paymentCalendarYearForMonth(?AcademicYear $academicYear, int $month): int
@@ -809,9 +893,18 @@ class FinanceController extends Controller
         $years      = AcademicYear::orderByDesc('start_date')->get();
         $isAdmin    = $user->hasAnyRole(['super-admin','directeur','fondateur']);
 
+        $allowedTypes = ['journalier', 'hebdomadaire', 'mensuel', 'annuel', 'entre-2-dates'];
         $type      = $request->input('type', 'mensuel');
+        if (! in_array($type, $allowedTypes, true)) {
+            $type = 'mensuel';
+        }
+
         $yearId    = $request->input('year_id', $activeYear?->id);
         $month     = (int)$request->input('month', now()->month);
+        $date      = $request->input('date', now()->toDateString());
+        $week      = $request->input('week', now()->format('o-\WW'));
+        $startDate = $request->input('start_date', now()->toDateString());
+        $endDate   = $request->input('end_date', now()->toDateString());
         $whoFilter = $isAdmin ? $request->input('who', 'global') : 'me';
 
         $selectedYear = $yearId ? AcademicYear::find($yearId) : $activeYear;
@@ -829,6 +922,35 @@ class FinanceController extends Controller
             );
         }
 
+        if ($type === 'journalier') {
+            $paymentsQuery->whereDate('payment_date', $date);
+        } elseif ($type === 'hebdomadaire') {
+            try {
+                $weekStart = Carbon::parse($week . '-1')->startOfWeek(Carbon::MONDAY)->toDateString();
+            } catch (\Throwable $e) {
+                $weekStart = now()->startOfWeek(Carbon::MONDAY)->toDateString();
+            }
+            $weekEnd = Carbon::parse($weekStart)->endOfWeek(Carbon::SUNDAY)->toDateString();
+            $paymentsQuery->whereBetween('payment_date', [$weekStart, $weekEnd]);
+        } elseif ($type === 'mensuel') {
+            $paymentYear = $this->paymentCalendarYearForMonth($selectedYear, $month);
+            $paymentsQuery
+                ->whereYear('payment_date', $paymentYear)
+                ->whereMonth('payment_date', $month);
+        } elseif ($type === 'entre-2-dates') {
+            try {
+                $start = Carbon::parse($startDate)->startOfDay();
+                $end   = Carbon::parse($endDate)->endOfDay();
+            } catch (\Throwable $e) {
+                $start = Carbon::parse($startDate)->startOfDay();
+                $end   = Carbon::parse($startDate)->endOfDay();
+            }
+            if ($end->lt($start)) {
+                [$start, $end] = [$end, $start];
+            }
+            $paymentsQuery->whereBetween('payment_date', [$start->toDateString(), $end->toDateString()]);
+        }
+
         if ($whoFilter === 'me') {
             $paymentsQuery->where('recorded_by', $user->id);
         } elseif ($whoFilter === 'econome') {
@@ -837,25 +959,20 @@ class FinanceController extends Controller
             $paymentsQuery->whereIn('recorded_by', $economeIds);
         }
 
-        if ($type === 'mensuel') {
-            $paymentYear = $this->paymentCalendarYearForMonth($selectedYear, (int) $month);
-            $paymentsQuery
-                ->whereYear('payment_date', $paymentYear)
-                ->whereMonth('payment_date', (int) $month);
-        }
-
         $allPayments    = $paymentsQuery->orderByDesc('payment_date')->get();
         $totalCollected = (int)$allPayments->sum('amount_paid');
-
-        $byInstallment = $allPayments->groupBy('feeInstallment.label')
-            ->map(fn($g) => [
-                'label' => $g->first()?->feeInstallment?->label ?? '—',
-                'total' => (int)$g->sum('amount_paid'),
-                'count' => $g->count(),
-            ])->values();
-
+        $installmentExpectations = $this->buildInstallmentFinancialStats($selectedYear, $allPayments);
+        $byInstallment = $installmentExpectations->map(fn ($item) => [
+            'label' => $item->label,
+            'total' => (int) $item->collected,
+            'expected' => (int) $item->expected,
+            'remaining' => (int) $item->remaining,
+            'rate' => (int) $item->rate,
+            'count' => (int) $item->count,
+        ])->values();
         $byMethod = $allPayments->groupBy('payment_method')
             ->map(fn($g) => [
+                'method' => $g->first()?->payment_method,
                 'label' => $g->first()?->payment_method_label ?? '—',
                 'total' => (int)$g->sum('amount_paid'),
                 'count' => $g->count(),
@@ -879,7 +996,7 @@ class FinanceController extends Controller
 
         return compact(
             'user', 'isAdmin', 'selectedYear', 'years',
-            'type', 'month', 'whoFilter',
+            'type', 'month', 'date', 'week', 'startDate', 'endDate', 'whoFilter',
             'allPayments', 'totalCollected',
             'byInstallment', 'byMethod', 'bySection', 'evolution',
             'economes'
@@ -953,45 +1070,7 @@ class FinanceController extends Controller
         ->get();
 
         // ── Stats par tranche (agrégées par libellé, toutes classes confondues)
-        $installmentStatsRaw = FeeInstallment::query()
-            ->selectRaw('
-                fee_installments.label,
-                MIN(fee_installments.installment_number) as installment_number,
-                SUM(COALESCE(student_payments.amount_paid, 0)) as collected,
-                COUNT(DISTINCT student_payments.student_enrollment_id) as payers
-            ')
-            ->leftJoin('student_payments', function ($join) use ($selectedYear) {
-                $join->on('student_payments.fee_installment_id', '=', 'fee_installments.id');
-                if ($selectedYear) {
-                    $join->whereExists(function ($q) use ($selectedYear) {
-                        $q->selectRaw('1')
-                            ->from('student_enrollments')
-                            ->whereColumn('student_enrollments.id', 'student_payments.student_enrollment_id')
-                            ->where('student_enrollments.academic_year_id', $selectedYear->id);
-                    });
-                }
-            })
-            ->join('fee_structures', 'fee_structures.id', '=', 'fee_installments.fee_structure_id')
-            ->when($selectedYear, fn ($q) =>
-                $q->where('fee_structures.academic_year_id', $selectedYear->id)
-            )
-            ->groupBy('fee_installments.label')
-            ->orderBy('installment_number')
-            ->get();
-
-        $installmentStats = $installmentStatsRaw->map(function ($is) use ($totalEnrolled) {
-            $rate = $totalEnrolled > 0 ? round(($is->payers / $totalEnrolled) * 100) : 0;
-
-            return (object) [
-                'label'              => $is->label,
-                'installment_number' => $is->installment_number,
-                'collected'          => (float) ($is->collected ?? 0),
-                'payers'             => (int) ($is->payers ?? 0),
-                'rate'               => $rate,
-            ];
-        });
-
-        // ── Élèves avec solde impayé (Débiteurs)
+        $installmentStats = $this->buildInstallmentFinancialStats($selectedYear);
         $debtors = \App\Models\StudentEnrollment::where('status', 'active')
             ->when($selectedYear, fn($q) =>
                 $q->where('academic_year_id', $selectedYear->id)

@@ -288,17 +288,12 @@
                     </th>
                     <th class="text-center px-5 py-3.5 text-xs font-bold
                                text-gray-500 uppercase tracking-wider"
-                        style="width:30%;">
+                        style="width:45%;">
                         Note /20
                     </th>
                     <th class="text-center px-5 py-3.5 text-xs font-bold
                                text-gray-500 uppercase tracking-wider"
-                        style="width:15%;">
-                        Absent
-                    </th>
-                    <th class="text-center px-5 py-3.5 text-xs font-bold
-                               text-gray-500 uppercase tracking-wider"
-                        style="width:15%;">
+                        style="width:25%;">
                         Appréciation
                     </th>
                 </tr>
@@ -306,9 +301,8 @@
             <tbody class="divide-y divide-gray-50" id="gradeRows">
                 @foreach($enrollments as $i => $enr)
                 @php
-                    $g       = $grades->get($enr->id);
-                    $grade   = $g?->grade;
-                    $absent  = $g?->is_absent ?? false;
+                    $g      = $grades->get($enr->id);
+                    $grade  = $g?->grade;
                 @endphp
                 <tr class="hover:bg-blue-50/20 transition-colors"
                     data-row="{{ $enr->id }}">
@@ -339,41 +333,23 @@
                                    ? number_format((float)$grade, 2, '.', '')
                                    : '' }}"
                                min="0" max="20" step="0.25"
-                               placeholder="{{ $absent ? 'ABS' : '—' }}"
-                               {{ $absent ? 'disabled' : '' }}
+                               placeholder="—"
                                oninput="updateApprec({{ $enr->id }}, this.value)"
                                onchange="roundGrade(this)"
                                class="grade-input text-center font-black
                                       text-base rounded-xl border-2 px-3 py-2
                                       focus:outline-none transition-all"
                                style="width:80px; color:#1A3A6B;
-                                      border-color:{{ $absent ? '#D1D5DB'
-                                          : ($grade !== null ? '#1A3A6B' : '#E5E7EB') }};
-                                      background:{{ $absent ? '#F9FAFB' : 'white' }};">
-                    </td>
-                    <td class="px-5 py-3.5 text-center">
-                        <label class="inline-flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox"
-                                   name="absent[{{ $enr->id }}]"
-                                   value="1"
-                                   id="abs-{{ $enr->id }}"
-                                   {{ $absent ? 'checked' : '' }}
-                                   onchange="toggleAbsent({{ $enr->id }}, this.checked)"
-                                   class="w-4 h-4 rounded cursor-pointer"
-                                   style="accent-color:#EF4444;">
-                            <span class="text-xs font-bold text-red-500">ABS</span>
-                        </label>
+                                      border-color:{{ $grade !== null ? '#1A3A6B' : '#E5E7EB' }};
+                                      background:white;">
                     </td>
                     <td class="px-5 py-3.5 text-center">
                         <span id="apprec-{{ $enr->id }}"
                               class="text-xs font-bold px-2 py-1 rounded-lg"
-                              style="{{ $absent
-                                  ? 'background:#F3F4F6;color:#9CA3AF;'
-                                  : ($grade !== null
-                                      ? gradeStyle((float)$grade)
-                                      : 'background:#F3F4F6;color:#9CA3AF;') }}">
-                            @if($absent) ABS
-                            @elseif($grade !== null) {{ gradeLabel((float)$grade) }}
+                              style="{{ $grade !== null
+                                  ? gradeStyle((float)$grade)
+                                  : 'background:#F3F4F6;color:#9CA3AF;' }}">
+                            @if($grade !== null) {{ gradeLabel((float)$grade) }}
                             @else — @endif
                         </span>
                     </td>
@@ -389,8 +365,7 @@
                         <span id="class-avg" class="text-sm font-black"
                               style="color:#1A3A6B;">—</span>
                     </td>
-                    <td colspan="2"
-                        class="px-5 py-3 text-xs text-gray-400 text-center">
+                    <td class="px-5 py-3 text-xs text-gray-400 text-center">
                         <span id="filled-count">0</span>
                         / {{ $enrollments->count() }} notes saisies
                     </td>
@@ -451,7 +426,6 @@
             @php
                 $g      = $grades->get($enr->id);
                 $grade  = $g?->grade;
-                $absent = $g?->is_absent ?? false;
             @endphp
             <tr class="hover:bg-gray-50/50">
                 <td class="px-5 py-3.5">
@@ -460,9 +434,7 @@
                     </p>
                 </td>
                 <td class="px-5 py-3.5 text-center">
-                    @if($absent)
-                    <span class="text-red-500 font-bold text-sm">ABS</span>
-                    @elseif($grade !== null)
+                    @if($grade !== null)
                     <span class="text-lg font-black" style="color:#1A3A6B;">
                         {{ number_format((float)$grade, 2) }}
                     </span>
@@ -471,7 +443,7 @@
                     @endif
                 </td>
                 <td class="px-5 py-3.5 text-center">
-                    @if(!$absent && $grade !== null)
+                    @if($grade !== null)
                     <span class="text-xs font-bold px-2 py-1 rounded-lg"
                           style="{{ gradeStyle((float)$grade) }}">
                         {{ gradeLabel((float)$grade) }}
@@ -741,35 +713,6 @@ function updateApprec(eid, val) {
     updateStats();
 }
 
-function toggleAbsent(eid, checked) {
-    const input = document.getElementById(`grade-${eid}`);
-    const span  = document.getElementById(`apprec-${eid}`);
-    if (!input) return;
-
-    if (checked) {
-        input.disabled = true;
-        input.value    = '';
-        input.placeholder = 'ABS';
-        input.style.cssText = 'width:80px;text-align:center;font-weight:800;'
-            + 'font-size:1rem;border-radius:0.75rem;border:2px solid #D1D5DB;'
-            + 'padding:0.5rem;color:#9CA3AF;background:#F9FAFB;';
-        if (span) {
-            span.textContent = 'ABS';
-            span.style.cssText = 'background:#F3F4F6;color:#9CA3AF;';
-        }
-    } else {
-        input.disabled = false;
-        input.placeholder = '—';
-        input.style.cssText = 'width:80px;text-align:center;font-weight:800;'
-            + 'font-size:1rem;border-radius:0.75rem;border:2px solid #E5E7EB;'
-            + 'padding:0.5rem;color:#1A3A6B;background:white;';
-        if (span) {
-            span.textContent = '—';
-            span.style.cssText = 'background:#F3F4F6;color:#9CA3AF;';
-        }
-    }
-    updateStats();
-}
 
 function roundGrade(input) {
     const v = parseFloat(input.value);
@@ -783,11 +726,9 @@ function updateStats() {
     document.querySelectorAll('[data-row]').forEach(row => {
         const eid   = row.dataset.row;
         const inp   = document.getElementById(`grade-${eid}`);
-        const abs   = document.getElementById(`abs-${eid}`);
-        if (!inp && !abs) return;
+        if (!inp) return;
 
-        if (abs?.checked) { filled++; return; }
-        if (inp && inp.value !== '') {
+        if (inp.value !== '') {
             const v = parseFloat(inp.value);
             if (!isNaN(v) && v >= 0 && v <= 20) {
                 sum += v; cnt++; filled++;

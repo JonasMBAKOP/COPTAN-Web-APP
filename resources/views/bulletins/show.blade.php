@@ -17,6 +17,35 @@ body { background: #E5E7EB; }
 <body>
 @include('students.documents.partials.print-toolbar')
 
+@can('manage-parent-communication')
+@php
+    $phones = array_filter([
+        $enrollment->student->father_phone ?? null,
+        $enrollment->student->mother_phone ?? null,
+        $enrollment->student->guardian_phone ?? null,
+    ]);
+@endphp
+@if(!empty($phones))
+<form method="POST" action="{{ route('communication.parents.bulletin.send', $enrollment) }}"
+      class="inline">
+    @csrf
+    <input type="hidden" name="phone" value="all">
+    <input type="hidden" name="pdf_url"
+           value="{{ URL::temporarySignedRoute('bulletins.signed-pdf', now()->addMinutes(30), [
+                'enrollment'   => $enrollment,
+                'type'         => $type,
+                'sequence_id'  => request('sequence_id'),
+                'trimester_id' => request('trimester_id'),
+           ]) }}">
+    <button type="submit"
+            class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white
+                   text-sm font-bold" style="background-color:#1A5C2A;">
+        📱 Envoyer à tous les numéros parents/tuteurs par WhatsApp
+    </button>
+</form>
+@endif
+@endcan
+
 @include('bulletins.partials.pdf-page')
 
 </body>

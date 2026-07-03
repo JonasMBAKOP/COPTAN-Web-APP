@@ -13,6 +13,8 @@ use App\Models\StudentPayment;
 use App\Models\Level;
 use App\Models\Section;
 use App\Models\Staff;
+use App\Models\TimetableSetting;
+use App\Services\TimetableGridService;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
@@ -21,9 +23,27 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 
+use App\Models\ClassSubject;
+use App\Models\TeacherAssignment;
+use App\Models\Sequence;
+use App\Models\Grade;
+use App\Models\Absence;
+use App\Models\DisciplineIncident;
+use App\Models\TimetableSlot;
+use App\Models\Announcement;
+use Carbon\Carbon;
+use Illuminate\Support\Str;
+
 
 class DashboardController extends Controller
 {
+    private TimetableGridService $timetableGridService;
+
+    public function __construct(TimetableGridService $timetableGridService)
+    {
+        $this->timetableGridService = $timetableGridService;
+    }
+
     // ── REDIRECTION SELON LE RÔLE ─────────────────────────────────────────
     public function index()
     {
@@ -49,25 +69,507 @@ class DashboardController extends Controller
 
     public function directeur()
     {
-        return view('dashboard.directeur');
+        $activeYear = AcademicYear::active();
+
+        if (!$activeYear) {
+            return view('dashboards.directeur', ['activeYear' => null]);
+        }
+
+        // ── EFFECTIFS ──────────────────────────────────────────────────────
+        $totalStudents = StudentEnrollment::where('academic_year_id', $activeYear->id)
+            ->where('status', 'active')->count();
+        $totalStaff     = Staff::where('is_active', true)->count();
+        $totalTeachers  = Staff::where('is_active', true)
+            ->whereHas('positions', fn($q) => $q->where('position', 'enseignant'))->count();
+        $totalClasses   = ClassGroup::where('academic_year_id', $activeYear->id)->count();
+
+        $bySection = Section::with(['levels.classGroups' => fn($q) =>
+            $q->where('academic_year_id', $activeYear->id)
+            ->withCount(['studentEnrollments as enrolled' => fn($q2) =>
+                $q2->where('status', 'active')
+            ])
+        ])->orderBy('id')->get()->map(fn($s) => [
+            'section' => $s,
+            'count'   => $s->levels->flatMap->classGroups->sum('enrolled'),
+        ]);
+
+        // ── FINANCES ────────────────────────────────────────────────────────
+        $classes = ClassGroup::where('academic_year_id', $activeYear->id)
+            ->with('feeStructures.installments')
+            ->withCount(['studentEnrollments as enrolled' => fn($q) => $q->where('status', 'active')])
+            ->get();
+
+        $totalExpected = 0;
+        foreach ($classes as $c) {
+            $fee = $c->feeStructures->first();
+            $totalExpected += ($fee?->installments->sum('amount') ?? 0) * $c->enrolled;
+        }
+        $totalCollected = (int)StudentPayment::whereHas('studentEnrollment',
+            fn($q) => $q->where('academic_year_id', $activeYear->id)
+        )->sum('amount_paid');
+        $collectionRate = $totalExpected > 0 ? round(($totalCollected / $totalExpected) * 100) : 0;
+
+        $monthPeriods = $activeYear->monthPeriods();
+        $monthlyRevenue = StudentPayment::whereHas('studentEnrollment',
+            fn($q) => $q->where('academic_year_id', $activeYear->id)
+        )->whereBetween('payment_date', [
+            $activeYear->start_date->copy()->startOfMonth(),
+            $activeYear->end_date->copy()->endOfMonth(),
+        ])->selectRaw('YEAR(payment_date) y, MONTH(payment_date) m, SUM(amount_paid) total')
+        ->groupBy('y','m')->orderBy('y')->orderBy('m')->get();
+
+        $revenueChart = collect($monthPeriods)->map(function ($period) use ($monthlyRevenue) {
+            $found = $monthlyRevenue->first(fn($r) => $r->y === $period['year'] && $r->m === $period['month']);
+            return [
+                'label' => $period['label'],
+                'total' => $found ? (float)$found->total : 0,
+                'year'  => $period['year'],
+                'month' => $period['month'],
+            ];
+        });
+
+        // ── ACADÉMIQUE ─────────────────────────────────────────────────────
+        $currentSeq = $this->resolveCurrentSequence($activeYear, $classes);
+        $gradeProgress = 0;
+        if ($currentSeq) {
+            $classesWithSubj = ClassGroup::where('academic_year_id', $activeYear->id)
+                ->withCount([
+                    'studentEnrollments as enrolled' => fn($q)=>$q->where('status','active'),
+                    'classSubjects as subjects_count' => fn($q)=>$q->where('is_active',true),
+                ])->get();
+            $totalExp = $classesWithSubj->sum(fn($c)=>$c->enrolled*$c->subjects_count);
+            $filled = Grade::where('sequence_id', $currentSeq->id)
+                ->where(fn($q)=>$q->whereNotNull('grade')->orWhere('is_absent',true))->count();
+            $gradeProgress = $totalExp>0 ? round(($filled/$totalExp)*100) : 0;
+        }
+
+        $sequences = Sequence::where('academic_year_id', $activeYear->id)->orderBy('number')->get();
+        $trimesters = $activeYear->trimesters()->with('sequences')->get();
+        $classGroups = ClassGroup::where('academic_year_id', $activeYear->id)
+            ->with('level.section')->get();
+
+        $resultsByClass = $classGroups->map(function ($class) use ($sequences, $trimesters) {
+            $gradeBase = Grade::whereHas('classSubject', fn($q) => $q->where('class_group_id', $class->id));
+            $annualTotal = $gradeBase->whereNotNull('grade')->count();
+            $annualSuccess = $gradeBase->whereNotNull('grade')->where('grade', '>=', 10)->count();
+            $annualAvg = $gradeBase->whereNotNull('grade')->avg('grade') ?: 0;
+
+            $sequenceResults = $sequences->map(function ($seq) use ($class) {
+                $query = Grade::whereHas('classSubject', fn($q) => $q->where('class_group_id', $class->id))
+                    ->where('sequence_id', $seq->id)->whereNotNull('grade');
+                $count = $query->count();
+                return [
+                    'id' => $seq->id,
+                    'label' => $seq->label,
+                    'success_pct' => $count > 0 ? round(($query->where('grade', '>=', 10)->count() / $count) * 100) : 0,
+                    'avg_grade' => $query->avg('grade') ?: 0,
+                ];
+            });
+
+            $trimesterResults = $trimesters->map(function ($trimester) use ($class) {
+                $sequenceIds = $trimester->sequences->pluck('id');
+                $query = Grade::whereHas('classSubject', fn($q) => $q->where('class_group_id', $class->id))
+                    ->whereIn('sequence_id', $sequenceIds)->whereNotNull('grade');
+                $count = $query->count();
+                return [
+                    'id' => $trimester->id,
+                    'label' => $trimester->label,
+                    'success_pct' => $count > 0 ? round(($query->where('grade', '>=', 10)->count() / $count) * 100) : 0,
+                    'avg_grade' => $query->avg('grade') ?: 0,
+                ];
+            });
+
+            return [
+                'class' => $class,
+                'annual' => [
+                    'success_pct' => $annualTotal > 0 ? round(($annualSuccess / $annualTotal) * 100) : 0,
+                    'avg_grade' => round($annualAvg, 2),
+                ],
+                'sequences' => $sequenceResults,
+                'trimesters' => $trimesterResults,
+            ];
+        });
+
+        $performanceScope = request('performance_scope', 'annuel');
+        $performanceTargetId = request('performance_target_id');
+
+        if ($performanceScope === 'sequence' && !$performanceTargetId && $sequences->isNotEmpty()) {
+            $performanceTargetId = $sequences->first()->id;
+        }
+        if ($performanceScope === 'trimestre' && !$performanceTargetId && $trimesters->isNotEmpty()) {
+            $performanceTargetId = $trimesters->first()->id;
+        }
+
+        $chartResultsByClass = $resultsByClass->map(function ($row) use ($performanceScope, $performanceTargetId) {
+            $meta = ['label' => 'Annuel', 'success_pct' => $row['annual']['success_pct'], 'avg_grade' => $row['annual']['avg_grade']];
+            if ($performanceScope === 'sequence') {
+                $found = $row['sequences']->firstWhere('id', $performanceTargetId);
+                if ($found) {
+                    $meta = ['label' => $found['label'], 'success_pct' => $found['success_pct'], 'avg_grade' => $found['avg_grade']];
+                }
+            } elseif ($performanceScope === 'trimestre') {
+                $found = $row['trimesters']->firstWhere('id', $performanceTargetId);
+                if ($found) {
+                    $meta = ['label' => $found['label'], 'success_pct' => $found['success_pct'], 'avg_grade' => $found['avg_grade']];
+                }
+            }
+            return [
+                'class' => $row['class'],
+                'success_pct' => $meta['success_pct'],
+                'avg_grade' => $meta['avg_grade'],
+                'label' => $meta['label'],
+            ];
+        })->sortByDesc('success_pct')->values();
+
+        $performanceScopes = [
+            'annuel' => 'Annuel',
+            'trimestre' => 'Trimestre',
+            'sequence' => 'Séquence',
+        ];
+
+        $recentEnrollments = StudentEnrollment::where('academic_year_id', $activeYear->id)
+            ->with(['student', 'classGroup.level.section', 'enrollmentAudit.user'])
+            ->orderByDesc('created_at')->take(8)->get();
+
+        $recentActivities = AuditLog::with('user')
+            ->orderByDesc('created_at')->take(6)->get()
+            ->map(function ($a) {
+                $title = null;
+                $target = null;
+                try {
+                    // Grades-related actions logged with ClassGroup as model
+                    if (str_starts_with($a->action, 'grades')) {
+                        $title = 'Notes mises à jour';
+                        if ($a->model_type === 'ClassGroup' && $a->model_id) {
+                            $cg = ClassGroup::find($a->model_id);
+                            $target = $cg?->full_name;
+                        }
+                    } elseif ($a->action === 'enrolled') {
+                        $title = 'Inscription';
+                        if ($a->model_type === 'StudentEnrollment' && $a->model_id) {
+                            $enr = StudentEnrollment::with('classGroup')->find($a->model_id);
+                            $target = $enr?->classGroup?->full_name ?? null;
+                        }
+                    } elseif ($a->action === 'payment_recorded') {
+                        $title = 'Paiement enregistré';
+                        if ($a->model_type === 'StudentPayment' && $a->model_id) {
+                            $p = StudentPayment::with('studentEnrollment.student')->find($a->model_id);
+                            $target = $p?->studentEnrollment?->student?->full_name ?? null;
+                        }
+                    } elseif (in_array($a->action, ['created','updated','deleted'])) {
+                        $title = match ($a->action) {
+                            'created' => 'Création',
+                            'updated' => 'Modifications',
+                            'deleted' => 'Suppression',
+                            default => Str::ucfirst(str_replace(['_','-'], ' ', $a->action)),
+                        };
+                        if ($a->model_type) $target = $a->model_type;
+                    } else {
+                        $title = Str::ucfirst(str_replace(['_','-'], ' ', $a->action));
+                        if ($a->model_type) $target = $a->model_type;
+                    }
+                } catch (\Throwable $e) {
+                    $title = Str::ucfirst(str_replace(['_','-'], ' ', $a->action));
+                }
+
+                $message = $title . ($target ? ' · ' . $target : '');
+
+                return (object) [
+                    'id' => $a->id,
+                    'message' => $message,
+                    'user' => $a->user,
+                    'created_at' => $a->created_at,
+                    'raw' => $a,
+                ];
+            });
+
+        // ── ABSENTÉISME & DISCIPLINE ─────────────────────────────────────────
+        $monthAbsenceHours = (float)Absence::whereMonth('absence_date', now()->month)->sum('hours');
+        $disciplinePending = DisciplineIncident::where('status', 'ouvert')->count();
+        $disciplineThisMonth = DisciplineIncident::whereMonth('incident_date', now()->month)->count();
+
+        // ── ALERTES (à traiter en priorité) ──────────────────────────────────
+        $unconfiguredFees = $classes->filter(fn($c) => $c->feeStructures->isEmpty())->count();
+        $debtorsCount = StudentEnrollment::where('academic_year_id', $activeYear->id)
+            ->where('status', 'active')->get()
+            ->filter(function($e) {
+                $due = $e->classGroup->feeStructures->first()?->installments->sum('amount') ?? 0;
+                $paid = StudentPayment::where('student_enrollment_id', $e->id)->sum('amount_paid');
+                return $paid < $due;
+            })->count();
+
+        return view('dashboards.directeur', compact(
+            'activeYear', 'totalStudents', 'totalStaff', 'totalTeachers', 'totalClasses',
+            'bySection', 'totalExpected', 'totalCollected', 'collectionRate', 'revenueChart',
+            'currentSeq', 'gradeProgress', 'monthAbsenceHours',
+            'disciplinePending', 'disciplineThisMonth',
+            'unconfiguredFees', 'debtorsCount',
+            'resultsByClass', 'chartResultsByClass', 'performanceScope', 'performanceTargetId', 'performanceScopes',
+            'recentEnrollments', 'recentActivities',
+            'trimesters', 'sequences'
+        ));
     }
 
     // ── CENSEUR ───────────────────────────────────────────────────────────
     public function censeur()
     {
-        return view('dashboard.censeur');
+        $activeYear = AcademicYear::active();
+
+        if (!$activeYear) {
+            return view('dashboards.censeur', [
+                'activeYear' => null, 'classes' => collect(),
+                'classProgress' => collect(), 'currentSeq' => null,
+                'criticalAbsences' => collect(), 'mySlots' => collect(),
+                'sections' => collect(), 'selectedSectionId' => 0,
+                'days' => [1=>'Lundi',2=>'Mardi',3=>'Mercredi',4=>'Jeudi',5=>'Vendredi'],
+                'kpiNotesPending' => 0, 'kpiBulletinsToGenerate' => 0,
+                'kpiAbsencesToday' => 0, 'kpiIncidentsThisMonth' => 0,
+            ]);
+        }
+
+        $sections = Section::whereHas('levels.classGroups', fn($q) =>
+            $q->where('academic_year_id', $activeYear->id)
+        )->orderBy('name')->get();
+
+        $selectedSectionId = (int) request('section_id');
+
+        $classes = ClassGroup::where('academic_year_id', $activeYear->id)
+            ->with('level.section')
+            ->withCount([
+                'studentEnrollments as enrolled' => fn($q) => $q->where('status', 'active'),
+                'classSubjects as subjects_count' => fn($q) => $q->where('is_active', true),
+            ]);
+
+        if ($selectedSectionId > 0) {
+            $classes = $classes->whereHas('level', fn($q) => $q->where('section_id', $selectedSectionId));
+        }
+
+        $classes = $classes->orderBy('name')->get();
+
+        $currentSeq = $this->resolveCurrentSequence($activeYear, $classes);
+
+        // ── Progression par classe (style "Bulletins — Avancement") ─────────
+        $classProgress = $classes->map(function ($c) use ($currentSeq) {
+            if (!$currentSeq) return null;
+            $totalExpected = $c->enrolled * $c->subjects_count;
+            $filled = Grade::whereHas('classSubject', fn($q) => $q->where('class_group_id', $c->id))
+                ->where('sequence_id', $currentSeq->id)
+                ->where(fn($q) => $q->whereNotNull('grade')->orWhere('is_absent', true))
+                ->count();
+
+            return [
+                'class'    => $c,
+                'pct'      => $totalExpected > 0 ? round(($filled / $totalExpected) * 100) : 0,
+                'filled'   => $filled,
+                'total'    => $totalExpected,
+            ];
+        })->filter()->sortByDesc('pct')->values();
+
+        // ── KPI ────────────────────────────────────────────────────────────
+        $kpiNotesPending = $classProgress->filter(fn($r) => $r['pct'] < 100)->count();
+
+        $kpiBulletinsToGenerate = $currentSeq
+            ? $classes->filter(function ($c) use ($currentSeq) {
+                $expected = $c->enrolled;
+                $generated = \App\Models\BulletinReport::where('sequence_id', $currentSeq->id)
+                    ->whereHas('studentEnrollment', fn($q) => $q->where('class_group_id', $c->id))
+                    ->count();
+                return $generated < $expected;
+            })->count()
+            : 0;
+
+        $kpiAbsencesToday = (float)Absence::whereDate('absence_date', today())->sum('hours');
+        $kpiIncidentsThisMonth = DisciplineIncident::whereMonth('incident_date', now()->month)->count();
+
+        // ── Absences critiques (>= 6h cumulées sur 30 jours, non justifiées) ──
+        $criticalAbsences = Absence::where('absence_date', '>=', now()->subDays(30))
+            ->where('is_justified', false)
+            ->selectRaw('student_enrollment_id, SUM(hours) as total_hours')
+            ->groupBy('student_enrollment_id')
+            ->havingRaw('SUM(hours) >= 6')
+            ->orderByDesc('total_hours')
+            ->take(5)
+            ->get()
+            ->map(function ($row) {
+                $enr = StudentEnrollment::with('student', 'classGroup')->find($row->student_enrollment_id);
+                return $enr ? ['enrollment' => $enr, 'hours' => (float)$row->total_hours] : null;
+            })->filter()->values();
+
+        // ── Emploi du temps personnel (si le censeur enseigne aussi) ──────────
+        $staff = Auth::user()->staff;
+        $mySlots = collect();
+        if ($staff) {
+            $classSubjectIds = TeacherAssignment::where('staff_id', $staff->id)
+                ->where('academic_year_id', $activeYear->id)
+                ->pluck('class_subject_id');
+            $mySlots = TimetableSlot::whereIn('class_subject_id', $classSubjectIds)
+                ->where('academic_year_id', $activeYear->id)
+                ->with('classGroup', 'classSubject.subject')
+                ->orderBy('day_of_week')->orderBy('start_time')->get();
+        }
+
+        $setting = TimetableSetting::current();
+        $grid = $this->timetableGridService->buildGrid($setting, [1=>'Lundi',2=>'Mardi',3=>'Mercredi',4=>'Jeudi',5=>'Vendredi']);
+
+        return view('dashboards.censeur', compact(
+            'activeYear', 'classes', 'classProgress', 'currentSeq',
+            'criticalAbsences', 'mySlots', 'sections', 'selectedSectionId',
+            'kpiNotesPending', 'kpiBulletinsToGenerate',
+            'kpiAbsencesToday', 'kpiIncidentsThisMonth'
+        ) + [
+            'days' => [1=>'Lundi',2=>'Mardi',3=>'Mercredi',4=>'Jeudi',5=>'Vendredi'],
+            'gridRows' => $grid['rows'],
+        ]);
     }
 
     // ── ENSEIGNANT ────────────────────────────────────────────────────────
     public function enseignant()
     {
-        return view('dashboard.enseignant');
+        $user       = Auth::user();
+        $staff      = $user->staff;
+        $activeYear = AcademicYear::active();
+        $days       = [1=>'Lundi',2=>'Mardi',3=>'Mercredi',4=>'Jeudi',5=>'Vendredi'];
+
+        if (!$staff || !$activeYear) {
+            return view('dashboards.enseignant', [
+                'noStaff' => !$staff, 'activeYear' => $activeYear,
+                'myClasses' => collect(), 'mySlots' => collect(), 'days' => $days,
+                'totalStudents' => 0, 'totalClasses' => 0, 'totalSubjects' => 0,
+                'currentSeq' => null,
+            ]);
+        }
+
+        $assignments = TeacherAssignment::where('staff_id', $staff->id)
+            ->where('academic_year_id', $activeYear->id)
+            ->with(['classSubject.subject', 'classSubject.classGroup.level.section'])
+            ->get();
+
+        $totalClasses  = $assignments->pluck('classSubject.class_group_id')->unique()->count();
+        $totalSubjects = $assignments->pluck('classSubject.subject_id')->unique()->count();
+
+        $classGroups = $assignments->pluck('classSubject.classGroup')->filter()->unique('id');
+        $totalStudents = StudentEnrollment::whereIn('class_group_id', $classGroups->pluck('id'))
+            ->where('status', 'active')->count();
+
+        $currentSeq = $this->resolveCurrentSequence($activeYear);
+
+        // ── Mes classes (cartes, avec statut séquence courante) ──────────────
+        $myClasses = $assignments->map(function ($a) use ($currentSeq) {
+            $cs = $a->classSubject;
+            if (!$cs || !$cs->classGroup) return null;
+
+            $enrolled = StudentEnrollment::where('class_group_id', $cs->class_group_id)
+                ->where('status', 'active')->count();
+
+            $seqStatus = null;
+            if ($currentSeq) {
+                $filled = Grade::where('class_subject_id', $cs->id)
+                    ->where('sequence_id', $currentSeq->id)
+                    ->where(fn($q) => $q->whereNotNull('grade')->orWhere('is_absent', true))
+                    ->count();
+                $isLocked = \App\Models\GradeLock::where([
+                    'class_group_id' => $cs->class_group_id,
+                    'sequence_id'    => $currentSeq->id,
+                    'is_locked'      => true,
+                ])->exists();
+
+                $seqStatus = [
+                    'label'   => $currentSeq->label,
+                    'locked'  => $isLocked,
+                    'complete'=> $enrolled > 0 && $filled >= $enrolled,
+                    'filled'  => $filled,
+                    'total'   => $enrolled,
+                ];
+            }
+
+            return [
+                'class_subject_id' => $cs->id,
+                'class'            => $cs->classGroup,
+                'subject'          => $cs->subject,
+                'coefficient'      => $cs->coefficient,
+                'enrolled'         => $enrolled,
+                'seqStatus'        => $seqStatus,
+            ];
+        })->filter()->sortBy('class.name')->values();
+
+        // ── Mon emploi du temps de la semaine ──────────────────────────────
+        $classSubjectIds = $assignments->pluck('class_subject_id');
+        $mySlots = TimetableSlot::whereIn('class_subject_id', $classSubjectIds)
+            ->where('academic_year_id', $activeYear->id)
+            ->with('classGroup', 'classSubject.subject')
+            ->orderBy('day_of_week')->orderBy('start_time')->get();
+
+        $setting = TimetableSetting::current();
+        $grid = $this->timetableGridService->buildGrid($setting, $days);
+
+        return view('dashboards.enseignant', compact(
+            'activeYear', 'myClasses', 'mySlots', 'days',
+            'totalClasses', 'totalSubjects', 'totalStudents', 'currentSeq'
+        ) + ['noStaff' => false, 'gridRows' => $grid['rows']]);
     }
 
     // ── SURVEILLANT GÉNÉRAL ───────────────────────────────────────────────
     public function surveillant()
     {
-        return view('dashboard.surveillant');
+        $activeYear = AcademicYear::active();
+
+        // ── Absences du jour ─────────────────────────────────────────────
+        $todayAbsences = Absence::whereDate('absence_date', today())
+            ->with('studentEnrollment.student', 'studentEnrollment.classGroup')
+            ->get();
+
+        $todayHours    = (float)$todayAbsences->sum('hours');
+        $todayStudents = $todayAbsences->pluck('student_enrollment_id')->unique()->count();
+
+        // ── Liste détaillée des élèves absents aujourd'hui ───────────────
+        $absentToday = $todayAbsences->groupBy('student_enrollment_id')->map(function ($g) {
+            $enr = $g->first()->studentEnrollment;
+            return [
+                'enrollment'   => $enr,
+                'hours'        => (float)$g->sum('hours'),
+                'is_justified' => $g->every(fn($a) => $a->is_justified),
+            ];
+        })->filter(fn($r) => $r['enrollment'])->sortByDesc('hours')->values();
+
+        // ── Semaine ────────────────────────────────────────────────────────
+        $weekAbsences = Absence::whereBetween('absence_date', [
+            now()->startOfWeek(), now()->endOfWeek(),
+        ])->get();
+        $weekHours       = (float)$weekAbsences->sum('hours');
+        $weekUnjustified = (float)$weekAbsences->where('is_justified', false)->sum('hours');
+
+        // ── Top absentéistes 30j (déplacé à côté de discipline) ─────────────
+        $topAbsentees = Absence::where('absence_date', '>=', now()->subDays(30))
+            ->selectRaw('student_enrollment_id, SUM(hours) as total_hours, SUM(CASE WHEN is_justified=0 THEN hours ELSE 0 END) as unjustified')
+            ->groupBy('student_enrollment_id')
+            ->orderByDesc('total_hours')->take(5)->get()
+            ->map(function ($row) {
+                $enr = StudentEnrollment::with('student', 'classGroup')->find($row->student_enrollment_id);
+                return $enr ? [
+                    'enrollment'  => $enr,
+                    'total_hours' => (float)$row->total_hours,
+                    'unjustified' => (float)$row->unjustified,
+                ] : null;
+            })->filter()->values();
+
+        // ── Discipline ────────────────────────────────────────────────────
+        $disciplineStats = [
+            'pending'     => DisciplineIncident::where('status', 'ouvert')->count(),
+            'thisWeek'    => DisciplineIncident::whereBetween('incident_date', [
+                now()->startOfWeek(), now()->endOfWeek(),
+            ])->count(),
+            'suspensions' => DisciplineIncident::where('sanction_type', 'temporary_suspension')
+                ->whereDate('incident_date', '>=', now()->subDays(30))->count(),
+        ];
+
+        $recentIncidents = DisciplineIncident::with('studentEnrollment.student', 'studentEnrollment.classGroup')
+            ->orderByDesc('created_at')->take(5)->get();
+
+        return view('dashboards.surveillant', compact(
+            'activeYear', 'todayHours', 'todayStudents', 'absentToday',
+            'weekHours', 'weekUnjustified', 'topAbsentees',
+            'disciplineStats', 'recentIncidents'
+        ));
     }
 
     // ── ÉCONOME ───────────────────────────────────────────────────────────
@@ -453,5 +955,42 @@ class DashboardController extends Controller
             'recentEnrollments',
             'totalStudents'
         ));
+    }
+
+    /**
+     * Détermine la séquence "en cours" : la première séquence non verrouillée
+     * et non complète (toutes notes saisies). Si toutes sont verrouillées/complètes,
+     * retourne la dernière.
+     */
+    private function resolveCurrentSequence(AcademicYear $activeYear, ?\Illuminate\Support\Collection $classes = null): ?Sequence
+    {
+        $sequences = Sequence::where('academic_year_id', $activeYear->id)
+            ->orderBy('number')->get();
+
+        if ($sequences->isEmpty()) return null;
+
+        $classes = $classes ?? ClassGroup::where('academic_year_id', $activeYear->id)
+            ->withCount([
+                'studentEnrollments as enrolled' => fn($q) => $q->where('status', 'active'),
+                'classSubjects as subjects_count' => fn($q) => $q->where('is_active', true),
+            ])->get();
+
+        foreach ($sequences as $seq) {
+            $isLocked = \App\Models\GradeLock::where('sequence_id', $seq->id)
+                ->where('is_locked', true)->exists();
+
+            $totalExpected = $classes->sum(fn($c) => $c->enrolled * $c->subjects_count);
+            $totalFilled = Grade::where('sequence_id', $seq->id)
+                ->where(fn($q) => $q->whereNotNull('grade')->orWhere('is_absent', true))
+                ->count();
+
+            $isComplete = $totalExpected > 0 && $totalFilled >= $totalExpected;
+
+            if (!$isLocked && !$isComplete) {
+                return $seq; // première séquence encore "ouverte" → c'est la courante
+            }
+        }
+
+        return $sequences->last(); // tout est bouclé → dernière séquence
     }
 }

@@ -319,7 +319,10 @@ class AcademicYearController extends Controller
             $finalizedCount = $this->enrollments
                 ->finalizeYearEnrollments($academicYear);
 
-            $academicYear->update(['is_active' => false]);
+            $academicYear->update([
+                'is_active' => false,
+                'is_locked' => false,
+            ]);
 
             $reactivatedCount = $this->enrollments
                 ->reactivateYearEnrollments($academicYear);

@@ -16,7 +16,7 @@
 
         @page {
             size: A4 landscape;
-            margin: 4mm;
+            margin: 3mm;
         }
 
         * {
@@ -39,7 +39,7 @@
             width: 297mm;
             min-height: 210mm;
             margin: 0 auto;
-            padding: 8mm;
+            padding: 6mm;
             background: white;
         }
 
@@ -193,58 +193,58 @@
         }
 
         .bordereau-header__logo {
-            width: 88px;
-            min-width: 88px;
+            width: 108px;
+            min-width: 108px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
         .bordereau-header__logo img {
-            max-height: 84px;
-            max-width: 84px;
+            max-height: 104px;
+            max-width: 104px;
             object-fit: contain;
         }
 
         .bordereau-header__logo-placeholder {
-            width: 84px;
-            height: 84px;
+            width: 104px;
+            height: 104px;
             border-radius: 18px;
             background: var(--primary);
             color: #fff;
             display: grid;
             place-items: center;
-            font-size: 32px;
+            font-size: 36px;
             font-weight: 900;
         }
 
         .bordereau-header__school-info {
             display: grid;
-            gap: 4px;
+            gap: 6px;
         }
 
         .bordereau-header__school {
-            font-size: 14px;
+            font-size: 18px;
             font-weight: 900;
             color: var(--primary);
             text-transform: uppercase;
-            letter-spacing: .03em;
+            letter-spacing: .04em;
         }
 
         .bordereau-header__meta {
-            font-size: 10px;
+            font-size: 12px;
             color: var(--muted);
         }
 
         .bordereau-header__doc {
             display: grid;
-            gap: 4px;
+            gap: 5px;
             justify-items: end;
             text-align: right;
         }
 
         .bordereau-header__doc-title {
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 900;
             text-transform: uppercase;
             color: var(--primary);
@@ -252,14 +252,14 @@
         }
 
         .bordereau-header__doc-copy {
-            font-size: 10px;
+            font-size: 12px;
             font-weight: 700;
             color: #CC6000;
         }
 
         .bordereau-header__doc-year,
         .bordereau-header__doc-date {
-            font-size: 10px;
+            font-size: 12px;
             font-weight: 700;
             color: var(--primary);
         }
@@ -271,18 +271,18 @@
         }
 
         .bordereau-header__title {
-            font-size: 18px;
+            font-size: 26px;
             font-weight: 900;
             color: var(--primary);
             text-transform: uppercase;
-            letter-spacing: .06em;
+            letter-spacing: .08em;
             text-decoration: underline;
         }
 
         .bordereau-header__subtitle {
-            font-size: 10px;
+            font-size: 13px;
             color: var(--muted);
-            margin-top: 2px;
+            margin-top: 4px;
         }
 
         .data-table th:first-child,

@@ -13,7 +13,7 @@
      class="fixed top-20 left-1/2 -translate-x-1/2 z-50
             flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl
             border border-blue-200"
-     style="background-color:#7FA6C4;">
+     style="background-color:#1A3A6B;">
     <span class="text-white text-sm font-bold">
         <span x-text="selected.size"></span>
         reçu(s) sélectionné(s)
@@ -21,7 +21,7 @@
     <button @click="printSelected()"
             class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm
                    font-bold transition-all hover:shadow-md"
-            style="background-color:#F3D99B; color:#7FA6C4;">
+            style="background-color:#F3D99B; color:#1A3A6B;">
         <svg class="w-4 h-4" fill="none" stroke="currentColor"
              viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round"
@@ -135,7 +135,7 @@
         <button @click="selectAll()"
                 class="text-xs font-semibold px-3 py-1.5 rounded-lg
                        border border-gray-200 hover:bg-gray-50 transition-colors"
-                style="color:#7FA6C4;">
+                style="color:#1A3A6B;">
             Tout sélectionner
         </button>
         <button @click="clearSelection()"
@@ -165,7 +165,7 @@
                         <input type="checkbox"
                                @change="toggleAllVisible($event.target.checked)"
                                class="w-4 h-4 rounded cursor-pointer"
-                               style="accent-color:#7FA6C4;"
+                               style="accent-color:#1A3A6B;"
                                title="Sélectionner/désélectionner la page">
                     </th>
                     <th class="text-left px-4 py-3.5 text-xs font-semibold
@@ -214,7 +214,7 @@
                                :checked="selected.has('{{ $p->id }}')"
                                @change="toggle('{{ $p->id }}', $event.target.checked)"
                                class="payment-checkbox w-4 h-4 rounded cursor-pointer"
-                               style="accent-color:#7FA6C4;">
+                               style="accent-color:#1A3A6B;">
                     </td>
                     <td class="px-4 py-3.5">
                         <a href="{{ route('finances.student',
@@ -246,7 +246,7 @@
                     </td>
                     <td class="px-4 py-3.5 hidden lg:table-cell">
                         <span class="font-mono text-xs font-bold"
-                              style="color:#7FA6C4;">
+                              style="color:#1A3A6B;">
                             {{ $p->receipt_number }}
                         </span>
                     </td>

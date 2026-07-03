@@ -3,9 +3,11 @@
     $schoolNameEn = strtoupper($school->full_name_en ?: 'NTANKEU POLYVALENT COLLEGE');
     $ministryFr = strtoupper($school->ministry ?: 'MINISTERE DES ENSEIGNEMENTS SECONDAIRES');
     $ministryEn = strtoupper($school->ministry_en ?: 'MINISTRY OF SECONDARY EDUCATION');
+    $phones = collect($phones);
     $phoneLine = $phones->isNotEmpty() ? $phones->pluck('number')->join(' / ') : null;
-    $agreementLines = isset($agreements) && $agreements->isNotEmpty()
-        ? $agreements->map(fn ($agreement) => 'N° ' . $agreement->number)
+    $agreementLines = isset($agreements) ? collect($agreements) : collect();
+    $agreementLines = $agreementLines->isNotEmpty()
+        ? $agreementLines->map(fn ($agreement) => 'N° ' . $agreement->number)
         : collect();
     $logoSrc = null;
     if ($school->logo) {

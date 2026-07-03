@@ -5,33 +5,31 @@
 <title>Rapport des effectifs totaux — {{ $year->label }}</title>
 @include('students.documents.partials.base-styles')
 <style>
-@page { size: A4 portrait; margin: 7mm 9mm; }
+@page { size: A4 portrait; margin: 4mm 5mm; }
 .enrollment-report-page {
     max-width: 192mm;
-    padding: 7mm 9mm;
+    padding: 5mm 6mm;
     color: #111827;
 }
 .enrollment-report-page .cert-official-header {
     margin-bottom: 10px;
 }
 .enrollment-report-title {
-    /* background: #d9d9d9; */
-    /* background: #F9FAFB; */
     background: #E5E7EB;
     border: 1px solid #4B5563;
-    padding: 7px 8px;
-    margin-bottom: 14px;
+    padding: 10px 12px;
+    margin-bottom: 16px;
     text-align: center;
     font-family: Georgia, 'Times New Roman', serif;
-    font-size: 22px;
+    font-size: 26px;
     font-weight: 900;
-    line-height: 1.15;
+    line-height: 1.05;
     text-transform: uppercase;
 }
 .enrollment-report-subtitle {
-    margin-top: 3px;
+    margin-top: 4px;
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     text-transform: none;
 }
@@ -44,20 +42,20 @@
 }
 .enrollment-report-block__title {
     margin-bottom: 0;
-    padding: 6px 10px;
+    padding: 10px 12px;
     background: #fff;
     color: #111827;
     border: 1px solid #4B5563;
     border-bottom: 0;
     text-align: left;
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 900;
     text-transform: uppercase;
 }
 .enrollment-report-block__meta {
-    margin-top: 2px;
-    font-size: 10px;
+    margin-top: 3px;
+    font-size: 11px;
     font-weight: 600;
     text-transform: none;
     opacity: 0.85;
@@ -72,7 +70,7 @@
 .enrollment-report-table th,
 .enrollment-report-table td {
     border: 1px solid #4B5563;
-    padding: 7px 8px;
+    padding: 8px 10px;
     text-align: center;
     vertical-align: middle;
 }
@@ -80,6 +78,7 @@
     font-weight: 900;
     background: #f7f7f7;
     color: #111827;
+    font-size: 11px;
 }
 .enrollment-report-table td:first-child {
     text-align: left;

@@ -131,6 +131,29 @@
 
         </div>
 
+        {{-- @can('manage-parent-communication')
+        @php
+            $phone = $enrollment->student->father_phone
+                ?? $enrollment->student->mother_phone
+                ?? $enrollment->student->guardian_phone;
+        @endphp
+        @if($phone)
+        <form method="POST" action="{{ route('communication.parents.bulletin.send', $enrollment) }}"
+            class="inline">
+            @csrf
+            <input type="hidden" name="phone" value="{{ $phone }}">
+            <input type="hidden" name="pdf_url"
+                value="{{ route('bulletins.pdf', [$enrollment, 'type'=>$type,
+                            'sequence_id'=>request('sequence_id'), 'trimester_id'=>request('trimester_id')]) }}">
+            <button type="submit"
+                    class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white
+                        text-sm font-bold" style="background-color:#1A5C2A;">
+                📱 Envoyer tous par WhatsApp
+            </button>
+        </form>
+        @endif
+        @endcan --}}
+
         {{-- Message d'aide dynamique --}}
         <p class="mt-3 text-xs text-amber-600 font-medium"
            x-show="classId && !periodSelected">
@@ -237,6 +260,28 @@
                 : 'Générer tous les bulletins de la classe'">
             </span>
         </button>
+
+        @can('manage-parent-communication')
+        <button type="submit"
+                formaction="{{ route('communication.parents.bulletin.bulk-send') }}"
+                formtarget="_self"
+                :disabled="!canSubmit"
+                :class="canSubmit
+                    ? 'opacity-100 cursor-pointer hover:shadow-md'
+                    : 'opacity-40 cursor-not-allowed'"
+                class="flex items-center gap-2 px-6 py-3 rounded-xl text-white
+                       text-sm font-bold transition-all"
+                style="background-color:#1A5C2A;">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M3 10h2a2 2 0 012 2v6a2 2 0 01-2 2H3v-10zm0 0V6a2 2 0 012-2h2.5a2 2 0 012 2v4m0 0h6a2 2 0 012 2v3a2 2 0 01-2 2h-6a2 2 0 01-2-2v-3a2 2 0 012-2zm0 0V6a2 2 0 012-2H17"/>
+            </svg>
+            <span x-text="selected.length > 0
+                ? 'Envoyer ' + selected.length + ' bulletins par WhatsApp'
+                : 'Envoyer les bulletins de la classe par WhatsApp'">
+            </span>
+        </button>
+        @endcan
 
         <button type="button"
                 @click="

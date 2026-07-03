@@ -5,12 +5,12 @@
 <title>Certificats de scolarité — impression groupée</title>
 @include('students.documents.partials.base-styles')
 <style>
-@page { size: A4 portrait; margin: 6mm 7mm; }
+@page { size: A4 portrait; margin: 4mm 5mm; }
 @media print {
     .cert-page { page-break-after: always; }
     .cert-page:last-child { page-break-after: auto; }
 }
-.cert-page { margin-bottom: 20px; }
+.cert-page { margin-bottom: 18px; }
 </style>
 </head>
 <body>

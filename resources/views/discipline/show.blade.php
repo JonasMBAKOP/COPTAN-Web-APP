@@ -12,47 +12,84 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
+    <div class="lg:col-span-3 flex flex-wrap items-center justify-between gap-4 mb-4">
+        <div class="space-y-2">
+            <p class="text-xs uppercase tracking-[0.25em] text-gray-400 font-bold">Actions rapides</p>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ route('discipline.print', $disciplineIncident) }}" target="_blank"
+                   class="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-all">
+                    Prévisualiser fiche
+                </a>
+                @if($disciplineIncident->parent_convoked)
+                <a href="{{ route('discipline.convocation', $disciplineIncident) }}" target="_blank"
+                   class="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-all">
+                    Prévisualiser convocation
+                </a>
+                @endif
+                <a href="{{ route('discipline.edit', $disciplineIncident) }}"
+                   class="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-all">
+                    Modifier
+                </a>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+            @can('manage-discipline')
+            <form method="POST" action="{{ route('discipline.status', $disciplineIncident) }}"
+                  class="inline-flex items-center gap-2">
+                @csrf @method('PATCH')
+                <input type="hidden" name="status"
+                       value="{{ $disciplineIncident->status === 'open' ? 'closed' : 'open' }}">
+                <button type="submit"
+                        class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-all"
+                        style="background:{{ $disciplineIncident->status === 'closed' ? '#D1FAE5' : '#FEF3C7' }}; color:{{ $disciplineIncident->status === 'closed' ? '#065F46' : '#92400E' }}; border:1px solid {{ $disciplineIncident->status === 'closed' ? '#A7F3D0' : '#FCD34D' }};">
+                    {{ $disciplineIncident->status === 'closed' ? 'Clôturé' : 'Ouvert' }}
+                </button>
+            </form>
+            @else
+            <span class="inline-flex items-center rounded-full px-4 py-2 text-xs font-semibold"
+                  style="background:{{ $disciplineIncident->status === 'closed' ? '#D1FAE5' : '#FEF3C7' }}; color:{{ $disciplineIncident->status === 'closed' ? '#065F46' : '#92400E' }};">
+                {{ $statusLabels[$disciplineIncident->status] ?? ucfirst($disciplineIncident->status) }}
+            </span>
+            @endcan
+
+            <a href="{{ route('discipline.index') }}"
+               class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-all">
+                Retour à la liste
+            </a>
+        </div>
+    </div>
+
     {{-- ── Colonne principale ──────────────────────────────────────────── --}}
     <div class="lg:col-span-2 space-y-4">
 
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div class="flex items-center justify-between mb-4">
+        <div class="bg-white rounded-3xl shadow-xl border border-gray-100 p-6">
+            <div class="flex items-center justify-between gap-4 mb-6">
                 <span class="px-3 py-1 rounded-full text-xs font-bold"
                       style="background:#FEE2E2;color:#991B1B;">
                     {{ $disciplineIncident->incident_type_label }}
                 </span>
-                @can('manage-discipline')
-                <form method="POST"
-                      action="{{ route('discipline.status', $disciplineIncident) }}"
-                      class="flex items-center gap-2">
-                    @csrf @method('PATCH')
-                    <select name="status" onchange="this.form.submit()"
-                            class="px-3 py-1.5 border border-gray-200 rounded-lg
-                                   text-xs font-bold bg-white">
-                        @foreach($statusLabels as $v => $l)
-                        <option value="{{ $v }}"
-                                {{ $disciplineIncident->status==$v?'selected':'' }}>
-                            {{ $l }}
-                        </option>
-                        @endforeach
-                    </select>
-                </form>
-                @endcan
+                <div class="text-right">
+                    <p class="text-sm font-black text-gray-900">{{ $disciplineIncident->studentEnrollment->student->full_name }}</p>
+                    <p class="text-xs text-gray-400">
+                        {{ $disciplineIncident->studentEnrollment->classGroup->full_name }}
+                    </p>
+                </div>
             </div>
 
-            <h2 class="font-black text-lg mb-1" style="color:#1A3A6B;">
-                {{ $disciplineIncident->studentEnrollment->student->full_name }}
-            </h2>
-            <p class="text-sm text-gray-500 mb-4">
-                {{ $disciplineIncident->studentEnrollment->classGroup->full_name }}
-                · {{ $disciplineIncident->incident_date->format('d/m/Y') }}
-                @if($disciplineIncident->incident_time)
-                à {{ $disciplineIncident->incident_time }}
-                @endif
-                @if($disciplineIncident->location)
-                · {{ $disciplineIncident->location_label }}
-                @endif
-            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.25em] text-gray-400">Classe</p>
+                    <p class="text-sm font-semibold text-gray-800">{{ $disciplineIncident->studentEnrollment->classGroup->full_name }}</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase tracking-[0.25em] text-gray-400">Date</p>
+                    <p class="text-sm font-semibold text-gray-800">{{ $disciplineIncident->incident_date->format('d/m/Y') }} {{ $disciplineIncident->incident_time ? 'à ' . $disciplineIncident->incident_time : '' }}</p>
+                </div>
+            </div>
+            @if($disciplineIncident->location)
+            <p class="text-sm text-gray-500 mb-4">Lieu : {{ $disciplineIncident->location_label }}</p>
+            @endif
 
             <div class="bg-gray-50 rounded-xl p-4">
                 <p class="text-sm text-gray-700 leading-relaxed">
@@ -115,6 +152,18 @@
                         {{ $disciplineIncident->created_at->format('d/m/Y H:i') }}
                     </dd>
                 </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Modifié par</dt>
+                    <dd class="font-semibold text-gray-800">
+                        {{ $disciplineIncident->decidedBy?->name ?? '—' }}
+                    </dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Dernière modification</dt>
+                    <dd class="font-semibold text-gray-800">
+                        {{ $disciplineIncident->updated_at->format('d/m/Y H:i') }}
+                    </dd>
+                </div>
             </dl>
         </div>
 
@@ -146,12 +195,6 @@
             @endif
         </div>
 
-        <a href="{{ route('discipline.index') }}"
-           class="block w-full py-2.5 rounded-xl text-center text-sm
-                  font-medium text-gray-600 border border-gray-200
-                  hover:bg-gray-50">
-            ← Retour à la liste
-        </a>
     </div>
 
 </div>

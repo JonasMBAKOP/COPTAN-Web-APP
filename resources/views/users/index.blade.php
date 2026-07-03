@@ -181,9 +181,13 @@
                     {{-- Dernière connexion --}}
                     <td class="px-4 py-3 hidden lg:table-cell">
                         <span class="text-sm text-gray-500">
-                            {{ $user->last_login_at
-                                ? $user->last_login_at->diffForHumans()
-                                : 'Jamais connecté' }}
+                            @if(cache()->has('user-is-online-' . $user->id))
+                                En ligne
+                            @elseif($user->last_login_at)
+                                {{ $user->last_login_at->locale('fr')->diffForHumans() }}
+                            @else
+                                Jamais connecté
+                            @endif
                         </span>
                     </td>
 

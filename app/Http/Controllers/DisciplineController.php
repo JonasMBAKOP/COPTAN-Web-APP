@@ -7,8 +7,12 @@ use App\Models\AcademicYear;
 use App\Models\AuditLog;
 use App\Models\ClassGroup;
 use App\Models\DisciplineIncident;
+use App\Models\SchoolAgreement;
+use App\Models\SchoolPhone;
+use App\Models\SchoolSetting;
 use App\Models\Section;
 use App\Models\StudentEnrollment;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -331,7 +335,194 @@ class DisciplineController extends Controller
         ));
     }
 
-    // // ── FORMULAIRE D'ÉDITION ──────────────────────────────────────────────
+    public function edit(DisciplineIncident $disciplineIncident)
+    {
+        $disciplineIncident->load([
+            'studentEnrollment.student',
+            'studentEnrollment.classGroup.level.section',
+        ]);
+
+        $incident = $disciplineIncident;
+        $incidentTypes = DisciplineIncident::INCIDENT_TYPES;
+        $sanctionTypes = DisciplineIncident::SANCTIONS;
+        $statusLabels = DisciplineIncident::STATUSES;
+
+        return view('discipline.edit', compact(
+            'incident', 'incidentTypes', 'sanctionTypes', 'statusLabels'
+        ));
+    }
+
+    public function update(Request $request, DisciplineIncident $disciplineIncident)
+    {
+        $request->validate([
+            'incident_date'          => ['required', 'date', 'before_or_equal:today'],
+            'incident_time'          => ['nullable', 'date_format:H:i'],
+            'location'               => ['nullable', Rule::in(array_keys(DisciplineIncident::LOCATIONS))],
+            'incident_type'          => ['required', Rule::in(array_keys(DisciplineIncident::INCIDENT_TYPES))],
+            'description'            => ['required', 'string', 'max:2000'],
+            'sanction_type'          => ['nullable', Rule::in(array_keys(DisciplineIncident::SANCTIONS))],
+            'sanction_duration_days' => ['nullable', 'integer', 'min:1', 'max:365'],
+            'parent_convoked'        => ['boolean'],
+            'convocation_date'       => ['nullable', 'date'],
+        ]);
+
+        $parentConvoked = $request->boolean('parent_convoked');
+
+        $disciplineIncident->update([
+            'incident_date'          => $request->incident_date,
+            'incident_time'          => $request->incident_time,
+            'location'               => $request->location ?: null,
+            'incident_type'          => $request->incident_type,
+            'description'            => $request->description,
+            'sanction_type'          => $request->sanction_type ?: 'observation',
+            'sanction_duration_days' => $request->sanction_duration_days,
+            'parent_convoked'        => $parentConvoked,
+            'convocation_date'       => $parentConvoked ? $request->convocation_date : null,
+            'decided_by'             => Auth::id(),
+        ]);
+
+        AuditLog::log('discipline_incident_updated', $disciplineIncident);
+
+        return redirect()
+            ->route('discipline.show', $disciplineIncident)
+            ->with('success', 'Incident disciplinaire mis à jour.');
+    }
+
+    public function printIncident(DisciplineIncident $disciplineIncident)
+    {
+        $disciplineIncident->load([
+            'studentEnrollment.student',
+            'studentEnrollment.classGroup.level.section',
+            'studentEnrollment.academicYear',
+            'reportedBy', 'decidedBy',
+        ]);
+
+        $schoolSettings = \App\Models\SchoolSetting::instance();
+        $phones = \App\Models\SchoolPhone::orderByDesc('is_primary')->get();
+        $agreements = SchoolAgreement::orderBy('cycle')->get();
+
+        return view('discipline.pdf.incident-sheet', compact(
+            'disciplineIncident', 'schoolSettings', 'phones', 'agreements'
+        ));
+    }
+
+    public function convocation(DisciplineIncident $disciplineIncident)
+    {
+        if (! $disciplineIncident->parent_convoked) {
+            return redirect()->route('discipline.show', $disciplineIncident)
+                ->with('error', 'La convocation n’est pas disponible car le parent n’a pas été convoqué.');
+        }
+
+        $disciplineIncident->load([
+            'studentEnrollment.student',
+            'studentEnrollment.classGroup.level.section',
+            'studentEnrollment.academicYear',
+            'reportedBy', 'decidedBy',
+        ]);
+
+        $schoolSettings = \App\Models\SchoolSetting::instance();
+        $phones = \App\Models\SchoolPhone::orderByDesc('is_primary')->get();
+        $agreements = SchoolAgreement::orderBy('cycle')->get();
+
+        return view('discipline.pdf.parent-convocation', compact(
+            'disciplineIncident', 'schoolSettings', 'phones', 'agreements'
+        ));
+    }
+
+    public function bulkConvocations(Request $request)
+    {
+        $request->validate([
+            'incident_ids'   => ['required', 'array', 'min:1'],
+            'incident_ids.*' => ['integer', 'exists:discipline_incidents,id'],
+        ]);
+
+        $incidents = DisciplineIncident::with([
+                'studentEnrollment.student',
+                'studentEnrollment.classGroup.level.section',
+                'reportedBy', 'decidedBy',
+            ])
+            ->whereIn('id', $request->incident_ids)
+            ->where('parent_convoked', true)
+            ->orderByDesc('incident_date')
+            ->get();
+
+        if ($incidents->isEmpty()) {
+            return redirect()->back()->with('error', 'Aucun incident sélectionné n’est éligible à une convocation.');
+        }
+
+        $schoolSettings = \App\Models\SchoolSetting::instance();
+        $phones = \App\Models\SchoolPhone::orderByDesc('is_primary')->get();
+        $agreements = SchoolAgreement::orderBy('cycle')->get();
+
+        return view('discipline.pdf.parent-convocations-bulk', compact(
+            'incidents', 'schoolSettings', 'phones', 'agreements'
+        ));
+    }
+
+    public function reports(Request $request)
+    {
+        $allowedTypes = ['journalier', 'hebdomadaire', 'mensuel', 'annuel', 'entre-2-dates'];
+        $type = $request->input('type', 'mensuel');
+        if (! in_array($type, $allowedTypes, true)) {
+            $type = 'mensuel';
+        }
+
+        $selectedYear = $request->filled('year_id')
+            ? AcademicYear::find($request->year_id)
+            : AcademicYear::active();
+
+        $date = $request->input('date', now()->toDateString());
+        $week = $request->input('week', now()->format('o-\WW'));
+        $month = (int) $request->input('month', now()->month);
+        $startDate = $request->input('start_date', now()->toDateString());
+        $endDate = $request->input('end_date', now()->toDateString());
+
+        $query = DisciplineIncident::with([
+            'studentEnrollment.student',
+            'studentEnrollment.classGroup.level.section',
+            'reportedBy', 'decidedBy',
+        ]);
+
+        if ($selectedYear) {
+            $query->whereHas('studentEnrollment', function ($q) use ($selectedYear) {
+                $q->where('academic_year_id', $selectedYear->id);
+            });
+        }
+
+        switch ($type) {
+            case 'journalier':
+                $query->whereDate('incident_date', $date);
+                break;
+            case 'hebdomadaire':
+                $weekStart = Carbon::parse($week)->startOfWeek();
+                $weekEnd = Carbon::parse($week)->endOfWeek();
+                $query->whereBetween('incident_date', [$weekStart->toDateString(), $weekEnd->toDateString()]);
+                break;
+            case 'mensuel':
+                $query->whereMonth('incident_date', $month);
+                break;
+            case 'annuel':
+                $query->whereYear('incident_date', $selectedYear?->start_date?->year ?? now()->year);
+                break;
+            case 'entre-2-dates':
+                $query->whereBetween('incident_date', [$startDate, $endDate]);
+                break;
+        }
+
+        $incidents = $query
+            ->orderByDesc('incident_date')
+            ->orderByDesc('incident_time')
+            ->get();
+
+        $schoolSettings = SchoolSetting::instance();
+        $phones = SchoolPhone::orderByDesc('is_primary')->get();
+        $agreements = SchoolAgreement::orderBy('cycle')->get();
+
+        return view('discipline.reports.index', compact(
+            'incidents', 'type', 'selectedYear', 'date', 'week', 'month', 'startDate', 'endDate',
+            'schoolSettings', 'phones', 'agreements'
+        ));
+    }
     // public function edit(DisciplineIncident $incident)
     // {
     //     $incident->load([

@@ -254,7 +254,8 @@
 {{-- ══════════════════════════════════════════════════════════════════════════ --}}
 @foreach($otherYears as $year)
 @php
-    $isClosed = $year->end_date < now();
+    $isClosed = $year->isClosed();
+    $isFinished = !$year->is_active && $year->end_date < now();
 @endphp
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100
             overflow-hidden mb-4
@@ -270,7 +271,7 @@
                 </h2>
                 <span class="px-2.5 py-0.5 rounded-md text-xs font-bold
                              tracking-wider bg-gray-100 text-gray-500">
-                    {{ $isClosed ? 'CLÔTURÉE' : 'EN PRÉPARATION' }}
+                    {{ $isClosed ? 'CLÔTURÉE' : ($isFinished ? 'TERMINÉE' : 'EN PRÉPARATION') }}
                 </span>
                 @if($isClosed)
                 <span class="flex items-center gap-1 text-xs text-gray-400">
@@ -407,6 +408,20 @@
 
 {{-- ── MESSAGE INFO LECTURE SEULE ──────────────────────────────────────────── --}}
 @if($otherYears->where('end_date', '<', now())->isNotEmpty())
+<div class="flex items-start gap-3 px-5 py-4 rounded-xl mb-4"
+     style="background-color: #EBF3FB;">
+    <svg class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: #1A3A6B;"
+         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <p class="text-sm italic" style="color: #1A3A6B;">
+        Les années dont la date de fin est passée restent modifiables et activables
+        tant qu'elles ne sont pas clôturées manuellement.
+    </p>
+</div>
+@endif
+@if($otherYears->contains(fn($year) => $year->isClosed()))
 <div class="flex items-start gap-3 px-5 py-4 rounded-xl mb-6"
      style="background-color: #EBF3FB;">
     <svg class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: #1A3A6B;"

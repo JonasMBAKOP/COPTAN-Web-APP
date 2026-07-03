@@ -326,7 +326,7 @@ class ClassManagementController extends Controller
         $request->validate([
             'name'          => ['required', 'string', 'max:100'],
             'order_index'   => ['required', 'integer', 'min:1'],
-            'is_exam_class' => ['boolean'],
+            'is_exam_class' => ['required', 'boolean'],
         ]);
 
         $exists = Level::where('section_id', $section->id)
@@ -337,12 +337,14 @@ class ClassManagementController extends Controller
                 'Ce niveau existe déjà dans cette section.');
         }
 
-        Level::create([
+        $level = Level::create([
             'section_id'    => $section->id,
             'name'          => $request->name,
             'order_index'   => $request->order_index,
             'is_exam_class' => $request->boolean('is_exam_class'),
         ]);
+
+        AuditLog::log('created', $level, [], $level->toArray());
 
         return back()->with('success',
             "Niveau « {$request->name} » ajouté.");
@@ -353,7 +355,7 @@ class ClassManagementController extends Controller
         $request->validate([
             'name'          => ['required', 'string', 'max:100'],
             'order_index'   => ['required', 'integer', 'min:1'],
-            'is_exam_class' => ['boolean'],
+            'is_exam_class' => ['required', 'boolean'],
         ]);
 
         $old = $level->toArray();

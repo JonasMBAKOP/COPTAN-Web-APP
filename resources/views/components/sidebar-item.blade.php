@@ -158,6 +158,22 @@
                              c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                 </svg>
                 @break
+            @case('speakerphone')
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M11 5.882L6.062 3.5A1 1 0 004 4.382v15.236a1 1 0 001.562.882L11 18.118V5.882z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15.536 8.464a5 5 0 010 7.072M17.657 6.343a8 8 0 010 11.314"/>
+                </svg>
+                @break
+            @case('chat')
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.927
+                             9.927 0 01-4.888-1.218L3 20l1.218-4.112A9.927 9.927 0 013 12c0-4.418
+                             4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+                @break
             @case('mail')
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

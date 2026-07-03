@@ -15,9 +15,14 @@
 .finance-card:nth-of-type(3) { animation-delay: .08s; }
 .finance-card:nth-of-type(4) { animation-delay: .12s; }
 .finance-soft-card { background: #fff; border: 1px solid #E5EDF5; box-shadow: 0 10px 28px rgba(31, 78, 121, .06); }
+.finance-toolbar { background: linear-gradient(135deg, #FFFFFF 0%, #F8FBFE 100%); border: 1px solid #DCE8F3; box-shadow: 0 12px 32px rgba(31, 78, 121, .07); }
+.finance-action { transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease; }
+.finance-action:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(31, 78, 121, .08); }
 .finance-kpi { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
 .finance-kpi:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(31, 78, 121, .10); border-color: #CFE0EE; }
 .finance-progress { width: var(--target-width); animation: financeGrow .8s cubic-bezier(.2,.75,.25,1) both; }
+.finance-track { background:#E5E7EB; box-shadow:inset 0 1px 2px rgba(15,23,42,.08); }
+.finance-track .finance-progress { min-width:3px; }
 .finance-chart-bar { height: 0; animation: financeBarRise .72s cubic-bezier(.2,.75,.25,1.12) forwards; animation-delay: var(--delay); }
 .finance-tab-active { color: #1F4E79; border-color: #1F4E79; background: #EEF6FC; }
 @media print {
@@ -41,85 +46,76 @@
 @endphp
 
 <div class="finance-shell space-y-6">
-    <section class="finance-soft-card finance-card overflow-hidden rounded-2xl">
-        <div class="border-b border-[#E5EDF5] bg-[#F8FBFE] px-5 py-5 lg:px-6">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <span class="inline-flex items-center rounded-full bg-[#E8F2FA] px-3 py-1 text-[11px] font-black uppercase tracking-wide text-[#1F4E79]">Pilotage financier</span>
-                        @if($selectedYear?->is_active)
-                            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-bold text-emerald-700">
-                                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Année active
-                            </span>
-                        @endif
-                    </div>
-                    <h2 class="mt-3 text-2xl font-black tracking-tight text-[#163B5C]">Gestion globale des frais scolaires</h2>
-                    <p class="mt-1 text-sm font-medium text-slate-500">
-                        @if($selectedYear)
-                            Année {{ $selectedYear->label }}
-                            @if($selectedYear->start_date && $selectedYear->end_date)
-                                · {{ $selectedYear->start_date->locale('fr')->translatedFormat('F Y') }} à {{ $selectedYear->end_date->locale('fr')->translatedFormat('F Y') }}
-                            @endif
-                        @else
-                            Sélectionnez une année scolaire pour charger les indicateurs.
-                        @endif
-                    </p>
-                </div>
-
-                <div class="no-print flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <form method="GET" action="{{ route('finances.global') }}" class="flex items-center gap-2 rounded-xl border border-[#DCE8F3] bg-white px-3 py-2">
-                        <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">Année</label>
-                        <select name="year_id" onchange="this.form.submit()" class="min-w-[150px] border-0 bg-transparent text-sm font-bold text-[#1F4E79] outline-none focus:ring-0">
+    <section class="finance-toolbar finance-card rounded-2xl p-4 lg:p-5">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div class="no-print flex w-full flex-col gap-3 lg:flex-row lg:items-center">
+                <form method="GET" action="{{ route('finances.global') }}" class="flex min-w-[240px] items-center gap-3 rounded-2xl border border-[#DCE8F3] bg-white px-4 py-3">
+                    <svg class="h-5 w-5 text-[#1A3A6B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M5 11h14M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <div class="min-w-0 flex-1">
+                        <label class="block text-[10px] font-black uppercase tracking-wide text-slate-400">Annee scolaire</label>
+                        <select name="year_id" onchange="this.form.submit()" class="mt-0.5 w-full border-0 bg-transparent p-0 text-sm font-black text-[#1A3A6B] outline-none focus:ring-0">
                             @foreach($years as $year)
                                 <option value="{{ $year->id }}" {{ $selectedYear?->id == $year->id ? 'selected' : '' }}>
                                     {{ $year->label }}{{ $year->is_active ? ' (Active)' : '' }}
                                 </option>
                             @endforeach
                         </select>
-                    </form>
-                    <a href="{{ route('finances.reports', ['type' => 'annuel', 'year_id' => $selectedYear?->id]) }}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-[#DCE8F3] bg-white px-4 py-2.5 text-xs font-black text-slate-700 transition hover:bg-[#F8FBFE]">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6m4 6V7m4 10v-4M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                        Rapports
+                    </div>
+                </form>
+
+                <div class="grid flex-1 grid-cols-2 gap-2 md:grid-cols-4">
+                    <a href="{{ route('finances.global') }}" class="finance-action finance-tab-active inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-xs font-black">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h7"/></svg>
+                        Vue globale
                     </a>
-                    <a href="{{ route('finances.fees-list') }}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-[#DCE8F3] bg-white px-4 py-2.5 text-xs font-black text-slate-700 transition hover:bg-[#F8FBFE]">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                        Configurer les frais
+                    <a href="{{ route('finances.index') }}" class="finance-action inline-flex items-center justify-center gap-2 rounded-2xl border border-[#DCE8F3] bg-white px-4 py-3 text-xs font-black text-slate-600">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m0-4a4 4 0 100-8 4 4 0 000 8zm8 0a4 4 0 100-8 4 4 0 000 8z"/></svg>
+                        Par eleve
                     </a>
-                    <a href="{{ route('finances.index') }}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1F4E79] px-4 py-2.5 text-xs font-black text-white shadow-sm transition hover:bg-[#173D60]">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6"/></svg>
-                        Paiement
+                    <a href="{{ route('finances.fees-list') }}" class="finance-action inline-flex items-center justify-center gap-2 rounded-2xl border border-[#DCE8F3] bg-white px-4 py-3 text-xs font-black text-slate-600">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5h6M9 9h6M5 3h14a2 2 0 012 2v14l-4-2-4 2-4-2-4 2V5a2 2 0 012-2z"/></svg>
+                        Tranches
+                    </a>
+                    <a href="{{ route('finances.payments') }}" class="finance-action inline-flex items-center justify-center gap-2 rounded-2xl border border-[#DCE8F3] bg-white px-4 py-3 text-xs font-black text-slate-600">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l2 2 4-4M7 4h10a2 2 0 012 2v14l-3-2-3 2-3-2-3 2V6a2 2 0 012-2z"/></svg>
+                        Recus
                     </a>
                 </div>
             </div>
-        </div>
 
-        <div class="no-print px-5 py-3 lg:px-6">
-            <nav class="flex flex-wrap gap-2 text-xs font-black">
-                <a href="{{ route('finances.global') }}" class="finance-tab-active rounded-xl border px-4 py-2 transition">Vue globale</a>
-                <a href="{{ route('finances.index') }}" class="rounded-xl border border-transparent px-4 py-2 text-slate-500 transition hover:border-[#DCE8F3] hover:bg-[#F8FBFE] hover:text-slate-800">Par élève</a>
-                <a href="{{ route('finances.fees-list') }}" class="rounded-xl border border-transparent px-4 py-2 text-slate-500 transition hover:border-[#DCE8F3] hover:bg-[#F8FBFE] hover:text-slate-800">Tranches</a>
-                <a href="{{ route('finances.payments') }}" class="rounded-xl border border-transparent px-4 py-2 text-slate-500 transition hover:border-[#DCE8F3] hover:bg-[#F8FBFE] hover:text-slate-800">Reçus</a>
-            </nav>
+            <div class="no-print flex flex-col gap-2 sm:flex-row xl:shrink-0">
+                <a href="{{ route('finances.reports', ['type' => 'annuel', 'year_id' => $selectedYear?->id]) }}" class="finance-action inline-flex items-center justify-center gap-2 rounded-2xl border border-[#DCE8F3] bg-white px-4 py-3 text-xs font-black text-slate-700">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6m4 6V7m4 10v-4M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    Rapports
+                </a>
+                <a href="{{ route('finances.fees-list') }}" class="finance-action inline-flex items-center justify-center gap-2 rounded-2xl border border-[#DCE8F3] bg-white px-4 py-3 text-xs font-black text-slate-700">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Configurer les frais
+                </a>
+                <a href="{{ route('finances.index') }}" class="finance-action inline-flex items-center justify-center gap-2 rounded-2xl bg-[#1F4E79] px-4 py-3 text-xs font-black text-white">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6"/></svg>
+                    Paiement
+                </a>
+            </div>
         </div>
     </section>
-
     <section class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div class="finance-soft-card finance-kpi finance-card rounded-2xl p-5">
+        <div class="finance-soft-card finance-kpi finance-card rounded-2xl p-5 ring-1 ring-transparent">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <p class="text-[11px] font-black uppercase tracking-wide text-slate-400">Frais attendus</p>
-                    <p class="mt-2 text-2xl font-black text-[#163B5C]">{{ number_format($expected) }} <span class="text-xs text-slate-400">FCFA</span></p>
+                    <p class="mt-2 text-2xl font-black text-[#163B5C]" data-count-up="{{ (int) $expected }}" data-count-suffix=" FCFA">{{ number_format($expected) }} <span class="text-xs text-slate-400">FCFA</span></p>
                     <p class="mt-1 text-xs font-semibold text-slate-400">Prévisions de l'année</p>
                 </div>
                 <div class="rounded-2xl bg-[#EEF6FC] p-3 text-[#1F4E79]"><svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-9 4h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
             </div>
         </div>
 
-        <div class="finance-soft-card finance-kpi finance-card rounded-2xl p-5">
+        <div class="finance-soft-card finance-kpi finance-card rounded-2xl p-5 ring-1 ring-transparent">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <p class="text-[11px] font-black uppercase tracking-wide text-slate-400">Frais collectés</p>
-                    <p class="mt-2 text-2xl font-black text-[#2F7D57]">{{ number_format($collected) }} <span class="text-xs text-slate-400">FCFA</span></p>
+                    <p class="mt-2 text-2xl font-black text-[#2F7D57]" data-count-up="{{ (int) $collected }}" data-count-suffix=" FCFA">{{ number_format($collected) }} <span class="text-xs text-slate-400">FCFA</span></p>
                     <p class="mt-1 text-xs font-semibold text-slate-400">{{ $collectionRate }}% du prévisionnel</p>
                 </div>
                 <div class="rounded-2xl bg-emerald-50 p-3 text-[#2F7D57]"><svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg></div>
@@ -127,18 +123,18 @@
             <div class="mt-4 h-2 overflow-hidden rounded-full bg-slate-100"><div class="finance-progress h-full rounded-full bg-[#2F7D57]" style="--target-width: {{ $collectionRate }}%;"></div></div>
         </div>
 
-        <div class="finance-soft-card finance-kpi finance-card rounded-2xl p-5">
+        <div class="finance-soft-card finance-kpi finance-card rounded-2xl p-5 ring-1 ring-transparent">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <p class="text-[11px] font-black uppercase tracking-wide text-slate-400">Reste à collecter</p>
-                    <p class="mt-2 text-2xl font-black text-[#B45353]">{{ number_format($remaining) }} <span class="text-xs text-slate-400">FCFA</span></p>
+                    <p class="mt-2 text-2xl font-black text-[#B45353]" data-count-up="{{ (int) $remaining }}" data-count-suffix=" FCFA">{{ number_format($remaining) }} <span class="text-xs text-slate-400">FCFA</span></p>
                     <p class="mt-1 text-xs font-semibold text-slate-400">{{ $debtorsCount }} élève(s) débiteur(s)</p>
                 </div>
                 <div class="rounded-2xl bg-rose-50 p-3 text-[#B45353]"><svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg></div>
             </div>
         </div>
 
-        <div class="finance-soft-card finance-kpi finance-card rounded-2xl p-5">
+        <div class="finance-soft-card finance-kpi finance-card rounded-2xl p-5 ring-1 ring-transparent">
             <div class="flex items-center justify-between gap-4">
                 <div>
                     <p class="text-[11px] font-black uppercase tracking-wide text-slate-400">Élèves à jour</p>
@@ -166,22 +162,26 @@
                     </div>
                     <div class="rounded-xl bg-[#F8FBFE] px-4 py-2 text-right">
                         <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">Total période</p>
-                        <p class="text-sm font-black text-[#1F4E79]">{{ number_format($monthlyTotal) }} FCFA</p>
+                        <p class="text-sm font-black text-[#1F4E79]" data-count-up="{{ (int) $monthlyTotal }}" data-count-suffix=" FCFA">{{ number_format($monthlyTotal) }} FCFA</p>
                     </div>
                 </div>
 
                 @if($monthlyData->isEmpty() || $monthlyTotal == 0)
                     <div class="flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed border-[#DCE8F3] bg-[#F8FBFE] text-sm font-semibold text-slate-400">Aucune collecte enregistrée sur la période.</div>
                 @else
-                    <div class="flex h-[230px] items-end gap-2 rounded-2xl bg-[#F8FBFE] px-3 pb-3 pt-5 sm:gap-3">
+                    <div id="global-monthly-chart" class="flex h-[238px] items-end gap-2 rounded-2xl bg-[#F8FBFE] px-3 pb-3 pt-4 sm:gap-3">
                         @foreach($monthlyData as $i => $m)
                             @php
                                 $pct = $maxMonthValue > 0 ? round(($m->total / $maxMonthValue) * 100) : 0;
                                 if ($m->total > 0 && $pct < 4) $pct = 4;
+                                $shortValue = $m->total >= 1000000 ? number_format($m->total / 1000000, 1).'M' : ($m->total >= 1000 ? number_format($m->total / 1000, 0).'k' : number_format($m->total, 0));
                             @endphp
                             <div class="group flex min-w-0 flex-1 flex-col items-center gap-2" title="{{ $m->full_label ?? $m->label }} : {{ number_format($m->total) }} FCFA">
-                                <div class="flex h-[170px] w-full items-end rounded-t-xl bg-[#EAF2F9]">
-                                    <div class="finance-chart-bar w-full rounded-t-xl bg-gradient-to-t from-[#1F4E79] to-[#6FA7D8]" style="--target-height: {{ $pct }}%; --delay: {{ $i * 55 }}ms;"></div>
+                                <span class="h-4 w-full truncate text-center text-[9px] font-black text-slate-500">
+                                    @if($m->total > 0) {{ $shortValue }} @endif
+                                </span>
+                                <div class="flex h-[168px] w-full items-end overflow-hidden rounded-t-xl bg-[#EAF2F9]">
+                                    <div class="global-monthly-bar w-full rounded-t-xl bg-gradient-to-t from-[#1A3A6B] to-[#2D6FD4]" data-pct="{{ $pct }}" data-delay="{{ $i * 65 }}" style="height:0; transition:height .72s cubic-bezier(.22,.68,0,1.16);"></div>
                                 </div>
                                 <span class="w-full truncate text-center text-[10px] font-black uppercase text-slate-500">{{ $m->label }}</span>
                             </div>
@@ -211,7 +211,7 @@
                                     <p class="text-xs font-black text-[#1F4E79]">{{ $rate }}%</p>
                                 </div>
                             </div>
-                            <div class="h-2.5 overflow-hidden rounded-full bg-[#EEF2F7]"><div class="finance-progress h-full rounded-full bg-[#1F4E79]" style="--target-width: {{ $rate }}%;"></div></div>
+                            <div class="finance-track h-2.5 overflow-hidden rounded-full"><div class="finance-progress h-full rounded-full bg-[#1F4E79]" style="--target-width: {{ $rate }}%;"></div></div>
                         </div>
                     @empty
                         <p class="rounded-2xl border border-dashed border-[#DCE8F3] bg-[#F8FBFE] py-8 text-center text-sm font-semibold text-slate-400">Aucune section configurée.</p>
@@ -227,15 +227,18 @@
                     @forelse($installmentStats as $is)
                         @php
                             $rate = min(100, max(0, (int) $is->rate));
-                            $tone = $rate >= 70 ? '#2F7D57' : ($rate >= 40 ? '#D8A84A' : '#B45353');
+                            $label = strtolower((string) $is->label);
+                            $tone = str_contains($label, 'carnet') || str_contains($label, 'medical') || str_contains($label, 'médical')
+                                ? '#0EA5A4'
+                                : ($rate >= 70 ? '#1A5C2A' : ($rate >= 40 ? '#C8A415' : '#EF4444'));
                         @endphp
                         <div>
                             <div class="mb-1.5 flex items-center justify-between gap-3 text-xs font-black">
                                 <span class="truncate text-slate-700">{{ $is->label }}</span>
                                 <span style="color: {{ $tone }};">{{ $rate }}%</span>
                             </div>
-                            <div class="h-2 overflow-hidden rounded-full bg-[#EEF2F7]"><div class="finance-progress h-full rounded-full" style="--target-width: {{ $rate }}%; background: {{ $tone }};"></div></div>
-                            <p class="mt-1 text-[11px] font-semibold text-slate-400">{{ $is->payers }} payeur(s)</p>
+                            <div class="finance-track h-2.5 overflow-hidden rounded-full"><div class="finance-progress h-full rounded-full" style="--target-width: {{ $rate }}%; background: {{ $tone }};"></div></div>
+                            <p class="mt-1 text-[11px] font-semibold text-slate-400">{{ number_format($is->collected) }} / {{ number_format($is->expected) }} FCFA · {{ $is->payers }} payeur(s)</p>
                         </div>
                     @empty
                         <p class="py-6 text-center text-sm font-semibold text-slate-400">Aucune tranche configurée.</p>
@@ -314,3 +317,33 @@
     @endif
 </div>
 @endsection
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const chart = document.getElementById('global-monthly-chart');
+    const bars = document.querySelectorAll('.global-monthly-bar[data-pct]');
+    if (!chart || !bars.length) return;
+
+    const animateBars = () => {
+        bars.forEach((bar) => {
+            const pct = parseInt(bar.dataset.pct || '0', 10);
+            const delay = parseInt(bar.dataset.delay || '0', 10);
+            setTimeout(() => { bar.style.height = pct + '%'; }, delay);
+        });
+    };
+
+    if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+                animateBars();
+                observer.unobserve(entry.target);
+            });
+        }, { threshold: 0.2 });
+        observer.observe(chart);
+    } else {
+        animateBars();
+    }
+});
+</script>
+@endpush

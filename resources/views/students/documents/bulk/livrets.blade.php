@@ -5,15 +5,16 @@
 <title>Livrets scolaires — impression groupée</title>
 @include('students.documents.partials.base-styles')
 <style>
+@page { size: A4 portrait; margin: 4mm 5mm; }
 @media print {
     .livret-page { page-break-after: always; }
     .livret-page:last-child { page-break-after: auto; }
 }
-.livret-table { width: 100%; border-collapse: collapse; font-size: 8px; margin-top: 8px; }
-.livret-table th, .livret-table td { border: 1px solid #9CA3AF; padding: 3px 4px; text-align: center; }
-.livret-table th { background: #1A3A6B; color: #fff; }
-.livret-table td.subject { text-align: left; font-weight: 600; }
-.livret-note { background: #FEF3C7; border: 1px solid #FCD34D; padding: 6px; font-size: 8px; color: #92400E; margin-bottom: 8px; }
+.livret-table { width: 100%; border-collapse: collapse; font-size: 9px; margin-top: 10px; }
+.livret-table th, .livret-table td { border: 1px solid #9CA3AF; padding: 5px 6px; text-align: center; }
+.livret-table th { background: #1A3A6B; color: #fff; font-size: 9px; }
+.livret-table td.subject { text-align: left; font-weight: 600; font-size: 9px; }
+.livret-note { background: #FEF3C7; border: 1px solid #FCD34D; padding: 8px; font-size: 9px; color: #92400E; margin-bottom: 10px; }
 </style>
 </head>
 <body>

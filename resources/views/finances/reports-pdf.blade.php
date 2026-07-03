@@ -5,67 +5,67 @@
     <title>Rapport financier — {{ $selectedYear?->label ?? '' }}</title>
     @include('students.documents.partials.base-styles')
     <style>
-        @page { size: A4 portrait; margin: 6mm 7mm; }
+        @page { size: A4 portrait; margin: 4mm 5mm; }
 
         .finance-doc-title {
             background: #d9d9d9;
             border-top: 1px solid #9CA3AF;
             border-bottom: 1px solid #9CA3AF;
-            padding: 6px 8px;
+            padding: 10px 12px;
             text-align: center;
             font-family: Georgia, 'Times New Roman', serif;
-            margin: 10px 0 14px;
+            margin: 12px 0 16px;
         }
         .finance-doc-title .main {
-            font-size: 18px;
+            font-size: 24px;
             font-weight: 900;
             text-transform: uppercase;
-            line-height: 1.2;
+            line-height: 1.1;
             color: #111827;
         }
         .finance-doc-title .sub {
-            font-size: 10px;
+            font-size: 12px;
             color: #4B5563;
-            margin-top: 4px;
+            margin-top: 6px;
             font-family: Arial, Helvetica, sans-serif;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .kpi-row {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 6px;
-            margin-bottom: 12px;
+            gap: 8px;
+            margin-bottom: 14px;
         }
         .kpi-box {
             background: #F8FAFC;
             border: 1px solid #E5E7EB;
             border-radius: 4px;
-            padding: 7px 8px;
+            padding: 10px 12px;
         }
         .kpi-box .label {
-            font-size: 7px;
+            font-size: 9px;
             font-weight: 700;
             color: #6B7280;
             text-transform: uppercase;
             letter-spacing: 0.4px;
         }
         .kpi-box .value {
-            font-size: 10px;
+            font-size: 12px;
             font-weight: 900;
-            color: #7FA6C4;
-            margin-top: 2px;
+            color: #1A3A6B;
+            margin-top: 4px;
         }
 
         .section-title {
             background: #F3F4F6;
             color: #374151;
-            padding: 4px 8px;
-            font-size: 8.5px;
+            padding: 6px 10px;
+            font-size: 10px;
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin: 10px 0 6px;
+            margin: 12px 0 8px;
             border-radius: 3px;
             border: 1px solid #E5E7EB;
         }
@@ -73,7 +73,7 @@
         .bar-row { margin-bottom: 5px; }
         .bar-meta { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 8.5px; }
         .bar-label { font-weight: 700; }
-        .bar-value { font-weight: 800; color: #7FA6C4; }
+        .bar-value { font-weight: 800; color: #1A3A6B; }
         .bar-track { height: 6px; background: #EEF2F7; border-radius: 3px; overflow: hidden; }
         .bar-fill { height: 6px; background: #4A6FA5; border-radius: 3px; }
 
@@ -95,7 +95,7 @@
         tbody td.right { text-align: right; font-weight: 700; }
         tfoot tr { background: #F3F4F6; }
         tfoot td { padding: 4px 5px; font-weight: 900; border: 1px solid #E5E7EB; }
-        tfoot td.right { text-align: right; color: #7FA6C4; }
+        tfoot td.right { text-align: right; color: #1A3A6B; }
 
         .footer-note {
             text-align: center;

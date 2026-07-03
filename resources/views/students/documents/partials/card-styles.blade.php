@@ -1,12 +1,12 @@
 <style>
 /* ──────────────────────────────────────────────────────────────────────────
    CARTE SCOLAIRE — format élargi pour une meilleure lisibilité
-   Dimensions: 100mm × 63mm
+   Dimensions: 95mm × 60mm
    ────────────────────────────────────────────────────────────────────────── */
 
 .id-card {
-    width: 100mm;
-    height: 63mm;
+    width: 95mm;
+    height: 60mm;
     font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
     color: #191c1e;
     background: #ffffff;
@@ -14,8 +14,8 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 2px solid #1A3A6B;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.08);
 }
 
 .id-card__guilloche {
@@ -50,7 +50,7 @@
 }
 
 .id-card__header-section {
-    font-size: 4.5pt;
+    font-size: 5.5pt;
     line-height: 1.12;
     font-weight: 700;
     text-transform: uppercase;
@@ -145,7 +145,7 @@
 .id-card__body {
     flex: 1;
     display: flex;
-    gap: 1.5mm;
+    gap: 1mm;
     padding: 1.4mm 2mm 1.2mm;
     position: relative;
     overflow: hidden;
@@ -162,8 +162,8 @@
 }
 
 .id-card__photo-box {
-    width: 25mm;
-    height: 31mm;
+    width: 22mm;
+    height: 28mm;
     border: 1px solid #1A3A6B;
     background: #f1f5f9;
     display: flex;
@@ -180,13 +180,13 @@
 }
 
 .id-card__photo-placeholder {
-    font-size: 10pt;
+    font-size: 9pt;
     font-weight: 900;
     color: #64748b;
 }
 
 .id-card__matricule {
-    font-size: 3.6pt;
+    font-size: 4.5pt;
     font-weight: 700;
     color: #1A3A6B;
     text-align: center;
@@ -205,13 +205,13 @@
 .id-card__info-table {
     width: calc(100% - 20mm);
     border-collapse: collapse;
-    font-size: 3.9pt;
+    font-size: 4.5pt;
     line-height: 1.12;
     table-layout: fixed;
 }
 
 .id-card__info-row {
-    height: 5.2mm;
+    height: 5mm;
 }
 
 .id-card__info-label {
@@ -230,7 +230,7 @@
 
 .id-card__label-en {
     margin-top: 0.12mm;
-    font-size: 3.2pt;
+    font-size: 3.8pt;
     font-style: italic;
     font-weight: 600;
     color: #6B7280;
@@ -240,7 +240,7 @@
     font-weight: 700;
     color: #111827;
     border-bottom: 0.5px solid #cbd5e1;
-    padding: 0.2mm 0.4mm;
+    padding: 0.25mm 0.4mm;
     word-break: break-word;
     vertical-align: middle;
 }
@@ -249,7 +249,7 @@
     color: #E87722;
     font-weight: 900;
     text-transform: uppercase;
-    font-size: 4.3pt;
+    font-size: 5pt;
 }
 
 /* LOGO & COORDONNÉES HAUT DROIT ─────────────────────────────────────────── */
@@ -257,7 +257,7 @@
     position: absolute;
     top: -1.8mm;
     right: 0;
-    width: 18mm;
+    width: 17mm;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -268,8 +268,8 @@
 }
 
 .id-card__top-logo-image {
-    width: 11.5mm;
-    height: 11.5mm;
+    width: 10.5mm;
+    height: 10.5mm;
     object-fit: contain;
     display: block;
 }
@@ -295,14 +295,14 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.4mm;
-    width: 17mm;
+    gap: 0.3mm;
+    width: 16mm;
     text-align: center;
 }
 
 .id-card__seal-image {
-    width: 17mm;
-    height: 17mm;
+    width: 15mm;
+    height: 15mm;
     object-fit: contain;
     transform: rotate(-12deg);
     opacity: 0.9;
@@ -316,7 +316,7 @@
 }
 
 .id-card__seal-label {
-    font-size: 3pt;
+    font-size: 3.5pt;
     font-weight: 700;
     color: #374151;
     white-space: nowrap;
@@ -348,7 +348,7 @@
 
     .id-card {
         box-shadow: none;
-        border: 0.5px solid #e5e7eb;
+        border: 2px solid #1A3A6B;
         margin: 0;
         page-break-inside: avoid;
     }

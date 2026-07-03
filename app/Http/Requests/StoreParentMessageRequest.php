@@ -16,7 +16,7 @@ class StoreParentMessageRequest extends FormRequest
         /** @var \App\Models\User|null $user */
         $user = Auth::user();
 
-        return $user && $user->hasAnyRole(['super-admin', 'directeur', 'censeur']);
+        return $user && $user->can('manage-parent-communication');
     }
 
     /**

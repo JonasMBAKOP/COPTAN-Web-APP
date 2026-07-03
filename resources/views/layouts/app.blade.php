@@ -119,14 +119,14 @@
         const parseNumber = (raw) => Number(String(raw).replace(/[\s,.]/g, '')) || 0;
         const formatNumber = (value) => Math.round(value).toLocaleString('fr-FR');
 
-        function financeCountUp(node, match) {
+        function financeCountUp(node, match, explicit = null) {
             const original = node.textContent;
-            const target = parseNumber(match[1]);
+            const target = explicit?.target ?? parseNumber(match[1]);
             if (!target || target < 2) return;
 
-            const prefix = original.slice(0, match.index);
-            const suffix = original.slice(match.index + match[1].length);
-            const duration = 1050;
+            const prefix = explicit?.prefix ?? original.slice(0, match.index);
+            const suffix = explicit?.suffix ?? original.slice(match.index + match[1].length);
+            const duration = 1150;
             const start = performance.now();
 
             const tick = (now) => {
@@ -139,8 +139,14 @@
             requestAnimationFrame(tick);
         }
 
+        document.querySelectorAll('[data-count-up]').forEach((el) => {
+            const target = Number(el.dataset.countUp || 0);
+            const suffix = el.dataset.countSuffix || '';
+            financeCountUp(el, ['0'], { target, prefix: '', suffix });
+        });
+
         document.querySelectorAll('main *').forEach((el) => {
-            if (el.children.length || ['SCRIPT','STYLE','SVG','OPTION','INPUT','TEXTAREA','SELECT'].includes(el.tagName)) return;
+            if (el.dataset.countUp || el.children.length || ['SCRIPT','STYLE','SVG','OPTION','INPUT','TEXTAREA','SELECT'].includes(el.tagName)) return;
             const text = el.textContent.trim();
             if (!suffixPattern.test(text)) return;
             const match = text.match(/([0-9][0-9\s,.]*)/);

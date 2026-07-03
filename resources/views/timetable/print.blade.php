@@ -27,19 +27,23 @@ body { background: #fff; padding: 0; color: #111827; }
 .report-title { border-top: 2px solid #1A3A6B; border-bottom: 1px solid #D1D5DB; margin: 4px 0 5px; padding: 4px 0; text-align: center; }
 .report-title h1 { color: #1A3A6B; font-size: 14px; font-weight: 900; letter-spacing: .2px; text-transform: uppercase; }
 .report-title p { color: #4B5563; font-size: 9px; margin-top: 2px; }
-.timetable-print { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.timetable-print { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8px; }
 .timetable-print th,
-.timetable-print td { border: 1px solid #CBD5E1; padding: 2px; vertical-align: middle; text-align: center; }
-.timetable-print th { background: #EEF2F7; color: #1A3A6B; font-size: 6.5px; font-weight: 900; text-transform: uppercase; }
-.timetable-print .period { width: 22mm; color: #4B5563; font-size: 6.5px; font-weight: 800; text-align: center; vertical-align: middle; }
-.timetable-print td { height: 7mm; text-align: center; vertical-align: middle; }
-.break-row td { background: #FFF7ED; color: #9A3412; font-size: 7.5px; font-weight: 800; text-align: center; }
-.slot { border-left: 3px solid #1A3A6B; background: #F8FAFC; padding: 2px; min-height: 6mm; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; }
-.slot strong { color: #0F2748; display: block; font-size: 6.5px; line-height: 1.15; }
-.slot span { color: #374151; display: block; font-size: 6.5px; line-height: 1.15; }
-.slot small { color: #6B7280; display: block; font-size: 6.5px; line-height: 1.1; margin-top: 1px; }
-.empty-half { color: #CBD5E1; font-size: 7px; text-align: center; }
-.footer-line { margin-top: 6px; display: flex; justify-content: space-between; color: #6B7280; font-size: 7.5px; }
+.timetable-print td { border: 1px solid #CBD5E1; padding: 4px 5px; vertical-align: middle; text-align: center; }
+.timetable-print th { background: #EEF2F7; color: #1A3A6B; font-size: 8.5px; font-weight: 900; text-transform: uppercase; }
+.timetable-print .period { width: 22mm; color: #4B5563; font-size: 8px; font-weight: 800; text-align: center; vertical-align: middle; }
+.timetable-print td { min-height: 9mm; text-align: center; vertical-align: middle; }
+.break-row td { background: #FFF7ED; color: #9A3412; font-size: 8.5px; font-weight: 800; text-align: center; }
+.slot { border-left: 3px solid #1A3A6B; background: #F8FAFC; padding: 4px 4px; min-height: 10mm; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; }
+.slot strong { color: #0F2748; display: block; font-size: 8px; line-height: 1.15; }
+.slot span { color: #374151; display: block; font-size: 7.5px; line-height: 1.15; }
+.slot small { color: #6B7280; display: block; font-size: 7.5px; line-height: 1.1; margin-top: 1px; }
+.empty-half { color: #CBD5E1; font-size: 7.5px; text-align: center; }
+.footer-line { margin-top: 8px; display: flex; justify-content: space-between; color: #6B7280; font-size: 8px; }
+.signatures { margin-top: 10px; display: flex; justify-content: space-between; gap: 12px; }
+.signatures__box { width: 48%; border-top: 1px solid #CBD5E1; padding-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+.signatures__label { font-size: 7.5px; color: #4B5563; font-weight: 700; }
+.signatures__line { border-bottom: 1px solid #9CA3AF; height: 0; margin-top: 10px; }
 @media print { .no-print { display: none !important; } }
 </style>
 </head>
@@ -69,9 +73,21 @@ body { background: #fff; padding: 0; color: #111827; }
         'conflicts' => collect(),
     ])
 
-    <div class="footer-line">
-        <span>Document généré le {{ now()->format('d/m/Y à H:i') }}</span>
-        <span>{{ $school->short_name ?? 'COPTAN' }}</span>
+    <div class="footer-area">
+        <div class="footer-line">
+            <span>Fait à ________________________ le ________________________</span>
+            <span>{{ $school->short_name ?? 'COPTAN' }}</span>
+        </div>
+        <div class="signatures">
+            <div class="signatures__box">
+                <span class="signatures__label">Le Préfet des Etudes / The Dean</span>
+                <div class="signatures__line"></div>
+            </div>
+            <div class="signatures__box">
+                <span class="signatures__label">Le Principale / The Principal</span>
+                <div class="signatures__line"></div>
+            </div>
+        </div>
     </div>
 </div>
 </body>

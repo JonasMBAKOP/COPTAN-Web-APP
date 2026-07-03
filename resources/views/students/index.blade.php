@@ -27,12 +27,12 @@
             @endif
             @endcan
 
-            <button class="inline-flex items-center gap-2 px-4 py-2 border border-[#1A3A6B] text-[#1A3A6B] bg-white text-sm font-semibold rounded-lg hover:bg-gray-50 shadow-sm transition-all">
+            {{-- <button class="inline-flex items-center gap-2 px-4 py-2 border border-[#1A3A6B] text-[#1A3A6B] bg-white text-sm font-semibold rounded-lg hover:bg-gray-50 shadow-sm transition-all">
                 <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
                 </svg>
                 Importer
-            </button>
+            </button> --}}
 
             @if($listPrintParams)
             <a href="{{ route('students.documents.lists', $listPrintParams) }}"
@@ -191,12 +191,12 @@
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="bg-gray-50 border-b border-gray-200">
-                        <th class="w-12 px-6 py-4">
+                        {{-- <th class="w-12 px-6 py-4">
                             <input type="checkbox" class="rounded border-gray-300 text-[#9c4005] focus:ring-[#9c4005]">
-                        </th>
+                        </th> --}}
                         <th class="px-4 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Photo</th>
-                        <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Matricule</th>
                         <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Nom & Prénom</th>
+                        <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Matricule</th>
                         <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Classe</th>
                         <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Section</th>
                         <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Statut</th>
@@ -238,9 +238,9 @@
                         $statusColor = $statusColors[$status] ?? 'bg-green-50 text-green-700 border-green-100';
                     @endphp
                     <tr class="hover:bg-gray-50/50 transition-colors">
-                        <td class="px-6 py-4">
+                        {{-- <td class="px-6 py-4">
                             <input type="checkbox" class="rounded border-gray-300 text-[#9c4005] focus:ring-[#9c4005]">
-                        </td>
+                        </td> --}}
                         <td class="px-4 py-4">
                             @if($student->photo)
                             <img src="{{ $student->photo_url }}"
@@ -253,15 +253,15 @@
                             @endif
                         </td>
                         <td class="px-6 py-4">
-                            <span class="font-mono text-sm font-semibold text-gray-600">
-                                {{ $student->matricule }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4">
                             <div class="flex flex-col text-sm">
                                 <span class="font-bold text-[#1A3A6B]">{{ $student->last_name }}</span>
                                 <span class="text-[#1A3A6B] font-medium">{{ $student->first_name }}</span>
                             </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="font-mono text-sm font-semibold text-gray-600">
+                                {{ $student->matricule }}
+                            </span>
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-700 font-medium">
                             @if($enrollment?->classGroup)

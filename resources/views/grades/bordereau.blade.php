@@ -5,17 +5,17 @@
     <title>Bordereau Effectif de Notes — {{ $classGroup->full_name }}</title>
     @include('students.documents.partials.base-styles')
     <style>
-        @page { size: A4 landscape; margin: 4mm 6mm; }
+        @page { size: A4 landscape; margin: 3mm 5mm; }
         body { background: #eef1f5; }
-        .page { max-width: 297mm; margin: 0 auto; padding: 6mm 8mm; background: #fff; }
+        .page { max-width: 297mm; margin: 0 auto; padding: 5mm 7mm; background: #fff; }
         .print-toolbar { margin-bottom: 10px; }
         .document-card { border: 1px solid #CBD5E1; border-radius: 18px; padding: 18px; margin-bottom: 14px; }
         .header-row { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: start; }
         .header-left { display: grid; gap: 4px; }
-        .document-label { font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: #475569; font-weight: 700; }
-        .document-title { font-size: 22px; font-weight: 900; color: #1A3A6B; letter-spacing: .03em; margin: 0; }
-        .info-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
-        .info-item { padding: 12px 14px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 14px; }
+        .document-label { font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: #475569; font-weight: 700; }
+        .document-title { font-size: 26px; font-weight: 900; color: #1A3A6B; letter-spacing: .03em; margin: 0; }
+        .info-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+        .info-item { padding: 14px 16px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 14px; }
         .bordereau-table th:first-child,
         .bordereau-table td:first-child { width: 22px; }
         .bordereau-table th:nth-child(2),
@@ -27,8 +27,8 @@
         .bordereau-table td:last-child { width: 30px; }
         .info-label { display: block; font-size: 9px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; }
         .info-value { font-size: 12px; color: #1A3A6B; font-weight: 900; }
-        .bordereau-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 10px; }
-        .bordereau-table th, .bordereau-table td { border: 1px solid #CBD5E1; padding: 6px 5px; }
+        .bordereau-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 11px; }
+        .bordereau-table th, .bordereau-table td { border: 1px solid #CBD5E1; padding: 6px 6px; }
         .bordereau-table th { background: #F8FAFC; color: #1A3A6B; font-weight: 900; font-size: 9px; }
         .bordereau-table td { color: #1F2937; }
         .bordereau-table td.name-cell { text-align: left; font-weight: 700; text-transform: uppercase; }
@@ -43,12 +43,12 @@
         .bordereau-header__school { font-size: 14px; font-weight: 900; color: #1A3A6B; text-transform: uppercase; letter-spacing: .03em; }
         .bordereau-header__meta { font-size: 10px; color: #475569; }
         .bordereau-header__doc { display: grid; gap: 4px; justify-items: end; text-align: right; }
-        .bordereau-header__doc-title { font-size: 11px; font-weight: 900; text-transform: uppercase; color: #1A3A6B; letter-spacing: .05em; }
-        .bordereau-header__doc-copy { font-size: 10px; font-weight: 700; color: #CC6000; }
-        .bordereau-header__doc-year { font-size: 10px; color: #1A3A6B; font-weight: 700; }
+        .bordereau-header__doc-title { font-size: 13px; font-weight: 900; text-transform: uppercase; color: #1A3A6B; letter-spacing: .05em; }
+        .bordereau-header__doc-copy { font-size: 12px; font-weight: 700; color: #CC6000; }
+        .bordereau-header__doc-year { font-size: 12px; color: #1A3A6B; font-weight: 700; }
         .bordereau-header__title-row { margin-top: 14px; text-align: center; grid-column: 1 / -1; }
-        .bordereau-header__title { font-size: 18px; font-weight: 900; color: #1A3A6B; text-transform: uppercase; letter-spacing: .08em; text-decoration: underline; }
-        .bordereau-header__subtitle { font-size: 10px; color: #475569; margin-top: 2px; }
+        .bordereau-header__title { font-size: 24px; font-weight: 900; color: #1A3A6B; text-transform: uppercase; letter-spacing: .08em; text-decoration: underline; }
+        .bordereau-header__subtitle { font-size: 12px; color: #475569; margin-top: 4px; }
         .page-number { margin-top: 12px; font-size: 10px; text-align: right; color: #475569; }
         @media print {
             .page-number { color: transparent; }

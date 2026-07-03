@@ -83,9 +83,28 @@
         Aucun incident disciplinaire enregistré.
     </div>
     @else
-    <table class="w-full">
+    <form method="POST" action="{{ route('discipline.bulk-convocations') }}">
+        @csrf
+        <div class="px-5 py-4 border-b border-gray-100 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-3">
+                @can('manage-discipline')
+                <button type="submit" id="bulk-convocations-btn" class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition-all disabled:cursor-not-allowed disabled:opacity-50" disabled>
+                    Générer convocations sélectionnées
+                </button>
+                @endcan
+                <button type="button" id="open-report-modal" class="px-4 py-2 rounded-lg border border-[#1A3A6B] text-sm font-bold text-[#1A3A6B] hover:bg-[#F8FAFC] transition-all">
+                    Rapport d'incidents
+                </button>
+                <span class="text-xs text-gray-500">Sélectionnez uniquement les incidents dont les parents ont été convoqués.</span>
+            </div>
+            <div class="text-xs text-gray-500">Convocation disponible pour <strong>{{ $incidents->where('parent_convoked', true)->count() }}</strong> incident(s)</div>
+        </div>
+        <table class="w-full">
         <thead>
             <tr style="background:#F8FAFC; border-bottom:1px solid #E5E7EB;">
+                <th class="text-left px-5 py-3 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    <span class="sr-only">Sélection</span>
+                </th>
                 @foreach(['Date','Élève','Type d\'incident','Sanction','Statut',''] as $th)
                 <th class="text-left px-5 py-3 text-xs font-bold text-gray-400
                            uppercase tracking-wider {{ $loop->last ? 'text-right' : '' }}">
@@ -120,6 +139,17 @@
                 $st = $statusConf[$inc->status]           ?? $statusConf['open'];
             @endphp
             <tr class="hover:bg-gray-50/50 transition-colors">
+                <td class="px-5 py-3.5">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" name="incident_ids[]" value="{{ $inc->id }}"
+                               {{ $inc->parent_convoked ? '' : 'disabled' }}
+                               class="bulk-convocation-checkbox h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                               data-parent-convoked="{{ $inc->parent_convoked ? '1' : '0' }}">
+                        @if(! $inc->parent_convoked)
+                        <span class="text-[10px] text-gray-400">non conv.</span>
+                        @endif
+                    </label>
+                </td>
                 <td class="px-5 py-3.5">
                     <p class="text-sm font-bold text-gray-800">
                         {{ $inc->incident_date->format('d/m/Y') }}
@@ -160,17 +190,155 @@
                 </td>
                 <td class="px-5 py-3.5 text-right">
                     <a href="{{ route('discipline.show', $inc) }}"
-                       class="text-xs font-bold hover:underline"
-                       style="color:#1A3A6B;">Voir →</a>
+                       class="inline-flex items-center gap-2 text-xs font-bold text-blue-700 hover:underline">
+                        Voir
+                    </a>
                 </td>
             </tr>
             @endforeach
         </tbody>
     </table>
+    </form>
     @if($incidents->hasPages())
     <div class="px-5 py-3 border-t border-gray-100">{{ $incidents->links() }}</div>
     @endif
     @endif
 </div>
 
+<div id="report-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4 py-6">
+    <div class="w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+        <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+            <div>
+                <h2 class="text-lg font-black text-[#1A3A6B]">Rapport d'incidents</h2>
+                <p class="text-sm text-gray-500">Choisissez les filtres puis cliquez sur Générer.</p>
+            </div>
+            <button id="close-report-modal" class="text-gray-400 hover:text-gray-600">Fermer</button>
+        </div>
+        <div class="p-6">
+            <form id="report-form" method="GET" action="{{ route('discipline.reports') }}" target="_blank" class="space-y-4">
+                <div class="grid gap-4 lg:grid-cols-2">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Type de rapport</label>
+                        <div class="flex flex-wrap rounded-2xl border border-gray-200 bg-white p-1">
+                            @php $reportTypes = ['journalier'=>'Journalier','hebdomadaire'=>'Hebdomadaire','mensuel'=>'Mensuel','annuel'=>'Annuel','entre-2-dates'=>'Entre 2 dates']; @endphp
+                            @foreach($reportTypes as $val => $lbl)
+                            <button type="button" data-report-type="{{ $val }}" class="report-type-btn type-btn px-4 py-2 text-sm font-bold transition-colors {{ $val === 'mensuel' ? 'active' : '' }}" style="{{ $val === 'mensuel' ? 'background:#1A3A6B;color:#fff;' : 'background:white;color:#6B7280;' }}">{{ $lbl }}</button>
+                            @endforeach
+                        </div>
+                        <input type="hidden" name="type" id="report-type-input" value="mensuel">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Année scolaire</label>
+                        <select name="year_id" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white">
+                            @foreach(App\Models\AcademicYear::orderByDesc('start_date')->get() as $year)
+                                <option value="{{ $year->id }}">{{ $year->label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div id="report-filters" class="grid gap-4 lg:grid-cols-3">
+                    <div id="filter-journalier" class="hidden">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Date</label>
+                        <input type="date" name="date" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm">
+                    </div>
+                    <div id="filter-hebdomadaire" class="hidden">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Semaine</label>
+                        <input type="week" name="week" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm">
+                    </div>
+                    <div id="filter-mensuel">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Mois</label>
+                        <select name="month" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white">
+                            @foreach(range(1,12) as $num)
+                                <option value="{{ $num }}">{{ \Carbon\Carbon::create()->month($num)->locale('fr')->monthName }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div id="filter-entre-2-dates" class="hidden gap-3 lg:grid-cols-2">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Début</label>
+                            <input type="date" name="start_date" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Fin</label>
+                            <input type="date" name="end_date" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3">
+                    <button type="button" id="close-report-modal-bottom" class="rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-semibold text-gray-700">Annuler</button>
+                    <button type="submit" class="rounded-xl bg-[#1A3A6B] px-5 py-2.5 text-sm font-bold text-white">Générer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const button = document.getElementById('bulk-convocations-btn');
+        const checkboxes = Array.from(document.querySelectorAll('.bulk-convocation-checkbox'));
+        const reportModal = document.getElementById('report-modal');
+        const openReportModal = document.getElementById('open-report-modal');
+        const closeReportModal = document.getElementById('close-report-modal');
+        const closeReportModalBottom = document.getElementById('close-report-modal-bottom');
+        const reportTypeInput = document.getElementById('report-type-input');
+        const reportTypeButtons = Array.from(document.querySelectorAll('.report-type-btn'));
+        const filterMap = {
+            journalier: 'filter-journalier',
+            hebdomadaire: 'filter-hebdomadaire',
+            mensuel: 'filter-mensuel',
+            annuel: 'filter-mensuel',
+            'entre-2-dates': 'filter-entre-2-dates',
+        };
+
+        const setActiveReportType = (type) => {
+            reportTypeInput.value = type;
+            reportTypeButtons.forEach((btn) => {
+                const isActive = btn.dataset.reportType === type;
+                btn.classList.toggle('active', isActive);
+                btn.style.background = isActive ? '#1A3A6B' : 'white';
+                btn.style.color = isActive ? '#fff' : '#6B7280';
+            });
+            Object.entries(filterMap).forEach(([key, id]) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.style.display = key === type ? (key === 'entre-2-dates' ? 'grid' : 'block') : 'none';
+            });
+        };
+
+        const toggleButton = () => {
+            if (!button) return;
+            const hasChecked = checkboxes.some((box) => box.checked);
+            button.disabled = !hasChecked;
+        };
+
+        checkboxes.forEach((box) => box.addEventListener('change', toggleButton));
+        toggleButton();
+
+        if (openReportModal) {
+            openReportModal.addEventListener('click', () => {
+                reportModal.classList.remove('hidden');
+                reportModal.classList.add('flex');
+            });
+        }
+        const closeModal = () => {
+            reportModal.classList.add('hidden');
+            reportModal.classList.remove('flex');
+        };
+        if (closeReportModal) closeReportModal.addEventListener('click', closeModal);
+        if (closeReportModalBottom) closeReportModalBottom.addEventListener('click', closeModal);
+
+        reportTypeButtons.forEach((btn) => {
+            btn.addEventListener('click', () => setActiveReportType(btn.dataset.reportType));
+        });
+
+        setActiveReportType('mensuel');
+    });
+</script>
+@endpush

@@ -142,6 +142,15 @@
                 AJOUTER UN ENSEIGNANT
             </a>
             @endcan
+
+            <a href="{{ route('staff.documents.cards') }}"
+               class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-gray-200 hover:bg-gray-50"
+               title="Cartes professionnelles">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18"/>
+                </svg>
+                Cartes
+            </a>
         </div>
     </form>
 

@@ -5,17 +5,16 @@
    ────────────────────────────────────────────────────────────────────────── */
 
 .id-card {
-    width: 100%;
-    max-width: 210mm;
+    width: 105mm;
+    max-width: 105mm;
     aspect-ratio: 85.6 / 154;
     font-family: 'Segoe UI', Arial, sans-serif;
     color: #1a2e4a;
     background: #fff;
-    border: 1px solid #e5e7eb;
+    border: 2px solid #1A3A6B;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 /* HEADER BILINGUE ──────────────────────────────────────────────────────── */
@@ -30,8 +29,8 @@
 }
 
 .id-card__header-section {
-    font-size: 5px;
-    line-height: 1.3;
+    font-size: 6px;
+    line-height: 1.2;
     font-weight: 700;
     text-transform: uppercase;
 }
@@ -51,7 +50,7 @@
 }
 
 .id-card__header-motto {
-    font-size: 4.5px;
+    font-size: 5.5px;
     font-weight: 600;
     color: #6B7280;
     margin-top: 1px;
@@ -77,8 +76,8 @@
 }
 
 .id-card__logo {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     object-fit: contain;
 }
 
@@ -101,10 +100,10 @@
 }
 
 .id-card__school-name {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 900;
     color: #1A3A6B;
-    line-height: 1.1;
+    line-height: 1.05;
     letter-spacing: 0.3px;
 }
 
@@ -124,16 +123,16 @@
 }
 
 .id-card__title {
-    font-size: 7px;
+    font-size: 8px;
     font-weight: 900;
     text-transform: uppercase;
     color: #1A3A6B;
     letter-spacing: 0.4px;
-    line-height: 1.2;
+    line-height: 1.15;
 }
 
 .id-card__subtitle {
-    font-size: 5px;
+    font-size: 6px;
     color: #6B7280;
     margin-top: 2px;
     font-weight: 600;
@@ -143,8 +142,8 @@
 .id-card__body {
     flex: 1;
     display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 8px;
+    grid-template-columns: 42px 1fr;
+    gap: 6px;
     padding: 6px 8px;
     overflow: hidden;
 }
@@ -158,9 +157,9 @@
 }
 
 .id-card__photo-box {
-    width: 48px;
-    height: 60px;
-    border: 1.5px solid #1A3A6B;
+    width: 40px;
+    height: 50px;
+    border: 1px solid #1A3A6B;
     background: #f1f5f9;
     display: flex;
     align-items: center;
@@ -176,13 +175,13 @@
 }
 
 .id-card__photo-placeholder {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 900;
     color: #64748b;
 }
 
 .id-card__matricule {
-    font-size: 5px;
+    font-size: 6px;
     font-weight: 700;
     color: #1A3A6B;
     text-align: center;
@@ -200,16 +199,16 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
 }
 
 .id-card__info-row {
     display: grid;
     grid-template-columns: auto auto 1fr;
-    gap: 2px;
+    gap: 4px;
     align-items: center;
-    font-size: 5.5px;
-    line-height: 1.2;
+    font-size: 7px;
+    line-height: 1.15;
 }
 
 .id-card__info-label {
@@ -230,7 +229,7 @@
 
 .id-card__info-value--highlight {
     color: #d97706;
-    font-size: 6px;
+    font-size: 7px;
     text-transform: uppercase;
 }
 
@@ -239,8 +238,8 @@
     position: absolute;
     top: 2px;
     right: 2px;
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
 }
 
 .id-card__top-right-logo img {
@@ -261,13 +260,13 @@
 }
 
 .id-card__seal-image {
-    width: 36px;
-    height: 36px;
+    width: 28px;
+    height: 28px;
     object-fit: contain;
 }
 
 .id-card__seal-label {
-    font-size: 4px;
+    font-size: 5px;
     font-weight: 700;
     color: #374151;
     text-align: center;
@@ -276,7 +275,7 @@
 
 /* BANDE COULEUR (DRAPEAU CAMEROUN) ─────────────────────────────────────── */
 .id-card__footer-stripe {
-    height: 4px;
+    height: 3px;
     background: linear-gradient(to right, #00B050 0%, #00B050 33.33%, #CE1126 33.33%, #CE1126 66.66%, #FCD116 66.66%, #FCD116 100%);
     flex-shrink: 0;
 }

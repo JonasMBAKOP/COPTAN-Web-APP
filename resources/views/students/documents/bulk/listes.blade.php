@@ -5,10 +5,10 @@
 <title>Liste des élèves — {{ $year->label ?? '' }}</title>
 @include('students.documents.partials.base-styles')
 <style>
-@page { size: A4 portrait; margin: 7mm 9mm; }
+@page { size: A4 portrait; margin: 4mm 5mm; }
 .student-list-page {
     max-width: 192mm;
-    padding: 7mm 9mm;
+    padding: 5mm 6mm;
     color: #111827;
 }
 .student-list-page .cert-official-header {
@@ -17,38 +17,38 @@
 .student-list-title {
     background: #E5E7EB;
     border: 1px solid #4B5563;
-    padding: 7px 8px;
-    margin-bottom: 14px;
+    padding: 10px 12px;
+    margin-bottom: 16px;
     text-align: center;
     font-family: Georgia, 'Times New Roman', serif;
-    font-size: 22px;
+    font-size: 26px;
     font-weight: 900;
-    line-height: 1.15;
+    line-height: 1.1;
     text-transform: uppercase;
 }
 .student-list-subtitle {
-    margin-top: 3px;
+    margin-top: 4px;
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     text-transform: none;
 }
 .section-banner {
-    background: #1A3A6B; color: #fff; padding: 8px 12px;
-    font-size: 12px; font-weight: 900; text-transform: uppercase;
-    margin: 18px 0 8px; border-radius: 3px;
+    background: #1A3A6B; color: #fff; padding: 10px 12px;
+    font-size: 13px; font-weight: 900; text-transform: uppercase;
+    margin: 18px 0 10px; border-radius: 4px;
 }
 .section-banner:first-of-type { margin-top: 0; }
 .class-title {
-    font-size: 11px; font-weight: 900; color: #9c4005;
-    border-bottom: 1px solid #E5E7EB; padding-bottom: 4px; margin: 12px 0 6px;
+    font-size: 14px; font-weight: 900; color: #9c4005;
+    border-bottom: 1px solid #E5E7EB; padding-bottom: 6px; margin: 14px 0 8px;
 }
-.list-table { width: 100%; border-collapse: collapse; font-size: 9.5px; margin-bottom: 14px; }
-.list-table th, .list-table td { border: 1px solid #D1D5DB; padding: 5px 6px; }
-.list-table th { background: #F3F4F6; font-weight: 700; text-align: left; }
-.list-table td.num { width: 28px; text-align: center; color: #6B7280; }
-.list-table td.mat { font-family: 'Courier New', monospace; font-size: 9px; }
-.list-summary { font-size: 9px; color: #6B7280; margin-bottom: 6px; }
+.list-table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 16px; }
+.list-table th, .list-table td { border: 1px solid #D1D5DB; padding: 6px 8px; }
+.list-table th { background: #F3F4F6; font-weight: 700; text-align: left; font-size: 10px; }
+.list-table td.num { width: 32px; text-align: center; color: #6B7280; font-size: 10px; }
+.list-table td.mat { font-family: 'Courier New', monospace; font-size: 10px; }
+.list-summary { font-size: 10px; color: #6B7280; margin-bottom: 8px; }
 @media print {
     body { background: #fff !important; }
     .section-banner { page-break-before: auto; }

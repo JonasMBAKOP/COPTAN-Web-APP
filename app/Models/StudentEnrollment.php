@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\AuditLog;
 use Illuminate\Database\Eloquent\Model;
 
 class StudentEnrollment extends Model
@@ -78,6 +79,14 @@ class StudentEnrollment extends Model
     public function disciplineIncidents()
     {
         return $this->hasMany(DisciplineIncident::class);
+    }
+
+    public function enrollmentAudit()
+    {
+        return $this->hasOne(AuditLog::class, 'model_id', 'id')
+            ->where('model_type', 'StudentEnrollment')
+            ->where('action', 'enrolled')
+            ->latestOfMany();
     }
 
     // ── Méthodes utilitaires ───────────────────────────────────────────────

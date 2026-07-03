@@ -5,17 +5,18 @@
 <title>Livret scolaire — {{ $student->full_name }}</title>
 @include('students.documents.partials.base-styles')
 <style>
-.livret-meta { font-size: 10px; margin-bottom: 12px; }
-.livret-table { width: 100%; border-collapse: collapse; font-size: 8.5px; }
+@page { size: A4 portrait; margin: 4mm 5mm; }
+.livret-meta { font-size: 12px; margin-bottom: 14px; }
+.livret-table { width: 100%; border-collapse: collapse; font-size: 10px; }
 .livret-table th, .livret-table td {
-    border: 1px solid #9CA3AF; padding: 4px 5px; text-align: center;
+    border: 1px solid #9CA3AF; padding: 6px 7px; text-align: center;
 }
-.livret-table th { background: #1A3A6B; color: #fff; font-weight: 700; }
-.livret-table td.subject { text-align: left; font-weight: 600; }
-.livret-table td.coef { width: 36px; }
+.livret-table th { background: #1A3A6B; color: #fff; font-weight: 700; font-size: 10px; }
+.livret-table td.subject { text-align: left; font-weight: 600; font-size: 10px; }
+.livret-table td.coef { width: 42px; }
 .livret-placeholder {
-    background: #FEF3C7; border: 1px solid #FCD34D; padding: 8px;
-    font-size: 9px; color: #92400E; margin-bottom: 10px; border-radius: 4px;
+    background: #FEF3C7; border: 1px solid #FCD34D; padding: 10px;
+    font-size: 10px; color: #92400E; margin-bottom: 12px; border-radius: 4px;
 }
 </style>
 </head>

@@ -60,12 +60,12 @@
     };
 @endphp
 
-<table class="{{ $printable ? 'timetable-print' : 'w-full min-w-[1080px] border-separate border-spacing-0' }}">
+<table class="{{ $printable ? 'timetable-print' : 'w-full min-w-[1080px] border-separate border-spacing-0 text-sm' }}">
     <thead>
         <tr class="{{ $printable ? '' : 'bg-gray-50' }}">
-            <th class="{{ $printable ? 'period' : 'sticky left-0 z-10 w-36 border-b border-gray-100 bg-gray-50 px-4 py-3 text-left text-xs font-black uppercase tracking-wide text-gray-500' }}">PERIODS / HEURES</th>
+            <th class="{{ $printable ? 'period' : 'sticky left-0 z-10 w-40 border-b bg-[#F8FBFE] px-4 py-3 text-center text-xs font-black uppercase tracking-wide text-slate-600' }}">PERIODS / HEURES</th>
             @foreach($days as $dayNumber => $dayName)
-                <th class="{{ $printable ? '' : 'border-b border-gray-100 px-3 py-3 text-center text-xs font-black uppercase tracking-wide text-gray-500' }}">{{ $bilingualDays[$dayNumber] ?? strtoupper($dayName) }}</th>
+                <th class="{{ $printable ? '' : 'border-b px-3 py-3 text-center text-xs font-black uppercase tracking-wide text-slate-600' }}">{{ $bilingualDays[$dayNumber] ?? strtoupper($dayName) }}</th>
             @endforeach
         </tr>
     </thead>
@@ -78,7 +78,7 @@
                 </tr>
             @else
                 <tr>
-                    <td class="{{ $printable ? 'period' : 'sticky left-0 z-10 border-b border-gray-50 bg-white px-4 py-2 align-middle text-xs font-black text-gray-700' }}">{{ $rowInterval($row) }}</td>
+                    <td class="{{ $printable ? 'period' : 'sticky left-0 z-10 border-b bg-white px-4 py-2 text-center align-middle text-xs font-black text-slate-700' }}">{{ $rowInterval($row) }}</td>
                     @foreach($days as $dayNumber => $dayName)
                         @php
                             $periodIndex = (int) $row['period_index'];
@@ -95,16 +95,16 @@
                                 $renderedUntil[$dayNumber] = $periodIndex + $rowspan - 1;
                             }
                         @endphp
-                        <td rowspan="{{ $rowspan }}" class="{{ $printable ? '' : 'border-b border-gray-50 px-1 py-0.5 text-center align-middle ' . (($cell && !($cell['is_active'] ?? false)) ? 'bg-gray-50' : '') }}" @if(!$printable) style="height:38px; vertical-align:middle; text-align:center;" @endif>
+                        <td rowspan="{{ $rowspan }}" class="{{ $printable ? '' : 'border-b px-1.5 py-1 text-center align-middle ' . (($cell && !($cell['is_active'] ?? false)) ? 'bg-gray-50' : '') }}" @if(!$printable) style="height:34px; vertical-align:middle; text-align:center;" @endif>
                             @if($slot)
                                 @php
                                     $isConflict = $conflicts->contains($slot->id);
                                     $teacher = $slot->classSubject?->teacherAssignments?->first()?->staff;
                                     $subject = $slot->classSubject?->subject;
-                                    $blockMinHeight = $rowspan * 34;
+                                    $blockMinHeight = $rowspan * 32;
                                 @endphp
                                 @if($mode === 'teacher')
-                                    <div class="{{ $printable ? 'slot' : 'flex h-full min-h-[34px] flex-col items-center justify-center rounded-xl border border-green-100 bg-green-50 p-1 text-center shadow-sm' }}" @if(!$printable) style="min-height: {{ $blockMinHeight }}px;" @endif>
+                                    <div class="{{ $printable ? 'slot' : 'flex h-full min-h-[32px] flex-col items-center justify-center rounded-xl border border-green-100 bg-green-50 p-1 text-center shadow-sm' }}" @if(!$printable) style="min-height: {{ $blockMinHeight }}px;" @endif>
                                         <strong class="{{ $printable ? '' : 'block text-xs font-black text-[#1A5C2A]' }}">{{ $slot->classGroup?->full_name }}</strong>
                                         @if($teacherSubjectCount !== 1)
                                             <span class="{{ $printable ? '' : 'mt-1 block text-[11px] font-semibold text-gray-600' }}">{{ $subject?->name_fr }}</span>
@@ -112,7 +112,7 @@
                                         @if(!$printable && $slot->room)<p class="mt-1 text-[10px] font-bold text-gray-500">{{ $slot->room }}</p>@endif
                                     </div>
                                 @else
-                                    <div class="{{ $printable ? 'slot' : 'flex h-full min-h-[34px] flex-col items-center justify-center rounded-xl border p-1 text-center shadow-sm ' . ($isConflict ? 'border-red-300 bg-red-50' : 'border-blue-100 bg-blue-50') }}" @if(!$printable) style="min-height: {{ $blockMinHeight }}px;" @can('manage-timetable') role="button" @click="openEdit({{ $slot->id }}, {{ $slot->class_subject_id }}, {{ $slot->day_of_week }}, {{ $slot->period_index }}, {{ $slot->periods_count }}, @js($slot->room))" @endcan @endif>
+                                    <div class="{{ $printable ? 'slot' : 'flex h-full min-h-[32px] flex-col items-center justify-center rounded-xl border p-1 text-center shadow-sm ' . ($isConflict ? 'border-red-300 bg-red-50' : 'border-blue-100 bg-blue-50') }}" @if(!$printable) style="min-height: {{ $blockMinHeight }}px;" @can('manage-timetable') role="button" @click="openEdit({{ $slot->id }}, {{ $slot->class_subject_id }}, {{ $slot->day_of_week }}, {{ $slot->period_index }}, {{ $slot->periods_count }}, @js($slot->room))" @endcan @endif>
                                         <strong class="{{ $printable ? '' : 'block text-xs font-black ' . ($isConflict ? 'text-red-800' : 'text-[#1A3A6B]') }}">{{ $subject?->name_fr ?? 'Matière' }}</strong>
                                         <span class="{{ $printable ? '' : 'mt-1 block text-[11px] font-semibold text-gray-600' }}">{{ $teacher?->honorific_full_name ?? 'Enseignant non assigné' }}</span>
                                         @if(!$printable && $slot->room)<p class="mt-1 text-[10px] font-bold text-gray-500">{{ $slot->room }}</p>@endif

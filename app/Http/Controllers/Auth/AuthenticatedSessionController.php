@@ -69,6 +69,17 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+
+        if ($user) {
+            // Mark last seen (used to display "Dernière connexion")
+            $user->update(['last_login_at' => now()]);
+
+            // Remove online cache key immediately so UI reflects logout in real-time
+            cache()->forget('user-is-online-' . $user->id);
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

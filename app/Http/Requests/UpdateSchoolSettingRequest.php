@@ -29,7 +29,8 @@ class UpdateSchoolSettingRequest extends FormRequest
         return [
             'full_name'    => 'required|string|max:200',
             'short_name'   => 'required|string|max:50',
-            'logo'         => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            // Allow SVG and WEBP and align max size with upload endpoints (2 MB)
+            'logo'         => 'nullable|image|mimes:jpg,jpeg,png,svg,webp|max:2048',
             'address'      => 'nullable|string|max:500',
             'postal_box'   => 'nullable|string|max:100',
             'city'         => 'nullable|string|max:100',

@@ -46,7 +46,7 @@ class RolesAndPermissionsSeeder extends Seeder
             // Emploi du temps
             'view-timetable', 'manage-timetable',
             // Annonces & Messagerie
-            'view-announcements', 'manage-announcements',
+            'view-announcements', 'manage-announcements', 'manage-parent-communication',
             'view-messages', 'send-messages',
             // Rapports
             'view-reports', 'export-reports',
@@ -84,7 +84,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-absences', 'manage-absences',
             'view-discipline', 'manage-discipline',
             'view-timetable', 'manage-timetable',
-            'view-announcements', 'manage-announcements',
+            'view-announcements', 'manage-announcements', 'manage-parent-communication',
             'view-messages', 'send-messages',
             'view-reports', 'export-reports',
             'view-academic-years', 'manage-academic-years',

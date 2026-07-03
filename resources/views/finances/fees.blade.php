@@ -13,7 +13,7 @@
         <path stroke-linecap="round" stroke-linejoin="round"
               stroke-width="2" d="M9 5l7 7-7 7"/>
     </svg>
-    <span style="color:#7FA6C4;" class="font-medium">
+    <span style="color:#1A3A6B;" class="font-medium">
         {{ $classGroup->full_name }}
     </span>
 @endsection
@@ -28,11 +28,11 @@
                 flex flex-col lg:flex-row lg:items-center gap-4 w-full">
         <div class="w-12 h-12 rounded-xl flex items-center justify-center
                     text-white font-bold text-lg flex-shrink-0"
-             style="background-color:#7FA6C4;">
+             style="background-color:#1A3A6B;">
             {{ strtoupper(substr($classGroup->name, 0, 2)) }}
         </div>
         <div class="min-w-0">
-            <p class="font-bold" style="color:#7FA6C4;">
+            <p class="font-bold" style="color:#1A3A6B;">
                 {{ $classGroup->full_name }}
             </p>
             <p class="text-sm text-gray-500">
@@ -44,7 +44,7 @@
         </div>
         <div class="lg:ml-auto lg:text-right">
             <p class="text-xs text-gray-400">Total actuel</p>
-            <p class="font-bold text-lg" style="color:#60906F;"
+            <p class="font-bold text-lg" style="color:#1A5C2A;"
                x-text="total.toLocaleString('fr-FR') + ' FCFA'">
                 {{ number_format($feeStructure?->total_amount ?? 0) }} FCFA
             </p>
@@ -65,7 +65,7 @@
                 <button type="button" @click="addInstallment()"
                         class="text-xs font-medium hover:underline flex
                                items-center gap-1"
-                        style="color:#60906F;">
+                        style="color:#1A5C2A;">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
                          viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -154,14 +154,14 @@
                     <p class="text-sm text-gray-500">
                         Total des frais par élève
                     </p>
-                    <p class="text-2xl font-black mt-0.5" style="color:#7FA6C4;"
+                    <p class="text-2xl font-black mt-0.5" style="color:#1A3A6B;"
                        x-text="total.toLocaleString('fr-FR') + ' FCFA'">
                     </p>
                 </div>
                 <button type="submit"
                         class="px-6 py-3 rounded-xl text-white font-bold text-sm
                                flex items-center gap-2 transition-all hover:shadow-md"
-                        style="background-color:#60906F;">
+                        style="background-color:#1A5C2A;">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor"
                          viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round"
