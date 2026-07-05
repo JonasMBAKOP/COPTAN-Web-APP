@@ -222,7 +222,7 @@
         <h3 class="font-black text-sm mb-4" style="color:#1A3A6B;">Effectifs par section</h3>
         @php
             $donutTotal = $bySection->sum('count') ?: 1;
-            $colors = ['#1D4ED8','#6D28D9','#991B1B','#1A5C2A'];
+            $colors = ['#1D4ED8','orange','#991B1B','#1A5C2A'];
             $start = 0;
             $segments = [];
         @endphp

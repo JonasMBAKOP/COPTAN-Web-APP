@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" class="h-full">
+<html lang="fr" class="h-full overflow-hidden">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,7 +15,7 @@
         }
     </style>
 </head>
-<body class="h-full bg-gray-50" x-data>
+<body class="h-full overflow-hidden bg-gray-50" x-data>
 
     {{-- ── OVERLAY MOBILE ───────────────────────────────────────────── --}}
     <div id="sidebar-overlay"
@@ -23,13 +23,13 @@
          class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden">
     </div>
 
-    <div class="flex h-full min-h-screen">
+    <div class="flex h-screen overflow-hidden">
 
         {{-- ── SIDEBAR ──────────────────────────────────────────────── --}}
         @include('layouts.partials.sidebar')
 
         {{-- ── CONTENU PRINCIPAL ───────────────────────────────────── --}}
-        <div class="flex-1 flex flex-col min-w-0 lg:ml-0">
+        <div class="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden lg:ml-0">
 
             {{-- Navbar --}}
             @include('layouts.partials.navbar')
@@ -44,7 +44,7 @@
             @endif
 
             {{-- Contenu de la page --}}
-            <main class="flex-1 px-4 lg:px-6 py-4 lg:py-6 overflow-auto">
+            <main class="flex-1 px-4 lg:px-6 py-4 lg:py-6 overflow-y-auto overflow-x-hidden">
                 {{-- Messages flash --}}
                 @if(session('success'))
                 <div class="mb-4 p-4 bg-green-50 border border-green-200
@@ -74,7 +74,7 @@
             </main>
 
             {{-- Footer --}}
-            <footer class="px-4 lg:px-6 py-3 border-t border-gray-200 bg-white">
+            <footer class="shrink-0 px-4 lg:px-6 py-3 border-t border-gray-200 bg-white">
                 <p class="text-xs text-gray-400 text-center">
                     COPTAN © {{ date('Y') }} — Plateforme de Gestion Scolaire
                 </p>

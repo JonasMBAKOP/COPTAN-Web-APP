@@ -11,11 +11,13 @@ use App\Models\ClassGroup;
 use App\Models\Section;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
+use App\Models\StudentPayment;
 use App\Services\EnrollmentService;
 use App\Services\StudentDocumentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class StudentController extends Controller
 {
@@ -249,6 +251,28 @@ class StudentController extends Controller
 
         try {
             $student = DB::transaction(function () use ($request, $data, $class, $academicYear) {
+                // 0. Vérifier que le matricule n'existe pas déjà dans les élèves existants (pas de soft delete, on utilise forceDelete)
+                $existingStudent = Student::where('matricule', $data['matricule'])->first();
+                
+                if ($existingStudent) {
+                    $currentEnrollment = $existingStudent->enrollments()
+                        ->where('status', StudentEnrollment::STATUS_ACTIVE)
+                        ->with('classGroup')
+                        ->first();
+                    
+                    if ($currentEnrollment) {
+                        throw new \Exception(
+                            "Un élève avec le matricule '{$data['matricule']}' est déjà inscrit dans la classe {$currentEnrollment->classGroup->full_name}. "
+                            . "Vous ne pouvez pas créer un doublon avec le même matricule."
+                        );
+                    } else {
+                        throw new \Exception(
+                            "Un élève avec le matricule '{$data['matricule']}' existe déjà dans le système. "
+                            . "Vous ne pouvez pas créer un doublon."
+                        );
+                    }
+                }
+
                 // 1. Vérifier la capacité AVANT de créer l'élève
                 try {
                     $this->enrollments->assertClassHasCapacity($class);
@@ -326,10 +350,16 @@ class StudentController extends Controller
             : null;
         $isEditable = $this->enrollments->isEditableInActiveYear($student);
         $canEnroll  = $this->enrollments->canEnrollInActiveYear($student);
+        $transferClasses = $activeYear
+            ? ClassGroup::where('academic_year_id', $activeYear->id)
+                ->with('level.section')
+                ->orderBy('name')
+                ->get()
+            : collect();
 
         return view('students.show', compact(
             'student', 'activeEnrollment', 'previousEnrollment',
-            'activeYear', 'isEditable', 'canEnroll'
+            'activeYear', 'isEditable', 'canEnroll', 'transferClasses'
         ));
     }
 
@@ -381,27 +411,44 @@ class StudentController extends Controller
         return back()->with('success', 'Photo supprimée.');
     }
 
-    // ── SUPPRESSION ───────────────────────────────────────────────────────
-    public function destroy(Student $student)
+    private function deleteStudentAndRelatedData(Student $student): void
     {
-        if ($student->enrollments()->count() > 0) {
-            return back()->with('error',
-                "Impossible de supprimer {$student->full_name} : "
-                . "il/elle a des inscriptions.");
-        }
-
-        $name = $student->full_name;
-        $studentId = $student->id;
-        
         if ($student->photo) {
             Storage::disk('public')->delete($student->photo);
         }
 
-        $student->delete();
+        $enrollmentIds = $student->enrollments()->pluck('id');
+
+        // Supprimer tous les paiements liés aux inscriptions, y compris les paiements en bloc et leurs allocations
+        if ($enrollmentIds->isNotEmpty()) {
+            StudentPayment::whereIn('student_enrollment_id', $enrollmentIds)->forceDelete();
+        }
+
+        // Supprimer toutes les inscriptions (forceDelete pour suppression permanente)
+        $student->enrollments()->forceDelete();
+
+        // Supprimer l'élève lui-même (forceDelete pour suppression permanente, pas soft delete)
+        $student->forceDelete();
+    }
+
+    // ── SUPPRESSION ───────────────────────────────────────────────────────
+    public function destroy(Student $student)
+    {
+        $name = $student->full_name;
+        $studentId = $student->id;
+
+        try {
+            DB::transaction(function () use ($student) {
+                $this->deleteStudentAndRelatedData($student);
+            });
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Impossible de supprimer cet élève : ' . $e->getMessage());
+        }
+
         AuditLog::log('deleted', null, ['name' => $name, 'id' => $studentId], []);
 
         return redirect()->route('students.index')
-            ->with('success', "Élève {$name} supprimé(e).");
+            ->with('success', "Élève {$name} supprimé(e) définitivement ainsi que ses inscriptions et données associées.");
     }
 
     // ── FORMULAIRE INSCRIPTION ────────────────────────────────────────────
@@ -540,6 +587,19 @@ class StudentController extends Controller
                 . "pour {$activeYear->label}.");
     }
 
+    public function updateEnrollmentDate(Request $request, StudentEnrollment $enrollment)
+    {
+        $data = $request->validate([
+            'enrollment_date' => ['required', 'date'],
+        ]);
+
+        $old = $enrollment->toArray();
+        $enrollment->update($data);
+        AuditLog::log('updated', $enrollment, $old, $enrollment->fresh()->toArray());
+
+        return back()->with('success', 'Date d\'inscription mise à jour.');
+    }
+
     // ── TRANSFERT ─────────────────────────────────────────────────────────
     public function transfer(Request $request, StudentEnrollment $enrollment)
     {
@@ -551,24 +611,77 @@ class StudentController extends Controller
         try {
             $newClass = ClassGroup::findOrFail($request->new_class_id);
 
+            if ((int) $newClass->id === (int) $enrollment->class_group_id) {
+                return back()->with('error', 'La classe de destination doit être différente de la classe actuelle.');
+            }
+
             DB::transaction(function () use ($request, $enrollment, $newClass) {
                 $this->enrollments->assertClassHasCapacity($newClass);
 
-                $enrollment->update([
-                    'class_group_id'       => $newClass->id,
-                    'transfer_date'        => now()->toDateString(),
-                    'transfer_destination' => $newClass->full_name,
+                $student = $enrollment->student;
+                $oldStudentFullName = $student->full_name;
+                $photoPath = null;
+
+                // ─── ÉTAPE 1 : Sauvegarder toutes les données avant suppression ───────
+                if ($student->photo) {
+                    $photoPath = 'students/photos/' . Str::uuid() . '-' . basename($student->photo);
+                    Storage::disk('public')->copy($student->photo, $photoPath);
+                }
+
+                $studentData = [
+                    'matricule'             => $student->matricule,
+                    'first_name'            => $student->first_name,
+                    'last_name'             => $student->last_name,
+                    'gender'                => $student->gender,
+                    'date_of_birth'         => $student->date_of_birth,
+                    'place_of_birth'        => $student->place_of_birth,
+                    'birth_certificate_number' => $student->birth_certificate_number,
+                    'nationality'           => $student->nationality,
+                    'photo'                 => $photoPath,
+                    'father_name'           => $student->father_name,
+                    'father_phone'          => $student->father_phone,
+                    'mother_name'           => $student->mother_name,
+                    'mother_phone'          => $student->mother_phone,
+                    'guardian_name'         => $student->guardian_name,
+                    'guardian_phone'        => $student->guardian_phone,
+                    'guardian_relationship' => $student->guardian_relationship,
+                    'address'               => $student->address,
+                ];
+
+                $enrollmentData = [
+                    'academic_year_id'        => $enrollment->academic_year_id,
+                    'class_group_id'          => $newClass->id,
+                    'enrollment_date'         => $enrollment->enrollment_date?->toDateString() ?? now()->toDateString(),
+                    'is_repeating'            => $enrollment->is_repeating,
+                    'previous_class_group_id' => $enrollment->class_group_id,
+                    'previous_class_label'    => $enrollment->classGroup?->full_name,
+                    'origin_school'           => $enrollment->origin_school,
+                    'status'                  => StudentEnrollment::STATUS_ACTIVE,
+                ];
+
+                // ─── ÉTAPE 2 : Supprimer complètement l'ancien élève ──────────────────
+                // (inscriptions, paiements, reçus de paiement, l'élève lui-même)
+                $this->deleteStudentAndRelatedData($student);
+
+                // ─── ÉTAPE 3 : Créer le nouvel élève avec les données sauvegardées ───
+                $newStudent = Student::create($studentData);
+
+                // ─── ÉTAPE 4 : Inscrire le nouvel élève dans la classe cible ────────
+                StudentEnrollment::create([
+                    'student_id' => $newStudent->id,
+                    ...$enrollmentData,
                 ]);
 
                 AuditLog::log('transferred', $enrollment);
             });
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Impossible de transférer cet élève : ' . $e->getMessage());
         }
 
-        return back()->with('success',
-            "{$enrollment->student->full_name} transféré(e) "
-            . "en {$newClass->full_name}.");
+        return redirect()->route('students.index')->with('success',
+            "L'élève a été transféré avec succès dans la nouvelle classe.");
     }
 
     // ── CHANGEMENT DE STATUT ──────────────────────────────────────────────

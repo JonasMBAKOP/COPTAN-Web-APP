@@ -45,7 +45,7 @@ class StoreStudentRequest extends FormRequest
             'guardian_phone'        => ['nullable', 'string', 'max:30'],
             'guardian_relationship' => ['nullable', 'string', 'max:100'],
             // Matricule
-            'matricule'             => ['nullable', 'string', 'max:30', 'unique:students,matricule'],
+            'matricule'             => ['nullable', 'string', 'max:30'],
             // Scolarité (Inscription directe)
             'academic_year_id'      => ['required', 'exists:academic_years,id'],
             'class_group_id'        => ['required', 'exists:class_groups,id'],
@@ -65,7 +65,6 @@ class StoreStudentRequest extends FormRequest
             'gender.required'        => 'Le genre est obligatoire.',
             'date_of_birth.required' => 'La date de naissance est obligatoire.',
             'date_of_birth.before'   => 'La date de naissance doit être dans le passé.',
-            'matricule.unique'       => 'Ce matricule est déjà utilisé.',
         ];
     }
 }

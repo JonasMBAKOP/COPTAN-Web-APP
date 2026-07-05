@@ -104,6 +104,77 @@
 
         {{-- Boutons d'action --}}
         <div class="flex items-center gap-2 flex-wrap flex-shrink-0">
+            {{-- Bouton Transférer --}}
+            @can('manage-students')
+            @if($activeEnrollment)
+            <div x-data="{ showTransferModal: false }" class="relative">
+                <button type="button" @click="showTransferModal = true"
+                        class="flex items-center gap-2 px-4 py-2 rounded-lg
+                               border border-gray-200 text-sm font-medium
+                               text-gray-600 hover:bg-gray-50 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                    Transférer
+                </button>
+
+                {{-- Modal Transfert --}}
+                <div x-show="showTransferModal" @click.outside="showTransferModal = false" x-cloak
+                     class="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
+                    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">
+                            Transférer {{ $student->full_name }}
+                        </h3>
+
+                        <form method="POST" action="{{ route('students.enrollments.transfer', $activeEnrollment) }}">
+                            @csrf
+                            @method('PATCH')
+
+                            <div class="mb-6">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    Classe de destination
+                                </label>
+                                <select name="new_class_id" required
+                                        class="w-full rounded-lg border border-gray-300 px-4 py-2.5
+                                               text-sm text-gray-800 focus:border-[#1A3A6B]
+                                               focus:ring-2 focus:ring-[#1A3A6B]/20">
+                                    <option value="">Sélectionner une classe...</option>
+                                    @foreach($transferClasses as $class)
+                                        @if($class->id !== $activeEnrollment->class_group_id)
+                                        <option value="{{ $class->id }}">
+                                            {{ $class->full_name }}
+                                            ({{ $class->studentEnrollments()->where('status', 'active')->count() }}/{{ $class->max_students }})
+                                        </option>
+                                        @endif
+                                    @endforeach
+                                </select>
+                                @error('new_class_id')
+                                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="flex gap-3 justify-end">
+                                <button type="button" @click="showTransferModal = false"
+                                        class="px-4 py-2 rounded-lg border border-gray-300
+                                               text-sm font-medium text-gray-700
+                                               hover:bg-gray-50 transition-colors">
+                                    Annuler
+                                </button>
+                                <button type="submit"
+                                        class="px-4 py-2 rounded-lg text-white text-sm font-semibold
+                                               transition-colors"
+                                        style="background-color:#1A3A6B;">
+                                    Transférer
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            @endif
+            @endcan
+
             {{-- Documents à imprimer --}}
             <div class="relative" x-data="{ openDocs: false }">
                 <button type="button" @click="openDocs = !openDocs"
@@ -553,11 +624,19 @@
                                  2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                     </svg>
                 </div>
-                <div>
+                <div class="flex-1">
                     <p class="text-xs text-gray-400">Date d'inscription</p>
                     <p class="text-sm font-bold text-gray-800">
                         {{ $activeEnrollment->enrollment_date->format('d/m/Y') }}
                     </p>
+                    @can('manage-students')
+                    <form method="POST" action="{{ route('students.enrollments.update-date', $activeEnrollment) }}" class="mt-2 flex flex-wrap items-center gap-2">
+                        @csrf
+                        @method('PATCH')
+                        <input type="date" name="enrollment_date" value="{{ $activeEnrollment->enrollment_date->toDateString() }}" class="rounded-lg border border-gray-200 px-2 py-1 text-xs">
+                        <button type="submit" class="rounded-lg bg-[#1A3A6B] px-2.5 py-1 text-[11px] font-semibold text-white">Mettre à jour</button>
+                    </form>
+                    @endcan
                 </div>
             </div>
 
@@ -882,40 +961,64 @@
                 {{-- Actions sur l'inscription --}}
                 @can('manage-students')
                 @if($enr->status === 'active')
-                <div x-data="{ open: false }" class="relative">
-                    <button @click="open = !open"
-                            class="p-2 rounded-lg text-gray-400
-                                   hover:bg-gray-100 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                             viewBox="0 0 24 24">
-                            <path stroke-linecap="round"
-                                  stroke-linejoin="round" stroke-width="2"
-                                  d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1
-                                     0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1
-                                     0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
-                        </svg>
-                    </button>
-                    <div x-show="open" @click.away="open = false"
-                         class="absolute right-0 mt-1 w-48 bg-white
-                                rounded-xl shadow-lg border border-gray-200
-                                z-10 py-1">
-                        <form method="POST"
-                              action="{{ route('students.enrollments.status',
-                                               $enr) }}">
-                            @csrf @method('PATCH')
-                            @foreach([
-                                'transferred' => '→ Marquer transféré(e)',
-                                'withdrawn'   => 'Marquer retiré(e)',
-                                'excluded'    => '⊘ Marquer exclu(e)',
-                            ] as $val => $lbl)
-                            <button type="submit" name="status"
-                                    value="{{ $val }}"
-                                    class="w-full text-left px-4 py-2 text-sm
-                                           text-gray-700 hover:bg-gray-50">
-                                {{ $lbl }}
-                            </button>
-                            @endforeach
-                        </form>
+                <div class="flex flex-col items-end gap-2">
+                    <div x-data="{ open: false }" class="relative">
+                        <button @click="open = !open"
+                                class="p-2 rounded-lg text-gray-400
+                                       hover:bg-gray-100 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                 viewBox="0 0 24 24">
+                                <path stroke-linecap="round"
+                                      stroke-linejoin="round" stroke-width="2"
+                                      d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1
+                                         0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1
+                                         0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+                            </svg>
+                        </button>
+                        <div x-show="open" @click.away="open = false"
+                             class="absolute right-0 mt-1 w-56 bg-white
+                                    rounded-xl shadow-lg border border-gray-200
+                                    z-10 py-2">
+                            <form method="POST"
+                                  action="{{ route('students.enrollments.status',
+                                                   $enr) }}">
+                                @csrf @method('PATCH')
+                                @foreach([
+                                    'transferred' => '→ Marquer transféré(e)',
+                                    'withdrawn'   => 'Marquer retiré(e)',
+                                    'excluded'    => '⊘ Marquer exclu(e)',
+                                ] as $val => $lbl)
+                                <button type="submit" name="status"
+                                        value="{{ $val }}"
+                                        class="w-full text-left px-4 py-2 text-sm
+                                               text-gray-700 hover:bg-gray-50">
+                                    {{ $lbl }}
+                                </button>
+                                @endforeach
+                            </form>
+                            <div class="border-t border-gray-100 mt-2 pt-2 px-3 space-y-2">
+                                <form method="POST" action="{{ route('students.enrollments.update-date', $enr) }}" class="space-y-1">
+                                    @csrf @method('PATCH')
+                                    <label class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Date d'inscription</label>
+                                    <input type="date" name="enrollment_date" value="{{ $enr->enrollment_date->toDateString() }}" class="w-full rounded-lg border border-gray-200 px-2 py-1 text-sm">
+                                    <button type="submit" class="w-full rounded-lg bg-[#1A3A6B] px-2.5 py-1.5 text-xs font-semibold text-white">Enregistrer</button>
+                                </form>
+                                @if($transferClasses->isNotEmpty())
+                                <form method="POST" action="{{ route('students.enrollments.transfer', $enr) }}" class="space-y-1">
+                                    @csrf @method('PATCH')
+                                    <label class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Transférer vers</label>
+                                    <select name="new_class_id" class="w-full rounded-lg border border-gray-200 px-2 py-1 text-sm">
+                                        @foreach($transferClasses as $class)
+                                            @if($class->id !== $enr->class_group_id)
+                                            <option value="{{ $class->id }}">{{ $class->full_name }}</option>
+                                            @endif
+                                        @endforeach
+                                    </select>
+                                    <button type="submit" class="w-full rounded-lg bg-[#1A5C2A] px-2.5 py-1.5 text-xs font-semibold text-white">Transférer</button>
+                                </form>
+                                @endif
+                            </div>
+                        </div>
                     </div>
                 </div>
                 @endif

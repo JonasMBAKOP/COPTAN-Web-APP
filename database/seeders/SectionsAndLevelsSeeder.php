@@ -18,6 +18,7 @@ class SectionsAndLevelsSeeder extends Seeder
             ['name' => 'Enseignement Général',   'code' => 'ESG',  'language' => 'fr'],
             ['name' => 'Enseignement Technique', 'code' => 'EST',  'language' => 'fr'],
             ['name' => 'Anglophone',            'code' => 'ANG', 'language' => 'en'],
+            ['name' => 'Anglophone Technique',  'code' => 'EAT', 'language' => 'en'],
         ];
 
         foreach ($sections as $section) {
@@ -31,6 +32,7 @@ class SectionsAndLevelsSeeder extends Seeder
         $esg = DB::table('sections')->where('code', 'ESG')->value('id');
         $est = DB::table('sections')->where('code', 'EST')->value('id');
         $ang = DB::table('sections')->where('code', 'ANG')->value('id');
+        $eat = DB::table('sections')->where('code', 'EAT')->value('id');
 
         // ── NIVEAUX ───────────────────────────────────────────────────────────
 
@@ -58,46 +60,116 @@ class SectionsAndLevelsSeeder extends Seeder
 
         // Anglophone
         $levelsANG = [
-            ['name' => 'Form 1',      'order_index' => 1, 'is_exam_class' => false],
-            ['name' => 'Form 2',      'order_index' => 2, 'is_exam_class' => false],
-            ['name' => 'Form 3',      'order_index' => 3, 'is_exam_class' => false],
-            ['name' => 'Form 4',      'order_index' => 4, 'is_exam_class' => false],
-            ['name' => 'Form 5',      'order_index' => 5, 'is_exam_class' => true],
-            ['name' => 'Lower Sixth', 'order_index' => 6, 'is_exam_class' => false],
-            ['name' => 'Upper Sixth', 'order_index' => 7, 'is_exam_class' => true],
+            ['name' => 'Form 1',      'order_index' => 1, 'is_exam_class' => false, 'cycle' => '1er'],
+            ['name' => 'Form 2',      'order_index' => 2, 'is_exam_class' => false, 'cycle' => '1er'],
+            ['name' => 'Form 3',      'order_index' => 3, 'is_exam_class' => false, 'cycle' => '1er'],
+            ['name' => 'Form 4',      'order_index' => 4, 'is_exam_class' => false, 'cycle' => '1er'],
+            ['name' => 'Form 5',      'order_index' => 5, 'is_exam_class' => true,  'cycle' => '2nd'],
+            ['name' => 'Lower Sixth', 'order_index' => 6, 'is_exam_class' => false, 'cycle' => '2nd'],
+            ['name' => 'Upper Sixth', 'order_index' => 7, 'is_exam_class' => true,  'cycle' => '2nd'],
+        ];
+
+        // Anglophone Technique
+        $levelsEAT = [
+            ['name' => 'Form 1',      'order_index' => 1, 'is_exam_class' => false, 'cycle' => '1er'],
+            ['name' => 'Form 2',      'order_index' => 2, 'is_exam_class' => false, 'cycle' => '1er'],
+            ['name' => 'Form 3',      'order_index' => 3, 'is_exam_class' => false, 'cycle' => '1er'],
+            ['name' => 'Form 4',      'order_index' => 4, 'is_exam_class' => false, 'cycle' => '1er'],
+            ['name' => 'Form 5',      'order_index' => 5, 'is_exam_class' => true,  'cycle' => '2nd'],
+            ['name' => 'Lower Sixth', 'order_index' => 6, 'is_exam_class' => false, 'cycle' => '2nd'],
+            ['name' => 'Upper Sixth', 'order_index' => 7, 'is_exam_class' => true,  'cycle' => '2nd'],
         ];
 
         foreach ($levelsESG as $level) {
-            DB::table('levels')->insertOrIgnore([
-                'section_id'    => $esg,
-                'name'          => $level['name'],
-                'order_index'   => $level['order_index'],
-                'is_exam_class' => $level['is_exam_class'],
-                'created_at'    => now(),
-                'updated_at'    => now(),
-            ]);
+            $updated = DB::table('levels')
+                ->where('section_id', $esg)
+                ->where('name', $level['name'])
+                ->update([
+                    'order_index'   => $level['order_index'],
+                    'is_exam_class' => $level['is_exam_class'],
+                    'updated_at'    => now(),
+                ]);
+            
+            if ($updated === 0) {
+                DB::table('levels')->insert([
+                    'section_id'    => $esg,
+                    'name'          => $level['name'],
+                    'order_index'   => $level['order_index'],
+                    'is_exam_class' => $level['is_exam_class'],
+                    'created_at'    => now(),
+                    'updated_at'    => now(),
+                ]);
+            }
         }
 
         foreach ($levelsEST as $level) {
-            DB::table('levels')->insertOrIgnore([
-                'section_id'    => $est,
-                'name'          => $level['name'],
-                'order_index'   => $level['order_index'],
-                'is_exam_class' => $level['is_exam_class'],
-                'created_at'    => now(),
-                'updated_at'    => now(),
-            ]);
+            $updated = DB::table('levels')
+                ->where('section_id', $est)
+                ->where('name', $level['name'])
+                ->update([
+                    'order_index'   => $level['order_index'],
+                    'is_exam_class' => $level['is_exam_class'],
+                    'updated_at'    => now(),
+                ]);
+            
+            if ($updated === 0) {
+                DB::table('levels')->insert([
+                    'section_id'    => $est,
+                    'name'          => $level['name'],
+                    'order_index'   => $level['order_index'],
+                    'is_exam_class' => $level['is_exam_class'],
+                    'created_at'    => now(),
+                    'updated_at'    => now(),
+                ]);
+            }
         }
 
         foreach ($levelsANG as $level) {
-            DB::table('levels')->insertOrIgnore([
-                'section_id'    => $ang,
-                'name'          => $level['name'],
-                'order_index'   => $level['order_index'],
-                'is_exam_class' => $level['is_exam_class'],
-                'created_at'    => now(),
-                'updated_at'    => now(),
-            ]);
+            $updated = DB::table('levels')
+                ->where('section_id', $ang)
+                ->where('name', $level['name'])
+                ->update([
+                    'cycle'         => $level['cycle'],
+                    'order_index'   => $level['order_index'],
+                    'is_exam_class' => $level['is_exam_class'],
+                    'updated_at'    => now(),
+                ]);
+            
+            if ($updated === 0) {
+                DB::table('levels')->insert([
+                    'section_id'    => $ang,
+                    'name'          => $level['name'],
+                    'cycle'         => $level['cycle'],
+                    'order_index'   => $level['order_index'],
+                    'is_exam_class' => $level['is_exam_class'],
+                    'created_at'    => now(),
+                    'updated_at'    => now(),
+                ]);
+            }
+        }
+
+        foreach ($levelsEAT as $level) {
+            $updated = DB::table('levels')
+                ->where('section_id', $eat)
+                ->where('name', $level['name'])
+                ->update([
+                    'cycle'         => $level['cycle'],
+                    'order_index'   => $level['order_index'],
+                    'is_exam_class' => $level['is_exam_class'],
+                    'updated_at'    => now(),
+                ]);
+            
+            if ($updated === 0) {
+                DB::table('levels')->insert([
+                    'section_id'    => $eat,
+                    'name'          => $level['name'],
+                    'cycle'         => $level['cycle'],
+                    'order_index'   => $level['order_index'],
+                    'is_exam_class' => $level['is_exam_class'],
+                    'created_at'    => now(),
+                    'updated_at'    => now(),
+                ]);
+            }
         }
 
         $this->command->info('✅ Sections et niveaux créés.');

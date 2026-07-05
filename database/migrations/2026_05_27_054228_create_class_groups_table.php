@@ -25,7 +25,7 @@ return new class extends Migration
                   ->comment('Ex: A, B, C — NULL si pas de sous-groupe');
             $table->string('series', 20)->nullable()
                   ->comment('Ex: C, D, A4, F3, Sciences — NULL si pas de série');
-            $table->tinyInteger('max_students')->unsigned()->default(60);
+            $table->tinyInteger('max_students')->unsigned()->default(100);
             $table->foreignId('titular_staff_id')
                   ->nullable()
                   ->constrained('staff')

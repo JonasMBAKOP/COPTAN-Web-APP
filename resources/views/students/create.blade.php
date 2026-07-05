@@ -16,9 +16,52 @@
     {{-- Titre de la page --}}
     <h1 class="text-2xl font-bold text-gray-900">Inscrire un nouvel élève</h1>
 
+    {{-- Messages d'erreur et succès --}}
+    @if ($errors->any())
+        <div class="bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm">
+            <div class="flex items-start gap-3">
+                <svg class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div class="flex-1">
+                    <h3 class="font-bold text-red-900 mb-2">Erreur lors de la création</h3>
+                    <ul class="space-y-1 text-sm text-red-800">
+                        @foreach ($errors->all() as $error)
+                            <li>• {{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm">
+            <div class="flex items-start gap-3">
+                <svg class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div class="flex-1">
+                    <p class="font-bold text-red-900">{{ session('error') }}</p>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if (session('success'))
+        <div class="bg-green-50 border border-green-200 rounded-xl p-4 shadow-sm">
+            <div class="flex items-start gap-3">
+                <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m7 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="font-bold text-green-900">{{ session('success') }}</p>
+            </div>
+        </div>
+    @endif
+
     {{-- Progress Steps --}}
     <div class="flex items-center justify-between bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-        {{-- Étape 1 --}}
+        {{-- Étape 1 (Scolarité) --}}
         <div class="flex flex-col items-center flex-1 relative">
             <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all"
                  :class="step === 1 ? 'bg-[#9c4005] border-[#9c4005] text-white shadow-sm' : (step > 1 ? 'bg-green-600 border-green-600 text-white' : 'bg-white border-gray-300 text-gray-400')">
@@ -29,12 +72,12 @@
                 </template>
                 <template x-if="step <= 1"><span>1</span></template>
             </div>
-            <span class="text-xs font-semibold mt-2 transition-colors" :class="step === 1 ? 'text-[#9c4005]' : 'text-gray-500'">Identité</span>
+            <span class="text-xs font-semibold mt-2 transition-colors" :class="step === 1 ? 'text-[#9c4005]' : 'text-gray-500'">Scolarité</span>
         </div>
 
         <div class="flex-1 h-0.5 bg-gray-200 -mt-6" :class="step > 1 ? 'bg-green-500' : ''"></div>
 
-        {{-- Étape 2 --}}
+        {{-- Étape 2 (Identité) --}}
         <div class="flex flex-col items-center flex-1 relative">
             <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all"
                  :class="step === 2 ? 'bg-[#9c4005] border-[#9c4005] text-white shadow-sm' : (step > 2 ? 'bg-green-600 border-green-600 text-white' : 'bg-white border-gray-300 text-gray-400')">
@@ -45,7 +88,7 @@
                 </template>
                 <template x-if="step <= 2"><span>2</span></template>
             </div>
-            <span class="text-xs font-semibold mt-2 transition-colors" :class="step === 2 ? 'text-[#9c4005]' : 'text-gray-500'">Scolarité</span>
+            <span class="text-xs font-semibold mt-2 transition-colors" :class="step === 2 ? 'text-[#9c4005]' : 'text-gray-500'">Identité</span>
         </div>
 
         <div class="flex-1 h-0.5 bg-gray-200 -mt-6" :class="step > 2 ? 'bg-green-500' : ''"></div>
@@ -89,140 +132,13 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
                 <h2 class="text-sm font-bold uppercase tracking-wider text-[#1A3A6B]"
-                    x-text="step === 1 ? 'Identité de l\'élève' : (step === 2 ? 'Scolarité de l\'élève' : (step === 3 ? 'Parents & Tuteurs' : 'Confirmation des informations'))">
+                    x-text="step === 1 ? 'Scolarité de l\'élève' : (step === 2 ? 'Identité de l\'élève' : (step === 3 ? 'Parents & Tuteurs' : 'Confirmation des informations'))">
                 </h2>
             </div>
 
-            {{-- ÉTAPE 1 : IDENTITÉ --}}
+
+            {{-- ÉTAPE 1 : SCOLARITÉ --}}
             <div x-show="step === 1" class="space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    
-                    {{-- Colonne Gauche : Upload Photo --}}
-                    <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl p-6 bg-gray-50/50 hover:bg-gray-50 transition-all cursor-pointer relative"
-                         @click="$refs.photoInput.click()">
-                        <input type="file" name="photo" x-ref="photoInput" class="hidden" accept="image/*" @change="handlePhotoUpload($event)">
-                        
-                        <template x-if="photoPreview">
-                            <img :src="photoPreview" class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md">
-                        </template>
-                        
-                        <template x-if="!photoPreview">
-                            <div class="flex flex-col items-center">
-                                <div class="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 mb-3">
-                                    <svg class="w-8 h-8 text-[#1A3A6B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                    </svg>
-                                </div>
-                                <span class="text-sm font-semibold text-gray-700">Cliquer pour ajouter une photo</span>
-                                <span class="text-xs text-gray-400 mt-1">Format JPG/PNG, Max 2Mo</span>
-                            </div>
-                        </template>
-                    </div>
-
-                    {{-- Colonne Droite : Infos Identité rapides --}}
-                    <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        
-                        {{-- Genre --}}
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Sexe <span class="text-red-500">*</span></label>
-                            <div class="flex gap-4">
-                                <label class="flex items-center gap-2 px-4 py-2.5 border rounded-lg cursor-pointer flex-1 text-sm bg-white hover:bg-gray-50 transition-all"
-                                       :class="gender === 'M' ? 'border-[#9c4005] bg-orange-50/20 text-[#9c4005] font-semibold' : 'border-gray-200'">
-                                    <input type="radio" name="gender" value="M" x-model="gender" class="text-[#9c4005] focus:ring-[#9c4005]">
-                                    Masculin
-                                </label>
-                                <label class="flex items-center gap-2 px-4 py-2.5 border rounded-lg cursor-pointer flex-1 text-sm bg-white hover:bg-gray-50 transition-all"
-                                       :class="gender === 'F' ? 'border-[#9c4005] bg-orange-50/20 text-[#9c4005] font-semibold' : 'border-gray-200'">
-                                    <input type="radio" name="gender" value="F" x-model="gender" class="text-[#9c4005] focus:ring-[#9c4005]">
-                                    Féminin
-                                </label>
-                            </div>
-                            <span class="text-xs text-red-500 mt-1 block" x-text="errors.gender"></span>
-                        </div>
-
-                        {{-- Nationalité --}}
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Nationalité <span class="text-red-500">*</span></label>
-                            <input type="text" name="nationality" x-model="nationality"
-                                   class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B]">
-                            <span class="text-xs text-red-500 mt-1 block" x-text="errors.nationality"></span>
-                        </div>
-
-                        {{-- Numéro Matricule --}}
-                        <div class="sm:col-span-2">
-                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Numéro Matricule</label>
-                            <div class="flex items-center gap-2">
-                                <button type="button" 
-                                        @click="matriculeMode = matriculeMode === 'auto' ? 'manual' : 'auto'"
-                                        :class="matriculeMode === 'auto' ? 'border-[#9c4005] bg-orange-50' : 'border-gray-200 bg-white'"
-                                        class="px-3 py-2 border rounded-lg text-xs font-semibold whitespace-nowrap transition-all">
-                                    <span x-show="matriculeMode === 'auto'">Généré</span>
-                                    <span x-show="matriculeMode === 'manual'">Saisir</span>
-                                </button>
-                                <template x-if="matriculeMode === 'auto'">
-                                    <div class="flex-1 flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
-                                        <span class="font-mono text-sm font-bold text-[#1A3A6B] tracking-wider" x-text="matricule"></span>
-                                        <input type="hidden" name="matricule" :value="matricule">
-                                    </div>
-                                </template>
-                                <template x-if="matriculeMode === 'manual'">
-                                    <input type="text" name="matricule" x-model="matricule" placeholder="Ex: CP-2026-0001"
-                                           class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B]">
-                                </template>
-                            </div>
-                        </div>
-
-                        {{-- Numéro Acte de Naissance --}}
-                        <div class="sm:col-span-2">
-                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Numéro de l'acte de naissance</label>
-                            <input type="text" name="birth_certificate_number" x-model="birthCertificateNumber" placeholder="Ex: 1234567890"
-                                   class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B]">
-                            <p class="text-xs text-gray-400 mt-1">Optionnel</p>
-                        </div>
-
-                    </div>
-                </div>
-
-                {{-- Suite Infos Identité --}}
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-gray-100 pt-6">
-                    {{-- Nom --}}
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Nom de famille <span class="text-red-500">*</span></label>
-                        <input type="text" name="last_name" x-model="lastName" @input="lastName = lastName.toUpperCase()" placeholder="Entrez le nom"
-                               class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B]">
-                        <span class="text-xs text-red-500 mt-1 block" x-text="errors.lastName"></span>
-                    </div>
-
-                    {{-- Prénom --}}
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Prénom(s) <span class="text-red-500">*</span></label>
-                        <input type="text" name="first_name" x-model="firstName" placeholder="Entrez le prénom"
-                               class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B]">
-                        <span class="text-xs text-red-500 mt-1 block" x-text="errors.firstName"></span>
-                    </div>
-
-                    {{-- Date de naissance --}}
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Date de naissance <span class="text-red-500">*</span></label>
-                        <div class="relative">
-                            <input type="date" name="date_of_birth" x-model="dateOfBirth"
-                                   class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B]">
-                        </div>
-                        <span class="text-xs text-red-500 mt-1 block" x-text="errors.dateOfBirth"></span>
-                    </div>
-
-                    {{-- Lieu de naissance --}}
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Lieu de naissance <span class="text-red-500">*</span></label>
-                        <input type="text" name="place_of_birth" x-model="placeOfBirth" placeholder="Ville"
-                               class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B]">
-                        <span class="text-xs text-red-500 mt-1 block" x-text="errors.placeOfBirth"></span>
-                    </div>
-                </div>
-            </div>
-
-            {{-- ÉTAPE 2 : SCOLARITÉ --}}
-            <div x-show="step === 2" class="space-y-6">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     
                     {{-- Année Scolaire en Cours (Lecture seule) --}}
@@ -339,6 +255,135 @@
                 </div>
             </div>
 
+            {{-- ÉTAPE 2 : IDENTITÉ --}}
+            <div x-show="step === 2" class="space-y-6">
+                {{-- Suite Infos Identité --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {{-- Nom --}}
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Nom de famille <span class="text-red-500">*</span></label>
+                        <input type="text" name="last_name" x-model="lastName" @input="lastName = lastName.toUpperCase()" placeholder="Entrez le nom"
+                               class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B]">
+                        <span class="text-xs text-red-500 mt-1 block" x-text="errors.lastName"></span>
+                    </div>
+
+                    {{-- Prénom --}}
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Prénom(s) <span class="text-red-500">*</span></label>
+                        <input type="text" name="first_name" x-model="firstName" placeholder="Entrez le prénom"
+                               class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B]">
+                        <span class="text-xs text-red-500 mt-1 block" x-text="errors.firstName"></span>
+                    </div>
+
+                    {{-- Date de naissance --}}
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Date de naissance <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <input type="date" name="date_of_birth" x-model="dateOfBirth"
+                                   class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B]">
+                        </div>
+                        <span class="text-xs text-red-500 mt-1 block" x-text="errors.dateOfBirth"></span>
+                    </div>
+
+                    {{-- Lieu de naissance --}}
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Lieu de naissance <span class="text-red-500">*</span></label>
+                        <input type="text" name="place_of_birth" x-model="placeOfBirth" placeholder="Ville"
+                               class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B]">
+                        <span class="text-xs text-red-500 mt-1 block" x-text="errors.placeOfBirth"></span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-gray-100 pt-6">
+                    
+                    {{-- Colonne Gauche : Upload Photo --}}
+                    <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl p-6 bg-gray-50/50 hover:bg-gray-50 transition-all cursor-pointer relative"
+                         @click="$refs.photoInput.click()">
+                        <input type="file" name="photo" x-ref="photoInput" class="hidden" accept="image/*" @change="handlePhotoUpload($event)">
+                        
+                        <template x-if="photoPreview">
+                            <img :src="photoPreview" class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md">
+                        </template>
+                        
+                        <template x-if="!photoPreview">
+                            <div class="flex flex-col items-center">
+                                <div class="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 mb-3">
+                                    <svg class="w-8 h-8 text-[#1A3A6B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                </div>
+                                <span class="text-sm font-semibold text-gray-700">Cliquer pour ajouter une photo</span>
+                                <span class="text-xs text-gray-400 mt-1">Format JPG/PNG, Max 2Mo</span>
+                            </div>
+                        </template>
+                    </div>
+
+                    {{-- Colonne Droite : Infos Identité rapides --}}
+                    <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        
+                        {{-- Genre --}}
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Sexe <span class="text-red-500">*</span></label>
+                            <div class="flex gap-4">
+                                <label class="flex items-center gap-2 px-4 py-2.5 border rounded-lg cursor-pointer flex-1 text-sm bg-white hover:bg-gray-50 transition-all"
+                                       :class="gender === 'M' ? 'border-[#9c4005] bg-orange-50/20 text-[#9c4005] font-semibold' : 'border-gray-200'">
+                                    <input type="radio" name="gender" value="M" x-model="gender" class="text-[#9c4005] focus:ring-[#9c4005]">
+                                    Masculin
+                                </label>
+                                <label class="flex items-center gap-2 px-4 py-2.5 border rounded-lg cursor-pointer flex-1 text-sm bg-white hover:bg-gray-50 transition-all"
+                                       :class="gender === 'F' ? 'border-[#9c4005] bg-orange-50/20 text-[#9c4005] font-semibold' : 'border-gray-200'">
+                                    <input type="radio" name="gender" value="F" x-model="gender" class="text-[#9c4005] focus:ring-[#9c4005]">
+                                    Féminin
+                                </label>
+                            </div>
+                            <span class="text-xs text-red-500 mt-1 block" x-text="errors.gender"></span>
+                        </div>
+
+                        {{-- Nationalité --}}
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Nationalité <span class="text-red-500">*</span></label>
+                            <input type="text" name="nationality" x-model="nationality"
+                                   class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B]">
+                            <span class="text-xs text-red-500 mt-1 block" x-text="errors.nationality"></span>
+                        </div>
+
+                        {{-- Numéro Matricule --}}
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Numéro Matricule</label>
+                            <div class="flex items-center gap-2">
+                                <button type="button" 
+                                        @click="matriculeMode = matriculeMode === 'auto' ? 'manual' : 'auto'"
+                                        :class="matriculeMode === 'auto' ? 'border-[#9c4005] bg-orange-50' : 'border-gray-200 bg-white'"
+                                        class="px-3 py-2 border rounded-lg text-xs font-semibold whitespace-nowrap transition-all">
+                                    <span x-show="matriculeMode === 'auto'">Généré</span>
+                                    <span x-show="matriculeMode === 'manual'">Saisir</span>
+                                </button>
+                                <template x-if="matriculeMode === 'auto'">
+                                    <div class="flex-1 flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
+                                        <span class="font-mono text-sm font-bold text-[#1A3A6B] tracking-wider" x-text="matricule"></span>
+                                        <input type="hidden" name="matricule" :value="matricule">
+                                    </div>
+                                </template>
+                                <template x-if="matriculeMode === 'manual'">
+                                    <input type="text" name="matricule" x-model="matricule" placeholder="Ex: CP-2026-0001"
+                                           class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B]">
+                                </template>
+                            </div>
+                        </div>
+
+                        {{-- Numéro Acte de Naissance --}}
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Numéro de l'acte de naissance</label>
+                            <input type="text" name="birth_certificate_number" x-model="birthCertificateNumber" placeholder="Ex: 1234567890"
+                                   class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B]">
+                            <p class="text-xs text-gray-400 mt-1">Optionnel</p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            
             {{-- ÉTAPE 3 : PARENTS / TUTEURS --}}
             <div x-show="step === 3" class="space-y-6">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -464,7 +509,7 @@
                                 x-text="selectedCycle ? (selectedCycle === '1er' ? '1er Cycle' : '2nd Cycle') : '—'"></dd>
 
                             <dt class="text-gray-400">Classe affectée :</dt>
-                            <dd class="text-gray-800 font-bold text-sm text-[#9c4005]" x-text="getClassName()"></dd>
+                            <dd class="font-bold text-sm text-[#9c4005]" x-text="getClassName()"></dd>
 
                             <dt class="text-gray-400">Date d'inscription :</dt>
                             <dd class="text-gray-800 font-semibold" x-text="formatDate(enrollmentDate)"></dd>
@@ -710,19 +755,19 @@ foreach($errors->toArray() as $field => $messages) {
             validateStep(s) {
                 this.errors = {};
                 if (s === 1) {
-                    if (!this.lastName.trim()) this.errors.lastName = "Le nom de famille est requis.";
-                    if (!this.firstName.trim()) this.errors.firstName = "Le prénom est requis.";
-                    if (!this.gender) this.errors.gender = "Le genre est requis.";
-                    if (!this.dateOfBirth) this.errors.dateOfBirth = "La date de naissance est requise.";
-                    if (!this.placeOfBirth.trim()) this.errors.placeOfBirth = "Le lieu de naissance est requis.";
-                    if (!this.nationality.trim()) this.errors.nationality = "La nationalité est requise.";
-                } else if (s === 2) {
                     if (!this.selectedSection) this.errors.selectedSection = "La section est requise.";
                     if (!this.selectedCycle) this.errors.selectedCycle = "Le cycle est requis.";
                     if (!this.selectedClass) this.errors.selectedClass = "La classe est requise.";
                     if (!this.enrollmentDate) this.errors.enrollmentDate = "La date d'inscription est requise.";
                     if (!this.situation) this.errors.situation = "La situation est requise.";
                     this.updatePreviousClassLabel();
+                } else if (s === 2) {
+                    if (!this.lastName.trim()) this.errors.lastName = "Le nom de famille est requis.";
+                    if (!this.firstName.trim()) this.errors.firstName = "Le prénom est requis.";
+                    if (!this.gender) this.errors.gender = "Le genre est requis.";
+                    if (!this.dateOfBirth) this.errors.dateOfBirth = "La date de naissance est requise.";
+                    if (!this.placeOfBirth.trim()) this.errors.placeOfBirth = "Le lieu de naissance est requis.";
+                    if (!this.nationality.trim()) this.errors.nationality = "La nationalité est requise.";
                 }
                 return Object.keys(this.errors).length === 0;
             },

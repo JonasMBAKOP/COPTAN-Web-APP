@@ -67,6 +67,19 @@
                 {{ number_format($totalRemaining) }} FCFA
             </p>
         </div>
+        @can('manage-finances')
+        @if($feeStructure)
+        <button type="button"
+                onclick="openBulkPaymentModal()"
+                class="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-bold transition-all hover:shadow-md"
+                style="background-color:#E87722;">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 10c-4.418 0-8-2.239-8-5s3.582-5 8-5 8 2.239 8 5-3.582 5-8 5zm0-12V3m0 18v-3"/>
+            </svg>
+            Payer en bloc
+        </button>
+        @endif
+        @endcan
         <a href="{{ route('finances.student.receipt', $enrollment) }}"
             target="_blank"
             class="flex items-center gap-2 px-4 py-2 rounded-lg text-white
@@ -301,8 +314,13 @@
                                 +{{ number_format($p->amount_paid) }} FCFA
                             </p>
                             <p class="text-xs text-gray-500">
-                                {{ $p->feeInstallment?->label }}
+                                {{ $p->is_bulk ? 'Paiement en bloc' : ($p->feeInstallment?->label ?? '—') }}
                             </p>
+                            @if($p->is_bulk)
+                            <p class="text-[11px] text-gray-400 mt-1">
+                                {{ $p->allocation_summary ?: 'Répartition automatique des tranches' }}
+                            </p>
+                            @endif
                             <p class="text-xs text-gray-400">
                                 {{ $p->payment_method_label }}
                                 @if($p->reference)
@@ -332,5 +350,65 @@
 
 </div>
 @endif
+
+@can('manage-finances')
+@if($feeStructure)
+<div id="bulk-payment-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4">
+    <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-lg font-black" style="color:#1A3A6B;">Paiement en bloc</h3>
+                <p class="text-sm text-gray-500">Le montant sera réparti automatiquement sur les tranches ouvertes.</p>
+            </div>
+            <button type="button" onclick="closeBulkPaymentModal()" class="p-2 rounded-lg text-gray-400 hover:bg-gray-100">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <form method="POST" action="{{ route('finances.bulk-pay', $enrollment) }}" class="space-y-4">
+            @csrf
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Montant à payer (FCFA)</label>
+                <input type="number" name="amount_paid" min="1" required
+                       class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100">
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="closeBulkPaymentModal()" class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50">Annuler</button>
+                <button type="submit" class="px-4 py-2 rounded-lg text-white text-sm font-semibold" style="background-color:#1A5C2A;">Payer</button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
+@endcan
+
+<script>
+function openBulkPaymentModal() {
+    const modal = document.getElementById('bulk-payment-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        const input = modal.querySelector('input[name="amount_paid"]');
+        if (input) input.focus();
+    }
+}
+
+function closeBulkPaymentModal() {
+    const modal = document.getElementById('bulk-payment-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+        closeBulkPaymentModal();
+    }
+});
+</script>
 
 @endsection

@@ -6,22 +6,40 @@
 
 @section('content')
 
-    {{-- Sélecteur d'année --}}
-    <div class="flex items-center gap-3 mb-6">
+    {{-- Sélecteurs d'année et de section --}}
+    <div class="mb-6">
         <form method="GET" action="{{ route('finances.fees-list') }}"
-            class="flex items-center gap-2">
-            <label class="text-sm text-gray-500">Année :</label>
-            <select name="year_id" onchange="this.form.submit()"
-                    class="px-3 py-2 border border-gray-200 rounded-lg text-sm
-                        focus:outline-none bg-white"
-                    style="color:#1A3A6B;">
-                @foreach($years as $year)
-                    <option value="{{ $year->id }}"
-                            {{ $selectedYear?->id == $year->id ? 'selected' : '' }}>
-                        {{ $year->label }} {{ $year->is_active ? '(Active)' : '' }}
-                    </option>
-                @endforeach
-            </select>
+            class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-2">
+                <label class="text-sm text-gray-500">Année :</label>
+                <select name="year_id" onchange="this.form.submit()"
+                        class="px-3 py-2 border border-gray-200 rounded-lg text-sm
+                            focus:outline-none bg-white"
+                        style="color:#1A3A6B;">
+                    @foreach($years as $year)
+                        <option value="{{ $year->id }}"
+                                {{ $selectedYear?->id == $year->id ? 'selected' : '' }}>
+                            {{ $year->label }} {{ $year->is_active ? '(Active)' : '' }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <label class="text-sm text-gray-500">Section :</label>
+                <select name="section_id" onchange="this.form.submit()"
+                        class="px-3 py-2 border border-gray-200 rounded-lg text-sm
+                            focus:outline-none bg-white"
+                        style="color:#1A3A6B;">
+                    <option value="">Toutes les sections</option>
+                    @foreach($sections as $section)
+                        <option value="{{ $section->id }}"
+                                {{ (string)($selectedSectionId ?? '') === (string)$section->id ? 'selected' : '' }}>
+                            {{ $section->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
         </form>
     </div>
 
@@ -100,12 +118,19 @@
                                 @if(!$selectedYear?->isClosed())
                                     <a href="{{ route('finances.fees', $class) }}"
                                     class="w-full py-2 rounded-lg text-center text-sm font-medium
-                                            transition-colors border
+                                            transition-colors border inline-flex items-center justify-center gap-2
                                             {{ $fee
                                                 ? 'border-blue-200 text-blue-700 hover:bg-blue-50'
                                                 : 'text-white hover:shadow-md' }}"
                                     style="{{ !$fee ? 'background-color:#1A5C2A;' : '' }}">
-                                        {{ $fee ? '<svg class="inline h-4 w-4 mr-1 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Modifier les frais' : '+ Configurer les frais' }}
+                                        @if($fee)
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                            </svg>
+                                            <span>Modifier les frais</span>
+                                        @else
+                                            <span>+ Configurer les frais</span>
+                                        @endif
                                     </a>
                                 @else
                                     <span class="w-full py-2 rounded-lg text-center text-xs

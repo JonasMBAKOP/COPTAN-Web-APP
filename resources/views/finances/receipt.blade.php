@@ -276,7 +276,22 @@ body {
     {{-- ── OBJET ────────────────────────────────────────────────────────── --}}
     <div class="object-bar">
         <span class="object-label">Objet du paiement :</span>
-        <span class="object-value">{{ $payment->feeInstallment?->label ?? '—' }}</span>
+        @php
+            $paymentObjects = $payment->is_bulk
+                ? $payment->allocations->loadMissing('feeInstallment')
+                : collect([$payment]);
+        @endphp
+        @foreach($paymentObjects as $item)
+            <span class="object-value" style="font-size:11px;">
+                {{ $item->is_bulk ? 'Paiement en bloc' : ($item->feeInstallment?->label ?? '—') }}
+                @if($payment->is_bulk && $item->feeInstallment)
+                    ({{ number_format((int) $item->amount_paid, 0, ',', ' ') }} FCFA)
+                @endif
+            </span>
+            @if(!$loop->last)
+                <span class="object-label">•</span>
+            @endif
+        @endforeach
         @if($payment->reference)
             <span class="object-label">Réf :</span>
             <span class="object-value" style="font-size:11px;">

@@ -9,7 +9,9 @@ use App\Models\Section;
 use App\Models\Staff;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
+use App\Models\StudentPayment;
 use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -23,6 +25,7 @@ class StaffAndStudentFlowTest extends TestCase
     {
         parent::setUp();
         Storage::fake('public');
+        $this->seed(RolesAndPermissionsSeeder::class);
     }
 
     /**
@@ -32,7 +35,7 @@ class StaffAndStudentFlowTest extends TestCase
     {
         // Admin user
         $admin = User::factory()->create();
-        $admin->assignRole('admin');
+        $admin->assignRole('super-admin');
 
         $response = $this->actingAs($admin)->post(route('staff.store'), [
             'first_name'      => 'Jean',
@@ -51,7 +54,7 @@ class StaffAndStudentFlowTest extends TestCase
             'new_user_name'   => 'Jean Kamga Enseignant',
             'new_user_email'  => 'jean.kamga.user@coptan.cm',
             'new_user_password' => 'SecurePassword123!',
-            'new_user_role'   => 'teacher',
+            'new_user_role'   => 'enseignant',
         ]);
 
         // Should redirect to show page
@@ -85,7 +88,7 @@ class StaffAndStudentFlowTest extends TestCase
     {
         // Setup
         $admin = User::factory()->create();
-        $admin->assignRole('admin');
+        $admin->assignRole('super-admin');
 
         $year = AcademicYear::factory()->create(['is_active' => true]);
         $section = Section::factory()->create();
@@ -140,7 +143,7 @@ class StaffAndStudentFlowTest extends TestCase
     public function test_cannot_create_duplicate_enrollment()
     {
         $admin = User::factory()->create();
-        $admin->assignRole('admin');
+        $admin->assignRole('super-admin');
 
         $year = AcademicYear::factory()->create(['is_active' => true]);
         $section = Section::factory()->create();
@@ -183,7 +186,7 @@ class StaffAndStudentFlowTest extends TestCase
     public function test_cannot_exceed_class_capacity()
     {
         $admin = User::factory()->create();
-        $admin->assignRole('admin');
+        $admin->assignRole('super-admin');
 
         $year = AcademicYear::factory()->create(['is_active' => true]);
         $section = Section::factory()->create();
@@ -220,5 +223,133 @@ class StaffAndStudentFlowTest extends TestCase
         // Should redirect back with error about capacity
         $response->assertRedirect();
         $response->assertSessionHas('error');
+    }
+
+    public function test_can_update_enrollment_date_for_existing_enrollment()
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('super-admin');
+
+        $year = AcademicYear::factory()->create(['is_active' => true]);
+        $section = Section::factory()->create();
+        $level = Level::factory()->create(['section_id' => $section->id]);
+        $class = ClassGroup::factory()->create([
+            'academic_year_id' => $year->id,
+            'level_id'        => $level->id,
+            'max_students'    => 50,
+        ]);
+
+        $student = Student::factory()->create();
+        $enrollment = StudentEnrollment::factory()->create([
+            'student_id'       => $student->id,
+            'academic_year_id' => $year->id,
+            'class_group_id'   => $class->id,
+            'status'           => 'active',
+            'enrollment_date'  => '2024-09-01',
+        ]);
+
+        $response = $this->actingAs($admin)->patch(route('students.enrollments.update-date', $enrollment), [
+            'enrollment_date' => '2024-09-15',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertSame('2024-09-15', $enrollment->fresh()->enrollment_date->toDateString());
+    }
+
+    public function test_can_delete_enrolled_student_with_related_records()
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('super-admin');
+
+        $year = AcademicYear::factory()->create(['is_active' => true]);
+        $section = Section::factory()->create();
+        $level = Level::factory()->create(['section_id' => $section->id]);
+        $class = ClassGroup::factory()->create([
+            'academic_year_id' => $year->id,
+            'level_id'        => $level->id,
+            'max_students'    => 50,
+        ]);
+
+        $student = Student::factory()->create();
+        $enrollment = StudentEnrollment::factory()->create([
+            'student_id'       => $student->id,
+            'academic_year_id' => $year->id,
+            'class_group_id'   => $class->id,
+            'status'           => 'active',
+        ]);
+
+        $enrollment->grades()->create([
+            'class_subject_id' => 1,
+            'sequence_id'      => 1,
+            'grade'            => 15.5,
+        ]);
+
+        StudentPayment::create([
+            'student_enrollment_id' => $enrollment->id,
+            'fee_installment_id'    => null,
+            'amount_paid'           => 10000,
+            'payment_date'          => now()->toDateString(),
+            'payment_method'        => 'cash',
+            'reference'             => null,
+            'receipt_number'        => 'RCP-TEST-1',
+            'recorded_by'           => $admin->id,
+            'notes'                 => 'Test payment',
+        ]);
+
+        $response = $this->actingAs($admin)->delete(route('students.destroy', $student));
+
+        $response->assertRedirect(route('students.index'));
+        $this->assertNull(Student::withTrashed()->find($student->id));
+        $this->assertNull(StudentEnrollment::withTrashed()->find($enrollment->id));
+        $this->assertSame(0, StudentPayment::where('student_enrollment_id', $enrollment->id)->count());
+    }
+
+    public function test_transfer_deletes_related_payments_for_the_old_enrollment()
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('super-admin');
+
+        $year = AcademicYear::factory()->create(['is_active' => true]);
+        $section = Section::factory()->create();
+        $level = Level::factory()->create(['section_id' => $section->id]);
+        $sourceClass = ClassGroup::factory()->create([
+            'academic_year_id' => $year->id,
+            'level_id'        => $level->id,
+            'max_students'    => 50,
+        ]);
+        $destinationClass = ClassGroup::factory()->create([
+            'academic_year_id' => $year->id,
+            'level_id'        => $level->id,
+            'max_students'    => 50,
+        ]);
+
+        $student = Student::factory()->create();
+        $enrollment = StudentEnrollment::factory()->create([
+            'student_id'       => $student->id,
+            'academic_year_id' => $year->id,
+            'class_group_id'   => $sourceClass->id,
+            'status'           => 'active',
+        ]);
+
+        StudentPayment::create([
+            'student_enrollment_id' => $enrollment->id,
+            'fee_installment_id'    => null,
+            'amount_paid'           => 5000,
+            'payment_date'          => now()->toDateString(),
+            'payment_method'        => 'cash',
+            'reference'             => null,
+            'receipt_number'        => 'RCP-TEST-2',
+            'recorded_by'           => $admin->id,
+            'notes'                 => 'Transfer payment',
+        ]);
+
+        $response = $this->actingAs($admin)->patch(route('students.enrollments.transfer', $enrollment), [
+            'new_class_id' => $destinationClass->id,
+            'transfer_reason' => 'Changement de classe',
+        ]);
+
+        $response->assertRedirect(route('students.index'));
+        $this->assertSame(0, StudentPayment::where('student_enrollment_id', $enrollment->id)->count());
+        $this->assertNull(StudentEnrollment::withTrashed()->find($enrollment->id));
     }
 }

@@ -419,6 +419,9 @@ Route::middleware(['auth', 'permission:view-students'])
             Route::patch('/enrollments/{enrollment}/transfer',
                 [StudentController::class, 'transfer'])
                 ->name('enrollments.transfer');
+            Route::patch('/enrollments/{enrollment}/date',
+                [StudentController::class, 'updateEnrollmentDate'])
+                ->name('enrollments.update-date');
             Route::patch('/enrollments/{enrollment}/status',
                 [StudentController::class, 'updateStatus'])
                 ->name('enrollments.status');
@@ -485,6 +488,9 @@ Route::middleware(['auth', 'permission:view-finances'])
             Route::post('/students/{enrollment}/pay',
                 [FinanceController::class, 'recordPayment'])
                 ->name('pay');
+            Route::post('/students/{enrollment}/bulk-pay',
+                [FinanceController::class, 'bulkPay'])
+                ->name('bulk-pay');
         });
     });
 

@@ -3,7 +3,7 @@
         'enseignant'          => 'Enseignant(e)',
         'directeur'           => 'Directeur / Principal',
         'fondateur'           => 'Fondateur / Fondatrice',
-        'censeur'             => 'Censeur / Préfet des études',
+        'censeur'             => 'Préfet des études / Dean',
         'econome'             => 'Économe',
         'surveillant_general' => 'Surveillant(e) Général(e)',
         'secretaire'          => 'Secrétaire',

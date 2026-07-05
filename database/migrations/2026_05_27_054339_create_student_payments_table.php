@@ -17,6 +17,7 @@ return new class extends Migration
                   ->constrained('student_enrollments')
                   ->cascadeOnDelete();
             $table->foreignId('fee_installment_id')
+                  ->nullable()
                   ->constrained('fee_installments')
                   ->cascadeOnDelete();
             $table->decimal('amount_paid', 10, 0)
@@ -31,7 +32,7 @@ return new class extends Migration
             ]);
             $table->string('reference', 100)->nullable()
                   ->comment('Référence Orange Money, MTN MoMo, virement...');
-            $table->string('receipt_number', 30)->unique()
+            $table->string('receipt_number', 30)->nullable()->unique()
                   ->comment('Ex: RCP-2025-00001 — Généré automatiquement');
             $table->foreignId('recorded_by')
                   ->constrained('users')

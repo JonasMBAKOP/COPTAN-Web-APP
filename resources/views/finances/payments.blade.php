@@ -230,7 +230,7 @@
                     </td>
                     <td class="px-4 py-3.5 text-sm text-gray-700 font-medium
                                hidden sm:table-cell">
-                        {{ $p->feeInstallment?->label }}
+                        {{ $p->is_bulk ? 'Paiement en bloc' : ($p->feeInstallment?->label ?? '—') }}
                     </td>
                     <td class="px-4 py-3.5 text-right">
                         <span class="font-bold text-green-700 text-sm">

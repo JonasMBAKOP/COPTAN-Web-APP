@@ -10,20 +10,38 @@
 <div class="flex flex-col sm:flex-row sm:items-center
             justify-between gap-4 mb-6">
     <form method="GET" action="{{ route('finances.index') }}"
-          class="flex items-center gap-2">
-        <label class="text-sm text-gray-500">Année :</label>
-        <select name="year_id" onchange="this.form.submit()"
-                class="px-3 py-2 border border-gray-200 rounded-lg text-sm
-                       focus:outline-none bg-white"
-                style="color:#1A3A6B;">
-            @foreach($years as $year)
-            <option value="{{ $year->id }}"
-                    {{ $selectedYear?->id == $year->id ? 'selected' : '' }}>
-                {{ $year->label }}
-                {{ $year->is_active ? '(Active)' : '' }}
-            </option>
-            @endforeach
-        </select>
+          class="flex flex-wrap items-center gap-2">
+        <div class="flex items-center gap-2">
+            <label class="text-sm text-gray-500">Année :</label>
+            <select name="year_id" onchange="this.form.submit()"
+                    class="px-3 py-2 border border-gray-200 rounded-lg text-sm
+                           focus:outline-none bg-white"
+                    style="color:#1A3A6B;">
+                @foreach($years as $year)
+                <option value="{{ $year->id }}"
+                        {{ $selectedYear?->id == $year->id ? 'selected' : '' }}>
+                    {{ $year->label }}
+                    {{ $year->is_active ? '(Active)' : '' }}
+                </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <label class="text-sm text-gray-500">Section :</label>
+            <select name="section_id" onchange="this.form.submit()"
+                    class="px-3 py-2 border border-gray-200 rounded-lg text-sm
+                           focus:outline-none bg-white"
+                    style="color:#1A3A6B;">
+                <option value="">Toutes les sections</option>
+                @foreach($sections as $section)
+                <option value="{{ $section->id }}"
+                        {{ (string)($selectedSectionId ?? '') === (string)$section->id ? 'selected' : '' }}>
+                    {{ $section->name }}
+                </option>
+                @endforeach
+            </select>
+        </div>
     </form>
 
     <a href="{{ route('finances.payments') }}"
@@ -158,7 +176,7 @@
                     $enrolled   = $class->studentEnrollments->count();
                     $feeTotal   = $fee?->installments->sum('amount') ?? 0;
                     $expected   = $feeTotal * $enrolled;
-                    $collected  = \App\Models\StudentPayment::whereHas(
+                    $collected  = \App\Models\StudentPayment::visible()->whereHas(
                         'studentEnrollment', fn($q) =>
                             $q->where('class_group_id', $class->id)
                               ->where('status', 'active')
@@ -322,7 +340,7 @@
                     </p>
                     <p class="text-xs text-gray-400">
                         {{ $p->studentEnrollment?->classGroup?->full_name }}
-                        · {{ $p->feeInstallment?->label }}
+                        · {{ $p->is_bulk ? 'Paiement en bloc' : ($p->feeInstallment?->label ?? '—') }}
                     </p>
                 </div>
             </div>

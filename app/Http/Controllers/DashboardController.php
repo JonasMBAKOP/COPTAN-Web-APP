@@ -104,13 +104,13 @@ class DashboardController extends Controller
             $fee = $c->feeStructures->first();
             $totalExpected += ($fee?->installments->sum('amount') ?? 0) * $c->enrolled;
         }
-        $totalCollected = (int)StudentPayment::whereHas('studentEnrollment',
+        $totalCollected = (int)StudentPayment::visible()->whereHas('studentEnrollment',
             fn($q) => $q->where('academic_year_id', $activeYear->id)
         )->sum('amount_paid');
         $collectionRate = $totalExpected > 0 ? round(($totalCollected / $totalExpected) * 100) : 0;
 
         $monthPeriods = $activeYear->monthPeriods();
-        $monthlyRevenue = StudentPayment::whereHas('studentEnrollment',
+        $monthlyRevenue = StudentPayment::visible()->whereHas('studentEnrollment',
             fn($q) => $q->where('academic_year_id', $activeYear->id)
         )->whereBetween('payment_date', [
             $activeYear->start_date->copy()->startOfMonth(),

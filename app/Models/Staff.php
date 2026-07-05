@@ -155,8 +155,8 @@ class Staff extends Model
     {
         return [
             'enseignant'          => 'Enseignant(e)',
-            'censeur'             => 'Censeur / Préfet des études',
-            'prefet_des_etudes'   => 'Préfet des études',
+            'censeur'             => 'Préfet des études / Dean',
+            'prefet_des_etudes'   => 'Préfet des études / Dean',
             'econome'             => 'Économe',
             'surveillant_general' => 'Surveillant(e) Général(e)',
             'directeur'           => 'Directeur / Principal',
