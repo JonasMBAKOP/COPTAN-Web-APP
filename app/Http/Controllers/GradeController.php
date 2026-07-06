@@ -71,46 +71,6 @@ class GradeController extends Controller
     }
 
     /** Matières enseignées dans une section par ce user */
-    // private function teacherSubjectsInSection(
-    //     int $sectionId, ?AcademicYear $year
-    // ): \Illuminate\Support\Collection {
-    //     if (!$year) return collect();
-
-    //     if ($this->isAdmin()) {
-    //         return ClassSubject::whereHas('classGroup.level',
-    //             fn($q) => $q->where('section_id', $sectionId)
-    //         )->where('class_group_id', function($q) use ($year) {
-    //             $q->select('id')->from('class_groups')
-    //               ->where('academic_year_id', $year->id);
-    //         })->where('is_active', true)
-    //           ->with('subject')
-    //           ->get()
-    //           ->pluck('subject')
-    //           ->unique('id')
-    //           ->sortBy('name_fr')
-    //           ->values();
-    //     }
-
-    //     $staff = $this->currentUser()->staff;
-    //     if (!$staff) return collect();
-
-    //     return TeacherAssignment::where('staff_id', $staff->id)
-    //         ->where('academic_year_id', $year->id)
-    //         ->with([
-    //             'classSubject.subject',
-    //             'classSubject.classGroup.level',
-    //         ])
-    //         ->get()
-    //         ->filter(fn($ta) =>
-    //             $ta->classSubject?->classGroup?->level?->section_id === $sectionId
-    //             && $ta->classSubject?->classGroup?->academic_year_id === $year->id
-    //         )
-    //         ->pluck('classSubject.subject')
-    //         ->filter()
-    //         ->unique('id')
-    //         ->sortBy('name_fr')
-    //         ->values();
-    // }
     private function teacherSubjectsInSection(
         int $sectionId, ?AcademicYear $year
     ): \Illuminate\Support\Collection {
@@ -186,63 +146,6 @@ class GradeController extends Controller
     }
 
     // // ── LISTE DES CLASSES PAR SÉQUENCE ───────────────────────────────────
-    // public function index(Request $request)
-    // {
-    //     $activeYear = AcademicYear::active();
-
-    //     if (!$activeYear) {
-    //         return view('grades.index', [
-    //             'sections'   => collect(),
-    //             'sequences'  => collect(),
-    //             'activeYear' => null,
-    //             'gradeLocks' => collect(),
-    //             'gradeCounts'=> collect(),
-    //         ]);
-    //     }
-
-    //     $sequences = Sequence::where('academic_year_id', $activeYear->id)
-    //         ->with('trimester')
-    //         ->orderBy('number')
-    //         ->get();
-
-    //     $sections = Section::with([
-    //         'levels.classGroups' => fn($q) =>
-    //             $q->where('academic_year_id', $activeYear->id)
-    //               ->withCount([
-    //                   'studentEnrollments as enrolled' => fn($q2) =>
-    //                       $q2->where('status', 'active'),
-    //                   'classSubjects as subjects_count' => fn($q2) =>
-    //                       $q2->where('is_active', true),
-    //               ])
-    //               ->orderBy('name'),
-    //     ])->orderBy('id')->get();
-
-    //     // Verrous de notes (par class_group_id et sequence_id)
-    //     $gradeLocks = GradeLock::where('is_locked', true)
-    //         ->pluck('sequence_id', 'class_group_id')
-    //         ->groupBy(fn($seqId, $cgId) => $cgId);
-
-    //     // Réindexer proprement
-    //     $locks = GradeLock::where('is_locked', true)
-    //         ->get()
-    //         ->groupBy('class_group_id');
-
-    //     // Nombre de notes saisies par class_group + sequence
-    //     $gradeCounts = Grade::select('class_subjects.class_group_id', 'grades.sequence_id')
-    //         ->selectRaw('COUNT(*) as cnt')
-    //         ->join('class_subjects',
-    //             'class_subjects.id', '=', 'grades.class_subject_id')
-    //         ->whereNotNull('grades.grade')
-    //         ->orWhere('grades.is_absent', true)
-    //         ->groupBy('class_subjects.class_group_id', 'grades.sequence_id')
-    //         ->get()
-    //         ->groupBy('class_group_id');
-
-    //     return view('grades.index', compact(
-    //         'sections', 'sequences', 'activeYear', 'locks', 'gradeCounts'
-    //     ));
-    // }
-
     public function index(Request $request)
     {
         $activeYear = $this->activeYear();
@@ -370,77 +273,7 @@ class GradeController extends Controller
     }
 
     // // ── FORMULAIRE DE SAISIE ─────────────────────────────────────────────
-    // public function entry(ClassGroup $classGroup, Sequence $sequence)
-    // {
-    //     $classGroup->load([
-    //         'level.section',
-    //         'academicYear',
-    //         'classSubjects' => fn($q) =>
-    //             $q->where('is_active', true)
-    //               ->with([
-    //                   'subject',
-    //                   'teacherAssignments' => fn($q2) =>
-    //                       $q2->where('academic_year_id', $classGroup->academic_year_id)
-    //                          ->with('staff'),
-    //               ])
-    //               ->orderBy('subject_id'),
-    //     ]);
-
-    //     // Vérifier si verrouillé
-    //     $lock = GradeLock::where([
-    //         'class_group_id' => $classGroup->id,
-    //         'sequence_id'    => $sequence->id,
-    //     ])->first();
-    //     $isLocked = $lock?->is_locked ?? false;
-
-    //     // Élèves inscrits
-    //     $enrollments = StudentEnrollment::where([
-    //         'class_group_id'   => $classGroup->id,
-    //         'academic_year_id' => $classGroup->academic_year_id,
-    //         'status'           => 'active',
-    //     ])->with('student')
-    //       ->get()
-    //       ->sortBy('student.last_name');
-
-    //     // Notes existantes indexées par [enrollment_id][class_subject_id]
-    //     $existingGrades = Grade::whereIn(
-    //         'student_enrollment_id', $enrollments->pluck('id')
-    //     )->where('sequence_id', $sequence->id)
-    //      ->get()
-    //      ->keyBy(fn($g) => $g->student_enrollment_id . '_' . $g->class_subject_id);
-
-    //     // Vérifier permissions enseignant
-    //     /** @var \App\Models\User $user */
-    //     $user = Auth::user();
-    //     $canEditAll = $user->hasAnyRole(['super-admin','directeur','censeur']);
-
-    //     // Matières que l'enseignant est assigné à enseigner
-    //     $mySubjectIds = collect();
-    //     if (!$canEditAll && $user->hasRole('enseignant') && $user->staff) {
-    //         $mySubjectIds = TeacherAssignment::where([
-    //             'staff_id'         => $user->staff->id,
-    //             'academic_year_id' => $classGroup->academic_year_id,
-    //         ])->whereHas('classSubject', fn($q) =>
-    //             $q->where('class_group_id', $classGroup->id)
-    //         )->with('classSubject')
-    //          ->get()
-    //          ->pluck('classSubject.id');
-    //     }
-
-    //     // Calcul de progression
-    //     $totalCells = $enrollments->count() * $classGroup->classSubjects->count();
-    //     $filledCells = $existingGrades->filter(
-    //         fn($g) => $g->grade !== null || $g->is_absent
-    //     )->count();
-
-    //     return view('grades.entry', compact(
-    //         'classGroup', 'sequence', 'lock', 'isLocked',
-    //         'enrollments', 'existingGrades',
-    //         'canEditAll', 'mySubjectIds',
-    //         'totalCells', 'filledCells'
-    //     ));
-    // }
-
+    
     // ══ SAISIE DES NOTES ═══════════════════════════════════════════════════
 
     public function entry(Request $request)
@@ -528,75 +361,7 @@ class GradeController extends Controller
     }
 
     // // ── ENREGISTREMENT DES NOTES ─────────────────────────────────────────
-    // public function save(StoreGradeRequest $request,
-    //                      ClassGroup $classGroup,
-    //                      Sequence $sequence)
-    // {
-    //     // Vérifier si verrouillé
-    //     $lock = GradeLock::where([
-    //         'class_group_id' => $classGroup->id,
-    //         'sequence_id'    => $sequence->id,
-    //         'is_locked'      => true,
-    //     ])->exists();
-
-    //     if ($lock) {
-    //         return back()->with('error',
-    //             'Les notes de cette séquence sont verrouillées.');
-    //     }
-
-    //     /** @var \App\Models\User $user */
-    //     $user = Auth::user();
-    //     $canEditAll = $user->hasAnyRole(['super-admin','directeur','censeur']);
-
-    //     $grades = $request->input('grades', []);
-    //     $saved  = 0;
-
-    //     foreach ($grades as $key => $data) {
-    //         // Clé = {enrollment_id}_{class_subject_id}
-    //         [$enrollmentId, $classSubjectId] = explode('_', $key);
-
-    //         // Vérifier autorisation enseignant
-    //         if (!$canEditAll) {
-    //             $isAssigned = TeacherAssignment::where([
-    //                 'staff_id'         => $user->staff?->id,
-    //                 'academic_year_id' => $classGroup->academic_year_id,
-    //                 'class_subject_id' => $classSubjectId,
-    //             ])->exists();
-
-    //             if (!$isAssigned) continue;
-    //         }
-
-    //         $isAbsent = !empty($data['is_absent']);
-    //         $grade    = $isAbsent ? null : (
-    //             isset($data['grade']) && $data['grade'] !== ''
-    //                 ? (float) $data['grade']
-    //                 : null
-    //         );
-
-    //         Grade::updateOrCreate(
-    //             [
-    //                 'student_enrollment_id' => (int) $enrollmentId,
-    //                 'class_subject_id'      => (int) $classSubjectId,
-    //                 'sequence_id'           => $sequence->id,
-    //             ],
-    //             [
-    //                 'grade'      => $grade,
-    //                 'is_absent'  => $isAbsent,
-    //                 'entered_by' => $user->id,
-    //                 'entered_at' => now(),
-    //                 'updated_by' => $user->id,
-    //             ]
-    //         );
-    //         $saved++;
-    //     }
-
-    //     AuditLog::log('grades_saved', $classGroup);
-
-    //     return back()->with('success',
-    //         "{$saved} note(s) enregistrée(s) pour "
-    //         . "{$classGroup->full_name} — {$sequence->label}.");
-    // }
-
+    
     // ══ ENREGISTREMENT (FIX BD) ════════════════════════════════════════════
 
     public function save(Request $request)
@@ -884,40 +649,7 @@ class GradeController extends Controller
     }
 
     // // ── VERROUILLER / DÉVERROUILLER ──────────────────────────────────────
-    // public function toggleLock(Request $request,
-    //                            ClassGroup $classGroup,
-    //                            Sequence $sequence)
-    // {
-    //     // Seuls censeur/directeur/admin peuvent verrouiller
-    //     /** @var \App\Models\User|null $user */
-    //     $user = Auth::user();
-    //     if (!$user->hasAnyRole([
-    //         'super-admin','directeur','censeur'
-    //     ])) {
-    //         abort(403, 'Permission insuffisante.');
-    //     }
-
-    //     $lock = GradeLock::firstOrCreate([
-    //         'class_group_id' => $classGroup->id,
-    //         'sequence_id'    => $sequence->id,
-    //     ]);
-
-    //     $lock->update([
-    //         'is_locked' => !$lock->is_locked,
-    //         'locked_by' => Auth::id(),
-    //         'locked_at' => $lock->is_locked ? null : now(),
-    //     ]);
-
-    //     $msg = $lock->is_locked
-    //         ? "Notes de {$classGroup->full_name} verrouillées."
-    //         : "Notes de {$classGroup->full_name} déverrouillées.";
-
-    //     AuditLog::log('grades_' . ($lock->is_locked ? 'locked' : 'unlocked'),
-    //                   $classGroup);
-
-    //     return back()->with('success', $msg);
-    // }
-
+    
     // ══ VERROU ══════════════════════════════════════════════════════════════
 
     public function toggleLock(ClassGroup $classGroup, Sequence $sequence)
@@ -948,34 +680,6 @@ class GradeController extends Controller
     }
 
     // // ══ API AJAX ═══════════════════════════════════════════════════════════
-
-    // public function apiSubjects(Request $request)
-    // {
-    //     $sectionId  = (int)$request->input('section_id');
-    //     $activeYear = $this->activeYear();
-
-    //     $subjects = $this->teacherSubjectsInSection($sectionId, $activeYear)
-    //         ->map(fn($s) => ['id' => $s->id, 'name' => $s->name_fr, 'code' => $s->code]);
-
-    //     return response()->json(['subjects' => $subjects->values()]);
-    // }
-
-    // public function apiClasses(Request $request)
-    // {
-    //     $sectionId  = (int)$request->input('section_id');
-    //     $subjectId  = (int)$request->input('subject_id');
-    //     $activeYear = $this->activeYear();
-
-    //     $classes = $this->teacherClassesForSubject($sectionId, $subjectId, $activeYear)
-    //         ->map(fn($c) => [
-    //             'id'        => $c->id,
-    //             'full_name' => $c->full_name,
-    //             'enrolled'  => $c->studentEnrollments()
-    //                 ->where('status', 'active')->count(),
-    //         ]);
-
-    //     return response()->json(['classes' => $classes->values()]);
-    // }
 
     // ── API AJAX (avec gestion d'erreur) ──────────────────────────────────────
 
