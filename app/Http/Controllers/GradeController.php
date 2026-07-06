@@ -267,8 +267,8 @@ class GradeController extends Controller
 
         // Sélection de section (filtre)
         $selectedSectionId = $request->input('section_id',
-            $sections->first()?->id);
-        $selectedSection   = $sections->find($selectedSectionId);
+            optional($sections->first())->id);
+        $selectedSection   = $sections->firstWhere('id', $selectedSectionId);
 
         // Verrous
         $locks = GradeLock::where('is_locked', true)
