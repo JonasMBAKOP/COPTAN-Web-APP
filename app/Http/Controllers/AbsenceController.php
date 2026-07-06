@@ -171,7 +171,7 @@ class AbsenceController extends Controller
             : collect();
 
         $preClassId     = $request->input('class_id');
-        $preClass       = $preClassId ? $classes->find($preClassId) : null;
+        $preClass       = $preClassId ? $classes->firstWhere('id', $preClassId) : null;
         $preSectionId   = $preClass?->level?->section_id;
         $classesJson    = $this->classesJsonForForms($classes);
 
