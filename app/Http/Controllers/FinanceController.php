@@ -174,7 +174,7 @@ class FinanceController extends Controller
             'academicYear',
         ]);
 
-        $feeStructure = $enrollment->classGroup->feeStructures->first();
+        $feeStructure = $enrollment->classGroup()->with('feeStructures.installments')->first()?->feeStructures->first();
 
         // Calculer le statut de chaque tranche
         $installments = collect();
@@ -206,6 +206,7 @@ class FinanceController extends Controller
             'student_enrollment_id', $enrollment->id
         )->with(['feeInstallment', 'recordedBy'])
          ->orderByDesc('payment_date')
+         ->orderByDesc('created_at')
          ->get();
 
         return view('finances.student', compact(
@@ -309,7 +310,7 @@ class FinanceController extends Controller
             'amount_paid' => ['required', 'numeric', 'min:1'],
         ]);
 
-        $feeStructure = $enrollment->classGroup->feeStructures->first();
+        $feeStructure = $enrollment->classGroup()->with('feeStructures.installments')->first()?->feeStructures->first();
         if (! $feeStructure) {
             return back()->with('error', 'Aucune structure de frais n\'est configurée pour cette classe.');
         }
@@ -328,12 +329,19 @@ class FinanceController extends Controller
             $remainingByInstallment[$installment->id] = max(0, (int) $installment->amount - (int) $paidAlready);
         }
 
+        $paymentDate = $request->filled('payment_date')
+            ? $request->input('payment_date')
+            : now()->toDateString();
+        $paymentMethod = $request->filled('payment_method')
+            ? $request->input('payment_method')
+            : 'cash';
+
         $bulkPayment = StudentPayment::create([
             'student_enrollment_id' => $enrollment->id,
             'fee_installment_id'    => null,
             'amount_paid'           => $remainingAmount,
-            'payment_date'          => now()->toDateString(),
-            'payment_method'        => 'cash',
+            'payment_date'          => $paymentDate,
+            'payment_method'        => $paymentMethod,
             'reference'             => null,
             'receipt_number'        => StudentPayment::generateReceiptNumber(),
             'recorded_by'           => Auth::id(),
@@ -365,8 +373,8 @@ class FinanceController extends Controller
                 'parent_payment_id'      => $bulkPayment->id,
                 'fee_installment_id'     => $installment->id,
                 'amount_paid'            => $amount,
-                'payment_date'           => now()->toDateString(),
-                'payment_method'         => 'cash',
+                'payment_date'           => $paymentDate,
+                'payment_method'         => $paymentMethod,
                 'reference'              => null,
                 'receipt_number'         => $bulkPayment->receipt_number . '-A' . $allocationIndex,
                 'recorded_by'            => Auth::id(),
@@ -479,17 +487,20 @@ class FinanceController extends Controller
         $school      = \App\Models\SchoolSetting::instance();
         $phones      = \App\Models\SchoolPhone::orderByDesc('is_primary')->orderBy('id')->get();
         $enrollment  = $payment->studentEnrollment;
+        $section     = $enrollment->classGroup->level->section;
 
-        $feeStructure   = $enrollment->classGroup->feeStructures->first();
-        $totalDue       = $feeStructure?->installments->sum('amount') ?? 0;
-        $totalPaid      = StudentPayment::visible()->where(
+        $feeStructure   = $enrollment->classGroup()->with('feeStructures.installments')->first()?->feeStructures->first();
+        $totalDue       = $payment->snapshot_total_due ?? ($feeStructure?->installments->sum('amount') ?? 0);
+        $totalPaid      = $payment->snapshot_total_paid ?? StudentPayment::visible()->where(
                             'student_enrollment_id', $enrollment->id
                         )->sum('amount_paid');
-        $totalRemaining = max(0, $totalDue - $totalPaid);
+        $totalRemaining = $payment->snapshot_total_remaining ?? max(0, $totalDue - $totalPaid);
+
+        $isEnglishReceipt = $section?->isAnglophone() ?? false;
 
         return view('finances.receipt',
             compact('payment', 'school', 'phones',
-                    'totalDue', 'totalPaid', 'totalRemaining'));
+                    'totalDue', 'totalPaid', 'totalRemaining', 'isEnglishReceipt'));
     }
 
     // ── REÇU GLOBAL (tous les paiements d'un élève) ───────────────────────
@@ -509,14 +520,18 @@ class FinanceController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        $feeStructure = $enrollment->classGroup->feeStructures->first();
+        $feeStructure = $enrollment->classGroup()->with('feeStructures.installments')->first()?->feeStructures->first();
+
+        $allocationsPayments = StudentPayment::where('student_enrollment_id', $enrollment->id)
+            ->where('is_bulk', false)
+            ->get();
 
         // Résumé par tranche
         $installmentSummary = collect();
         if ($feeStructure) {
             foreach ($feeStructure->installments
                         ->sortBy('installment_number') as $inst) {
-                $paid = $payments
+                $paid = $allocationsPayments
                     ->where('fee_installment_id', $inst->id)
                     ->sum('amount_paid');
 
@@ -535,11 +550,12 @@ class FinanceController extends Controller
         $totalRemaining = max(0, $totalDue - $totalPaid);
         $school         = \App\Models\SchoolSetting::instance();
         $phones         = \App\Models\SchoolPhone::orderByDesc('is_primary')->orderBy('id')->get();
+        $isEnglishReceipt = $enrollment->classGroup->level->section?->isAnglophone() ?? false;
 
         return view('finances.receipt-global', compact(
             'enrollment', 'payments', 'feeStructure',
             'installmentSummary', 'totalDue', 'totalPaid',
-            'totalRemaining', 'school', 'phones'
+            'totalRemaining', 'school', 'phones', 'isEnglishReceipt'
         ));
     }
 
@@ -569,12 +585,12 @@ class FinanceController extends Controller
 
         $receiptsData = $payments->map(function($payment) {
             $enrollment   = $payment->studentEnrollment;
-            $feeStructure = $enrollment->classGroup->feeStructures->first();
-            $totalDue     = $feeStructure?->installments->sum('amount') ?? 0;
-            $totalPaid    = StudentPayment::visible()->where(
+            $feeStructure = $enrollment->classGroup()->with('feeStructures.installments')->first()?->feeStructures->first();
+            $totalDue     = $payment->snapshot_total_due ?? ($feeStructure?->installments->sum('amount') ?? 0);
+            $totalPaid    = $payment->snapshot_total_paid ?? StudentPayment::visible()->where(
                                 'student_enrollment_id', $enrollment->id
                             )->sum('amount_paid');
-            $totalRemaining = max(0, $totalDue - $totalPaid);
+            $totalRemaining = $payment->snapshot_total_remaining ?? max(0, $totalDue - $totalPaid);
             return compact('payment', 'totalDue', 'totalPaid', 'totalRemaining');
         });
 
@@ -837,10 +853,13 @@ class FinanceController extends Controller
             $paymentsQuery->whereBetween('payment_date', [$start->toDateString(), $end->toDateString()]);
         }
 
-        $allPaymentRows = $paymentsQuery->orderByDesc('payment_date')->get();
+        $allPaymentRows = $paymentsQuery
+            ->orderByDesc('payment_date')
+            ->orderByDesc('created_at')
+            ->get();
         $allPayments = $allPaymentRows->filter(fn ($payment) =>
             is_null($payment->parent_payment_id) || $payment->is_bulk
-        );
+        )->values();
 
         // ── Stats globales ────────────────────────────────────────────────
         $totalCollected = (int)$allPayments->sum('amount_paid');
@@ -1074,10 +1093,13 @@ class FinanceController extends Controller
             $paymentsQuery->whereIn('recorded_by', $economeIds);
         }
 
-        $allPaymentRows = $paymentsQuery->orderByDesc('payment_date')->get();
+        $allPaymentRows = $paymentsQuery
+            ->orderByDesc('payment_date')
+            ->orderByDesc('created_at')
+            ->get();
         $allPayments = $allPaymentRows->filter(fn ($payment) =>
             is_null($payment->parent_payment_id) || $payment->is_bulk
-        );
+        )->values();
         $totalCollected = (int)$allPayments->sum('amount_paid');
         $installmentExpectations = $this->buildInstallmentFinancialStats($selectedYear, $allPaymentRows);
         $byInstallment = $installmentExpectations->map(fn ($item) => [

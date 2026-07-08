@@ -1,10 +1,10 @@
 @extends('layouts.app')
 
 @section('title', 'Modifier ' . $academicYear->label)
-@section('page-title')Modifier l'année @endsection
-@section('page-subtitle'){{ $academicYear->label }}@endsection
+@section('page-title')Modifier Année Scolaire @endsection
+@section('page-subtitle')Mise à jour des paramètres de l'année scolaire : <span class="font-bold text-gray-900">{{ $academicYear->label }}</span>@endsection
 
-@section('breadcrumb')
+{{-- @section('breadcrumb')
     <a href="{{ route('academic-years.index') }}" class="hover:text-gray-700">
         Années scolaires
     </a>
@@ -21,7 +21,7 @@
               stroke-width="2" d="M9 5l7 7-7 7"/>
     </svg>
     <span class="font-medium" style="color: #1A3A6B;">Modifier</span>
-@endsection
+@endsection --}}
 
 @section('content')
 

@@ -400,7 +400,9 @@ Route::middleware(['auth', 'permission:view-students'])
             Route::get('/fiches', [StudentDocumentController::class, 'bulkInformationSheets'])->name('information-sheets');
             Route::get('/livrets', [StudentDocumentController::class, 'bulkBooklets'])->name('booklets');
             Route::get('/listes', [StudentDocumentController::class, 'bulkLists'])->name('lists');
+            Route::get('/listes/word', [StudentDocumentController::class, 'bulkListsWord'])->name('lists.word');
             Route::get('/rapport-effectifs', [StudentDocumentController::class, 'enrollmentTotalsReport'])->name('enrollment-totals-report');
+            Route::get('/rapport-effectifs/word', [StudentDocumentController::class, 'enrollmentTotalsReportWord'])->name('enrollment-totals-report.word');
         });
 
         Route::get('/', [StudentController::class, 'index'])->name('index');

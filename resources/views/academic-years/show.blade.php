@@ -1,12 +1,14 @@
 @extends('layouts.app')
 
 @section('title', $academicYear->label)
-@section('page-title'){{ $academicYear->label }}@endsection
+@section('page-title')
+    Année Scolaire &rightarrow; {{ $academicYear->label }}
+@endsection
 @section('page-subtitle')
     Du {{ $academicYear->start_date->format('d/m/Y') }}
     au {{ $academicYear->end_date->format('d/m/Y') }}
 @endsection
-
+{{-- 
 @section('breadcrumb')
     <a href="{{ route('academic-years.index') }}" class="hover:text-gray-700">
         Années scolaires
@@ -18,7 +20,7 @@
     <span class="font-medium" style="color: #1A3A6B;">
         {{ $academicYear->label }}
     </span>
-@endsection
+@endsection --}}
 
 @section('content')
 

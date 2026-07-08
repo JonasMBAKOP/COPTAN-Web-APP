@@ -124,6 +124,95 @@ class FinanceBulkPaymentTest extends TestCase
         $this->assertSame(1, StudentPayment::where('receipt_number', $bulkPayment->receipt_number)->count());
     }
 
+    public function test_individual_receipt_keeps_initial_totals_after_later_payments(): void
+    {
+        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+
+        $academicYear = AcademicYear::create([
+            'label' => '2025-2026',
+            'start_date' => '2025-09-01',
+            'end_date' => '2026-06-30',
+            'is_active' => true,
+        ]);
+
+        $section = Section::create(['name' => 'Science', 'code' => 'SCI']);
+        $level = Level::create([
+            'section_id' => $section->id,
+            'name' => '6ème',
+            'cycle' => '1er',
+            'order_index' => 1,
+        ]);
+        $classGroup = ClassGroup::create([
+            'academic_year_id' => $academicYear->id,
+            'level_id' => $level->id,
+            'name' => '6ème A',
+            'max_students' => 100,
+        ]);
+
+        $feeStructure = FeeStructure::create([
+            'academic_year_id' => $academicYear->id,
+            'class_group_id' => $classGroup->id,
+            'total_amount' => 10000,
+        ]);
+
+        $installment = FeeInstallment::create([
+            'fee_structure_id' => $feeStructure->id,
+            'installment_number' => 1,
+            'label' => 'Tranche 1',
+            'amount' => 10000,
+        ]);
+
+        $student = Student::create([
+            'first_name' => 'Chloe',
+            'last_name' => 'Petit',
+            'gender' => 'F',
+            'date_of_birth' => '2015-05-10',
+            'matricule' => 'MAT-003',
+        ]);
+        $enrollment = StudentEnrollment::create([
+            'student_id' => $student->id,
+            'class_group_id' => $classGroup->id,
+            'academic_year_id' => $academicYear->id,
+            'status' => 'active',
+            'enrollment_date' => '2025-09-01',
+        ]);
+
+        $user = User::factory()->create();
+        $user->givePermissionTo(['view-finances', 'manage-finances']);
+
+        $firstPayment = StudentPayment::create([
+            'student_enrollment_id' => $enrollment->id,
+            'fee_installment_id' => $installment->id,
+            'amount_paid' => 4000,
+            'payment_date' => '2025-09-15',
+            'payment_method' => 'cash',
+            'receipt_number' => 'RCP-TEST-1',
+            'recorded_by' => $user->id,
+        ]);
+
+        $response = $this->actingAs($user)->withoutMiddleware()->get(route('finances.receipt', $firstPayment));
+        $response->assertOk();
+        $response->assertSee('4 000');
+        $response->assertSee('6 000');
+        $response->assertDontSee('7 000');
+
+        StudentPayment::create([
+            'student_enrollment_id' => $enrollment->id,
+            'fee_installment_id' => $installment->id,
+            'amount_paid' => 3000,
+            'payment_date' => '2025-09-20',
+            'payment_method' => 'cash',
+            'receipt_number' => 'RCP-TEST-2',
+            'recorded_by' => $user->id,
+        ]);
+
+        $response = $this->actingAs($user)->withoutMiddleware()->get(route('finances.receipt', $firstPayment));
+        $response->assertOk();
+        $response->assertSee('4 000');
+        $response->assertSee('6 000');
+        $response->assertDontSee('7 000');
+    }
+
     public function test_finance_index_counts_bulk_payments_once_in_summary_totals(): void
     {
         $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);

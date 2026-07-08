@@ -1,6 +1,13 @@
 @extends('layouts.app')
 
 @section('title', $classGroup->full_name)
+@section('page-title')
+    Détails Classe — {{ $classGroup->full_name }} 
+@endsection
+@section('page-subtitle')
+    Imformations détaillées de la classe :
+    <span class="font-bold text-gray-900">{{ $classGroup->full_name }}</span>
+@endsection
 
 @section('content')
 
@@ -10,10 +17,6 @@
     $boysCount = $stats['boys'];
     $girlsCount = $stats['girls'];
     $boysPct = $totalStudents > 0 ? round(($boysCount / $totalStudents) * 100) : 0;
-    
-    // Simuler des données cohérentes avec le mockup si les notes ne sont pas encore configurées
-    $avgClass = 12.8; 
-    $successRate = 78;
 @endphp
 
 <div x-data="{ activeTab: 'students', searchStudent: '' }">
@@ -24,15 +27,6 @@
         <div class="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-white/5 to-transparent pointer-events-none"></div>
         
         <div class="px-6 py-6.5">
-            {{-- Breadcrumb blanc/opacity --}}
-            <nav class="flex items-center gap-2 text-xs text-white/70 mb-4">
-                <a href="{{ route('classes.index') }}" class="hover:text-white transition-colors">Gestion des classes</a>
-                <svg class="w-3.5 h-3.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-                <span class="font-semibold text-white">{{ $classGroup->full_name }}</span>
-            </nav>
-
             {{-- Ligne titre principal --}}
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -113,7 +107,7 @@
             </button>
             
             {{-- Onglets Placeholders --}}
-            @foreach(['Notes' => 'grades', 'Emploi du temps' => 'timetable', 'Statistiques' => 'stats'] as $label => $tab)
+            @foreach(['Emploi du temps' => 'timetable', 'Statistiques' => 'stats'] as $label => $tab)
             <button @click="activeTab = '{{ $tab }}'"
                     :class="activeTab === '{{ $tab }}' ? 'border-b-2 font-bold text-gray-800' : 'text-gray-400 hover:text-gray-600'"
                     class="px-6 py-4 text-sm font-semibold whitespace-nowrap transition-all border-b-2 border-transparent focus:outline-none"
@@ -260,56 +254,67 @@
                     <h3 class="font-bold text-sm text-gray-800 uppercase tracking-wide">Résumé de la classe</h3>
                 </div>
 
-                {{-- Moyenne / Réussite --}}
-                <div class="grid grid-cols-2 gap-4">
-                    {{-- Moyenne --}}
-                    <div class="p-3 bg-gray-50/50 border border-gray-100 rounded-xl">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Moyenne Générale</p>
-                        <p class="text-xl font-black text-gray-800">{{ $avgClass }}<span class="text-xs font-normal text-gray-400">/20</span></p>
-                        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2">
-                            <div class="h-full rounded-full transition-all" style="width: {{ ($avgClass/20)*100 }}%; background-color: #1A3A6B;"></div>
-                        </div>
+                {{-- Évaluation précédente --}}
+                <div class="rounded-xl border border-gray-100 bg-gray-50/60 p-3">
+                    <div class="flex items-center justify-between gap-2">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Évaluation précédente</p>
+                        @if($previousEvaluation['available'])
+                            <span class="rounded-full bg-[#EBF3FB] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#1A3A6B]">
+                                {{ $previousEvaluation['sequence'] ? ($previousEvaluation['sequence']->label ?: 'Évaluation ' . $previousEvaluation['sequence']->number) : 'Aucune donnée' }}
+                            </span>
+                        @else
+                            <span class="rounded-full bg-gray-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-gray-500">À venir</span>
+                        @endif
                     </div>
 
-                    {{-- Réussite --}}
-                    <div class="p-3 bg-gray-50/50 border border-gray-100 rounded-xl">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Taux de Réussite</p>
-                        <p class="text-xl font-black text-gray-800">{{ $successRate }}%</p>
-                        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2">
-                            <div class="h-full rounded-full transition-all" style="width: {{ $successRate }}%; background-color: #A24E0C;"></div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Meilleur / Faible --}}
-                <div class="space-y-3">
-                    {{-- Meilleur --}}
-                    <div class="flex items-center justify-between p-3 border border-green-100 rounded-xl bg-green-50/10">
-                        <div class="flex items-center gap-2">
-                            <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                            <div>
-                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Meilleur élève</p>
-                                <p class="text-xs font-bold text-gray-750">
-                                    {{ $classGroup->studentEnrollments->first()?->student?->full_name ?? 'Non disponible' }}
+                    @if($previousEvaluation['available'])
+                        <div class="mt-3 grid grid-cols-2 gap-3">
+                            <div class="rounded-lg border border-gray-200 bg-white p-3">
+                                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Moyenne</p>
+                                <p class="mt-1 text-xl font-black text-gray-800">
+                                    {{ $previousEvaluation['average'] !== null ? number_format($previousEvaluation['average'], 2, ',', ' ') : '—' }}
+                                    @if($previousEvaluation['average'] !== null)
+                                        <span class="text-xs font-normal text-gray-400">/20</span>
+                                    @endif
+                                </p>
+                            </div>
+                            <div class="rounded-lg border border-gray-200 bg-white p-3">
+                                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Taux de réussite</p>
+                                <p class="mt-1 text-xl font-black text-gray-800">
+                                    {{ $previousEvaluation['success_rate'] !== null ? $previousEvaluation['success_rate'] . '%' : '—' }}
                                 </p>
                             </div>
                         </div>
-                        <span class="text-sm font-black text-green-600 bg-green-50 border border-green-200 px-2.5 py-0.5 rounded-lg">17.2</span>
-                    </div>
 
-                    {{-- Faible --}}
-                    <div class="flex items-center justify-between p-3 border border-red-150 rounded-xl bg-red-50/10">
-                        <div class="flex items-center gap-2">
-                            <div class="w-2 h-2 rounded-full bg-red-500"></div>
-                            <div>
-                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Plus faible élève</p>
-                                <p class="text-xs font-bold text-gray-750">
-                                    {{ $classGroup->studentEnrollments->last()?->student?->full_name ?? 'Non disponible' }}
-                                </p>
+                        <div class="mt-3 space-y-2">
+                            <div class="flex items-center justify-between rounded-lg border border-green-100 bg-green-50/70 px-3 py-2">
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Meilleur élève</p>
+                                    <p class="text-sm font-bold text-gray-800">
+                                        {{ data_get($previousEvaluation, 'best_student.name', '—') }}
+                                    </p>
+                                </div>
+                                <span class="text-sm font-black text-green-700">
+                                    {{ data_get($previousEvaluation, 'best_student.average') !== null ? number_format(data_get($previousEvaluation, 'best_student.average'), 2, ',', ' ') : '—' }}
+                                </span>
+                            </div>
+                            <div class="flex items-center justify-between rounded-lg border border-red-100 bg-red-50/70 px-3 py-2">
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Plus faible élève</p>
+                                    <p class="text-sm font-bold text-gray-800">
+                                        {{ data_get($previousEvaluation, 'weakest_student.name', '—') }}
+                                    </p>
+                                </div>
+                                <span class="text-sm font-black text-red-700">
+                                    {{ data_get($previousEvaluation, 'weakest_student.average') !== null ? number_format(data_get($previousEvaluation, 'weakest_student.average'), 2, ',', ' ') : '—' }}
+                                </span>
                             </div>
                         </div>
-                        <span class="text-sm font-black text-red-600 bg-red-50 border border-red-200 px-2.5 py-0.5 rounded-lg">6.4</span>
-                    </div>
+                    @else
+                        <div class="mt-3 rounded-lg border border-dashed border-gray-200 bg-white p-4 text-center text-sm text-gray-500">
+                            La première évaluation n’est pas encore disponible.
+                        </div>
+                    @endif
                 </div>
 
                 {{-- Circular Gauge Gender Ratio (MOCKUP 3 STYLE) --}}
@@ -318,7 +323,7 @@
                     <div class="relative flex items-center justify-center mb-4">
                         <svg class="w-24 h-24 transform -rotate-90">
                             {{-- Filles (Pink) en fond --}}
-                            <circle cx="48" cy="48" r="38" stroke="#FCE7F3" stroke-width="10" fill="transparent" />
+                            <circle cx="48" cy="48" r="38" stroke="#EC4899" stroke-width="10" fill="transparent" />
                             {{-- Garçons (Blue) en progression --}}
                             <circle cx="48" cy="48" r="38" stroke="#1A3A6B" stroke-width="10" fill="transparent"
                                     stroke-dasharray="238.7" stroke-dashoffset="{{ 238.7 * (1 - $boysPct / 100) }}" />
@@ -334,7 +339,7 @@
                             Garçons ({{ $boysCount }})
                         </span>
                         <span class="flex items-center gap-1.5 text-pink-650">
-                            <span class="w-2.5 h-2.5 rounded-full bg-pink-300"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-pink-500"></span>
                             Filles ({{ $girlsCount }})
                         </span>
                     </div>
@@ -432,20 +437,170 @@
         @endif
     </div>
 
-    {{-- ── 3/4/5. CONTENU DES ONGLET PLACEHOLDERS (ÉTAPES FUTURES) ───────────────────────────── --}}
-    @foreach(['grades' => 'Notes & Évaluations', 'timetable' => 'Emploi du temps', 'stats' => 'Statistiques & Analyse'] as $tabKey => $tabTitle)
-    <div x-show="activeTab === '{{ $tabKey }}'" class="bg-white rounded-2xl shadow-sm border border-gray-150 p-12 text-center" x-transition>
+    {{-- ── 3. ONGLET NOTES (PLACEHOLDER) ─────────────────────────────────────────────── --}}
+    {{-- <div x-show="activeTab === 'grades'" class="bg-white rounded-2xl shadow-sm border border-gray-150 p-12 text-center" x-transition>
         <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: #EBF3FB; color: #1A3A6B;">
             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
         </div>
-        <h3 class="text-lg font-extrabold text-gray-800 mb-1">{{ $tabTitle }}</h3>
+        <h3 class="text-lg font-extrabold text-gray-800 mb-1">Notes & Évaluations</h3>
         <p class="text-sm text-gray-400 max-w-md mx-auto mt-2">
-            Ce module sera entièrement opérationnel et disponible lors du développement des étapes correspondantes (<strong class="text-gray-500">Étape 4.7</strong> pour les Notes, <strong class="text-gray-500">4.12</strong> pour les Emplois du temps, et <strong class="text-gray-500">4.14</strong> pour les Dashboards).
+            Les tableaux de bord et synthèses de notes seront enrichis dans la prochaine itération du module.
         </p>
+    </div> --}}
+
+    {{-- ── 4. ONGLET EMPLOI DU TEMPS ───────────────────────────────────────────────── --}}
+    <div x-show="activeTab === 'timetable'" class="space-y-4" x-transition>
+        <div class="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+            <div class="border-b border-gray-100 px-5 py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h3 class="font-black text-[#1A3A6B]">Emploi du temps de la classe</h3>
+                    <p class="text-xs text-gray-500">La grille ci-dessous suit la même structure que celle du module principal.</p>
+                </div>
+                <div class="rounded-full bg-[#F8FBFE] px-3 py-1 text-xs font-semibold text-[#1A3A6B]">
+                    Grille active · {{ $timetableSetting->period_duration_minutes }} min / période
+                </div>
+            </div>
+            <div class="overflow-x-auto p-4">
+                @include('timetable.partials.grid', [
+                    'mode' => 'class',
+                    'printable' => false,
+                    'days' => $timetableDays,
+                    'gridRows' => $timetableGridRows,
+                    'slots' => $timetableSlots,
+                    'conflicts' => $timetableConflicts,
+                ])
+            </div>
+        </div>
     </div>
-    @endforeach
+
+    {{-- ── 5. ONGLET STATISTIQUES ─────────────────────────────────────────────────── --}}
+    <div x-show="activeTab === 'stats'" class="space-y-6" x-transition>
+        <div class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-400">Vue d’ensemble</p>
+                    <h3 class="mt-1 text-2xl font-black text-[#1A3A6B]">Tableau de bord de la classe</h3>
+                    <p class="mt-2 max-w-2xl text-sm text-gray-500">Une vision claire des effectifs, de la répartition par sexe et des performances de la classe.</p>
+                </div>
+                <div class="rounded-2xl bg-[#F8FBFE] px-4 py-3 text-sm font-semibold text-[#1A3A6B] border border-[#E7F0FA]">
+                    {{ $classGroup->level->section->name }} · {{ $classGroup->academicYear->label }}
+                </div>
+            </div>
+
+            <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div class="rounded-2xl border border-gray-100 bg-[#F8FBFE] p-4">
+                    <p class="text-xs font-bold uppercase tracking-wide text-gray-400">Élèves actifs</p>
+                    <p class="mt-2 text-3xl font-black text-[#1A3A6B]">{{ $stats['students'] }}</p>
+                </div>
+                <div class="rounded-2xl border border-gray-100 bg-[#F8FBFE] p-4">
+                    <p class="text-xs font-bold uppercase tracking-wide text-gray-400">Garçons</p>
+                    <p class="mt-2 text-3xl font-black text-[#1A3A6B]">{{ $stats['boys'] }}</p>
+                </div>
+                <div class="rounded-2xl border border-gray-100 bg-[#F8FBFE] p-4">
+                    <p class="text-xs font-bold uppercase tracking-wide text-gray-400">Filles</p>
+                    <p class="mt-2 text-3xl font-black text-[#1A3A6B]">{{ $stats['girls'] }}</p>
+                </div>
+                <div class="rounded-2xl border border-gray-100 bg-[#F8FBFE] p-4">
+                    <p class="text-xs font-bold uppercase tracking-wide text-gray-400">Matières</p>
+                    <p class="mt-2 text-3xl font-black text-[#1A3A6B]">{{ $stats['subjects'] }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-2">
+            <div class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm h-full">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-400">Performance</p>
+                        <h4 class="mt-1 text-lg font-black text-gray-800">Évaluation précédente</h4>
+                    </div>
+                    <div class="rounded-full bg-[#EBF3FB] px-3 py-1 text-xs font-semibold text-[#1A3A6B]">
+                        {{ $previousEvaluation['sequence'] ? ($previousEvaluation['sequence']->label ?: 'Évaluation ' . $previousEvaluation['sequence']->number) : 'Aucune donnée' }}
+                    </div>
+                </div>
+
+                <div class="mt-5 space-y-4">
+                    <div>
+                        <div class="mb-2 flex items-center justify-between text-sm font-semibold text-gray-600">
+                            <span>Moyenne générale</span>
+                            <span>{{ data_get($previousEvaluation, 'average') !== null ? number_format(data_get($previousEvaluation, 'average'), 2, ',', ' ') . ' / 20' : '—' }}</span>
+                        </div>
+                        <div class="h-2.5 rounded-full bg-gray-100">
+                            <div class="h-2.5 rounded-full bg-[#1A3A6B]" style="width: {{ data_get($previousEvaluation, 'average') !== null ? min(100, (data_get($previousEvaluation, 'average') / 20) * 100) : 0 }}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="mb-2 flex items-center justify-between text-sm font-semibold text-gray-600">
+                            <span>Taux de réussite</span>
+                            <span>{{ data_get($previousEvaluation, 'success_rate') !== null ? data_get($previousEvaluation, 'success_rate') . '%' : '—' }}</span>
+                        </div>
+                        <div class="h-2.5 rounded-full bg-gray-100">
+                            <div class="h-2.5 rounded-full bg-[#A24E0C]" style="width: {{ data_get($previousEvaluation, 'success_rate') !== null ? data_get($previousEvaluation, 'success_rate') : 0 }}%"></div>
+                        </div>
+                    </div>
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <div class="rounded-2xl border border-gray-100 bg-[#F8FBFE] p-3">
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Meilleur élève</p>
+                            <p class="mt-1 text-sm font-semibold text-gray-800">{{ data_get($previousEvaluation, 'best_student.name') ?? '—' }}</p>
+                            <p class="mt-1 text-xs font-medium text-[#1A3A6B]">{{ data_get($previousEvaluation, 'best_student.average') !== null ? number_format(data_get($previousEvaluation, 'best_student.average'), 2, ',', ' ') . ' / 20' : '—' }}</p>
+                        </div>
+                        <div class="rounded-2xl border border-gray-100 bg-[#F8FBFE] p-3">
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Plus faible</p>
+                            <p class="mt-1 text-sm font-semibold text-gray-800">{{ data_get($previousEvaluation, 'weakest_student.name') ?? '—' }}</p>
+                            <p class="mt-1 text-xs font-medium text-[#A24E0C]">{{ data_get($previousEvaluation, 'weakest_student.average') !== null ? number_format(data_get($previousEvaluation, 'weakest_student.average'), 2, ',', ' ') . ' / 20' : '—' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm h-full">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-400">Performance</p>
+                        <h4 class="mt-1 text-lg font-black text-gray-800">Annuel</h4>
+                    </div>
+                    <div class="rounded-full bg-[#F8FBFE] px-3 py-1 text-xs font-semibold text-[#1A3A6B]">
+                        Moyenne générale annuelle
+                    </div>
+                </div>
+
+                <div class="mt-5 space-y-4">
+                    <div>
+                        <div class="mb-2 flex items-center justify-between text-sm font-semibold text-gray-600">
+                            <span>Moyenne générale</span>
+                            <span>{{ $annualEvaluation['average'] !== null ? number_format($annualEvaluation['average'], 2, ',', ' ') . ' / 20' : '—' }}</span>
+                        </div>
+                        <div class="h-2.5 rounded-full bg-gray-100">
+                            <div class="h-2.5 rounded-full bg-[#1A3A6B]" style="width: {{ $annualEvaluation['average'] !== null ? min(100, ($annualEvaluation['average'] / 20) * 100) : 0 }}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="mb-2 flex items-center justify-between text-sm font-semibold text-gray-600">
+                            <span>Taux de réussite</span>
+                            <span>{{ $annualEvaluation['success_rate'] !== null ? $annualEvaluation['success_rate'] . '%' : '—' }}</span>
+                        </div>
+                        <div class="h-2.5 rounded-full bg-gray-100">
+                            <div class="h-2.5 rounded-full bg-[#A24E0C]" style="width: {{ $annualEvaluation['success_rate'] !== null ? $annualEvaluation['success_rate'] : 0 }}%"></div>
+                        </div>
+                    </div>
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <div class="rounded-2xl border border-gray-100 bg-[#F8FBFE] p-3">
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Meilleur élève</p>
+                            <p class="mt-1 text-sm font-semibold text-gray-800">{{ $annualEvaluation['best_student']['name'] ?? '—' }}</p>
+                            <p class="mt-1 text-xs font-medium text-[#1A3A6B]">{{ isset($annualEvaluation['best_student']['average']) ? number_format($annualEvaluation['best_student']['average'], 2, ',', ' ') . ' / 20' : '—' }}</p>
+                        </div>
+                        <div class="rounded-2xl border border-gray-100 bg-[#F8FBFE] p-3">
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Plus faible</p>
+                            <p class="mt-1 text-sm font-semibold text-gray-800">{{ $annualEvaluation['weakest_student']['name'] ?? '—' }}</p>
+                            <p class="mt-1 text-xs font-medium text-[#A24E0C]">{{ isset($annualEvaluation['weakest_student']['average']) ? number_format($annualEvaluation['weakest_student']['average'], 2, ',', ' ') . ' / 20' : '—' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </div>
 

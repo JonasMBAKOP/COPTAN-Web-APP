@@ -1,14 +1,18 @@
 @extends('layouts.app')
 
 @section('title', 'Nouvelle classe')
+@section('page-title', 'Nouvelle Classe')
+@section('page-subtitle')
+    Création d'un groupe d'élèves pour l'année scolaire active : {{ $activeYear->label }}
+@endsection
 
-@section('breadcrumb')
+{{-- @section('breadcrumb')
     <a href="{{ route('classes.index') }}" class="hover:text-gray-700">Classes</a>
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
     </svg>
     <span class="font-medium" style="color: #1A3A6B;">Nouvelle classe</span>
-@endsection
+@endsection --}}
 
 @section('content')
 
@@ -18,13 +22,13 @@
                         '{{ $selectedLevelId }}')">
 
     {{-- Titre --}}
-    <div class="mb-6">
+    {{-- <div class="mb-6">
         <h2 class="text-2xl font-extrabold" style="color: #1A3A6B;">Nouvelle Classe</h2>
         <p class="text-sm text-gray-500 mt-1">
             Création d'un groupe d'élèves pour l'année scolaire active :
             <span class="font-bold text-gray-700">{{ $activeYear->label }}</span>
         </p>
-    </div>
+    </div> --}}
 
     <form method="POST" action="{{ route('classes.store') }}">
         @csrf
@@ -199,7 +203,7 @@
                     <p class="text-sm font-semibold text-gray-700">Attribution des matières non disponible à la création</p>
                     <p class="text-xs text-gray-500 mt-0.5">
                         Les matières, coefficients et attributions d'enseignants seront configurables
-                        via le module <strong class="text-gray-700">Matières</strong> une fois la classe créée (Étape 4.4).
+                        via le module <strong class="text-gray-900">Matières</strong> une fois la classe créée.
                     </p>
                 </div>
             </div>

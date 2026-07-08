@@ -11,6 +11,10 @@ use App\Models\Level;
 use App\Models\Section;
 use App\Models\Staff;
 use App\Models\TeacherAssignment;
+use App\Models\TimetableSetting;
+use App\Models\TimetableSlot;
+use App\Services\GradeCalculationService;
+use App\Services\TimetableGridService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -194,6 +198,166 @@ class ClassManagementController extends Controller
                 "Classe « {$classGroup->full_name} » créée avec succès.");
     }
 
+    private function buildPreviousEvaluationSummary(ClassGroup $classGroup, GradeCalculationService $gradeService): array
+    {
+        $sequences = $classGroup->academicYear?->sequences()->orderBy('number')->get() ?? collect();
+        $orderedSequences = $sequences->sortBy('number')->values();
+
+        $currentSequence = $orderedSequences->last();
+        $previousSequence = null;
+
+        if ($currentSequence && $orderedSequences->count() >= 2) {
+            $candidateSequences = $orderedSequences->filter(fn ($sequence) => $sequence->id !== $currentSequence->id);
+            $previousSequence = $candidateSequences->reverse()->first(fn ($sequence) =>
+                $sequence->is_grades_locked || $sequence->isLockedFor($classGroup->id)
+            );
+        }
+
+        if (! $previousSequence && $orderedSequences->count() >= 2) {
+            $previousSequence = $orderedSequences->get($orderedSequences->count() - 2);
+        }
+
+        if (! $previousSequence) {
+            return [
+                'available' => false,
+                'sequence' => null,
+                'average' => null,
+                'success_rate' => null,
+                'best_student' => null,
+                'weakest_student' => null,
+            ];
+        }
+
+        $enrollments = $classGroup->studentEnrollments()
+            ->where('status', 'active')
+            ->with('student')
+            ->get();
+
+        $averages = $enrollments->map(function ($enrollment) use ($previousSequence, $gradeService) {
+            $average = $gradeService->sequenceAverage($enrollment, $previousSequence);
+
+            return [
+                'enrollment' => $enrollment,
+                'average' => $average,
+            ];
+        })->filter(fn ($item) => $item['average'] !== null);
+
+        if ($averages->isEmpty()) {
+            return [
+                'available' => true,
+                'sequence' => $previousSequence,
+                'average' => null,
+                'success_rate' => null,
+                'best_student' => null,
+                'weakest_student' => null,
+            ];
+        }
+
+        $best = $averages->sortByDesc(fn ($item) => $item['average'])->first();
+        $weakest = $averages->sortBy(fn ($item) => $item['average'])->first();
+        $successRate = round(($averages->filter(fn ($item) => (float) $item['average'] >= 10)->count() / $averages->count()) * 100);
+
+        return [
+            'available' => true,
+            'sequence' => $previousSequence,
+            'average' => round($averages->avg('average'), 2),
+            'success_rate' => $successRate,
+            'best_student' => $best['enrollment']->student
+                ? [
+                    'name' => $best['enrollment']->student->full_name,
+                    'average' => round((float) $best['average'], 2),
+                ]
+                : null,
+            'weakest_student' => $weakest['enrollment']->student
+                ? [
+                    'name' => $weakest['enrollment']->student->full_name,
+                    'average' => round((float) $weakest['average'], 2),
+                ]
+                : null,
+        ];
+    }
+
+    private function buildAnnualEvaluationSummary(ClassGroup $classGroup, GradeCalculationService $gradeService): array
+    {
+        $enrollments = $classGroup->studentEnrollments()
+            ->where('status', 'active')
+            ->with('student')
+            ->get();
+
+        $averages = $enrollments->map(function ($enrollment) use ($gradeService) {
+            $average = $gradeService->yearAverage($enrollment);
+
+            return [
+                'enrollment' => $enrollment,
+                'average' => $average,
+            ];
+        })->filter(fn ($item) => $item['average'] !== null);
+
+        if ($averages->isEmpty()) {
+            return [
+                'average' => null,
+                'success_rate' => null,
+                'best_student' => null,
+                'weakest_student' => null,
+            ];
+        }
+
+        $best = $averages->sortByDesc(fn ($item) => $item['average'])->first();
+        $weakest = $averages->sortBy(fn ($item) => $item['average'])->first();
+        $successRate = round(($averages->filter(fn ($item) => (float) $item['average'] >= 10)->count() / $averages->count()) * 100);
+
+        return [
+            'average' => round($averages->avg('average'), 2),
+            'success_rate' => $successRate,
+            'best_student' => $best['enrollment']->student
+                ? [
+                    'name' => $best['enrollment']->student->full_name,
+                    'average' => round((float) $best['average'], 2),
+                ]
+                : null,
+            'weakest_student' => $weakest['enrollment']->student
+                ? [
+                    'name' => $weakest['enrollment']->student->full_name,
+                    'average' => round((float) $weakest['average'], 2),
+                ]
+                : null,
+        ];
+    }
+
+    private function buildTimetableData(ClassGroup $classGroup): array
+    {
+        $days = [
+            1 => 'Lundi',
+            2 => 'Mardi',
+            3 => 'Mercredi',
+            4 => 'Jeudi',
+            5 => 'Vendredi',
+        ];
+
+        $setting = TimetableSetting::current();
+        $gridService = app(TimetableGridService::class);
+        $grid = $gridService->buildGrid($setting, $days);
+
+        $slots = TimetableSlot::where('class_group_id', $classGroup->id)
+            ->where('academic_year_id', $classGroup->academic_year_id)
+            ->with([
+                'classSubject.subject',
+                'classSubject.teacherAssignments.staff',
+            ])
+            ->orderBy('day_of_week')
+            ->orderBy('period_index')
+            ->orderBy('start_time')
+            ->get();
+
+        return [
+            'timetableDays' => $days,
+            'timetableGridRows' => $grid['rows'],
+            'timetableSlots' => $slots,
+            'timetableConflicts' => collect(),
+            'timetableSetting' => $setting,
+        ];
+    }
+
     // ── DÉTAIL ────────────────────────────────────────────────────────────
     public function show(ClassGroup $classGroup)
     {
@@ -218,8 +382,19 @@ class ClassManagementController extends Controller
                                     $e->student?->gender === 'F')->count(),
         ];
 
-        return view('classes.show',
-            compact('classGroup', 'stats'));
+        $previousEvaluation = $this->buildPreviousEvaluationSummary(
+            $classGroup,
+            app(GradeCalculationService::class)
+        );
+        $annualEvaluation = $this->buildAnnualEvaluationSummary(
+            $classGroup,
+            app(GradeCalculationService::class)
+        );
+
+        return view('classes.show', array_merge(
+            compact('classGroup', 'stats', 'previousEvaluation', 'annualEvaluation'),
+            $this->buildTimetableData($classGroup)
+        ));
     }
 
     // ── FORMULAIRE MODIFICATION ───────────────────────────────────────────

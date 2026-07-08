@@ -1,8 +1,13 @@
 @extends('layouts.app')
 
 @section('title', 'Modifier ' . $classGroup->full_name)
+@section('page-title', 'Modifier Classe')
+@section('page-subtitle')
+    Mise à jour des paramètres de la classe :
+            <span class="font-bold text-gray-900">{{ $classGroup->full_name }}</span>
+@endsection
 
-@section('breadcrumb')
+{{-- @section('breadcrumb')
     <a href="{{ route('classes.index') }}" class="hover:text-gray-700">Classes</a>
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -12,7 +17,7 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
     </svg>
     <span class="font-medium" style="color: #1A3A6B;">Modifier</span>
-@endsection
+@endsection --}}
 
 @section('content')
 
@@ -26,14 +31,14 @@
      )">
 
     {{-- Titre --}}
-    <div class="mb-6">
+    {{-- <div class="mb-6">
         <h2 class="text-2xl font-extrabold" style="color: #1A3A6B;">Modifier la classe</h2>
         <p class="text-sm text-gray-500 mt-1">
             Mise à jour des paramètres de la classe :
             <span class="font-bold text-gray-700">{{ $classGroup->full_name }}</span>
             ({{ $classGroup->academicYear->label }})
         </p>
-    </div>
+    </div> --}}
 
     <form method="POST" action="{{ route('classes.update', $classGroup) }}">
         @csrf @method('PUT')

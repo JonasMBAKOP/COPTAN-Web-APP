@@ -459,7 +459,7 @@
                     </td>
                     <td class="px-4 py-3 text-sm text-gray-600
                                hidden sm:table-cell">
-                        {{ $p->feeInstallment?->label ?? '—' }}
+                        {{ $p->is_bulk ? 'Paiement groupé' : ($p->feeInstallment?->label ?? '—') }}
                     </td>
                     <td class="px-4 py-3 text-right">
                         <span class="text-sm font-black text-green-600">

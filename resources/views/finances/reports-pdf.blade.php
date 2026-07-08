@@ -231,7 +231,7 @@
             <tr>
                 <td>{{ $p->studentEnrollment?->student?->full_name }}</td>
                 <td>{{ $p->studentEnrollment?->classGroup?->full_name }}</td>
-                <td>{{ $p->feeInstallment?->label ?? '—' }}</td>
+                <td>{{ $p->is_bulk ? 'Paiement groupé' : ($p->feeInstallment?->label ?? '—') }}</td>
                 <td class="right">{{ number_format($p->amount_paid) }} FCFA</td>
                 <td>{{ $p->payment_method_label }}</td>
                 <td>{{ $p->payment_date->format('d/m/Y') }}</td>

@@ -1,14 +1,16 @@
 @extends('layouts.app')
 
 @section('title', 'Gestion des Classes')
+@section('page-title', 'Gestions des Classes')
+@section('page-subtitle', 'Organisation et suivi des effectifs par section et niveau d\'enseignement')
 
-@section('breadcrumb')
+{{-- @section('breadcrumb')
     <a href="{{ route('settings.index') }}" class="hover:text-gray-700">Paramètres</a>
     <svg class="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
     </svg>
     <span class="font-medium" style="color: #1A3A6B;">Gestion des Classes</span>
-@endsection
+@endsection --}}
 
 @section('content')
 
@@ -35,29 +37,52 @@
     }
 }">
 
-    {{-- ── TITRE ET BOUTON DE CRÉATION ────────────────────────────────────────── --}}
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-            <h2 class="text-2xl font-extrabold tracking-tight" style="color: #1A3A6B;">
-                Gestion des Classes — {{ $selectedYear?->label ?? 'Aucune année scolaire' }}
-            </h2>
-            <p class="text-sm text-gray-500 mt-1">
-                Organisation et suivi des effectifs par section et niveau d'enseignement.
-            </p>
-        </div>
-        
-        @can('manage-classes')
-            @if($activeYear && $selectedYear?->isClosed() === false)
-            <a href="{{ route('classes.create') }}"
-               class="flex items-center gap-2 px-5 py-3 rounded-xl text-white text-sm font-bold shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
-               style="background-color: #A24E0C;">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+
+    {{-- ── CARTES DE STATISTIQUES GLOBALEs EN HAUT ─────────────────────── --}}
+    <div class="grid grid-cols-1 {{ ($isTeacher ?? false) ? 'md:grid-cols-2' : 'md:grid-cols-3' }} gap-6 mt-1 mb-6">
+        {{-- Total Classes --}}
+        <div class="rounded-2xl p-6 text-white flex items-center justify-between shadow-sm transition-transform duration-200 hover:scale-[1.01]" style="background-color: #1A3A6B;">
+            <div>
+                <p class="text-xs font-bold uppercase tracking-wider opacity-70 mb-2">Total Classes</p>
+                <p class="text-4xl font-black">{{ $stats['total_classes'] }}</p>
+            </div>
+            <div class="bg-white/10 p-3 rounded-xl">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                 </svg>
-                NOUVELLE CLASSE
-            </a>
-            @endif
-        @endcan
+            </div>
+        </div>
+
+        {{-- Étudiants Actifs --}}
+        <div class="bg-white border border-gray-150 rounded-2xl p-6 flex items-center justify-between shadow-sm transition-transform duration-200 hover:scale-[1.01]">
+            <div>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Étudiants Actifs</p>
+                <p class="text-4xl font-black" style="color: #1A3A6B;">{{ number_format($stats['total_students']) }}</p>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-xl" style="color: #1A3A6B;">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+            </div>
+        </div>
+
+        {{-- Occupation Moyenne (administration uniquement) --}}
+        @unless($isTeacher ?? false)
+        <div class="bg-white border border-gray-150 rounded-2xl p-6 flex items-center justify-between shadow-sm transition-transform duration-200 hover:scale-[1.01]">
+            <div>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Occupation Moyenne</p>
+                <p class="text-4xl font-black" style="color: #1A3A6B;">{{ $occupationRate }}%</p>
+            </div>
+            <div class="relative flex items-center justify-center">
+                <svg class="w-16 h-16 transform -rotate-90">
+                    <circle cx="32" cy="32" r="26" stroke="#F3F4F6" stroke-width="6" fill="transparent" />
+                    <circle cx="32" cy="32" r="26" stroke="#A24E0C" stroke-width="6" fill="transparent"
+                            stroke-dasharray="163.3" stroke-dashoffset="{{ 163.3 * (1 - $occupationRate / 100) }}" />
+                </svg>
+                <span class="absolute text-xs font-black" style="color: #A24E0C;">{{ $occupationRate }}%</span>
+            </div>
+        </div>
+        @endunless
     </div>
 
     {{-- ── ALERTE : PAS D'ANNÉE ACTIVE ────────────────────────────────────── --}}
@@ -320,52 +345,41 @@
         @endforeach
     @endif
 
-    {{-- ── CARTES DE STATISTIQUES GLOBALEs AU BAS ─────────────────────── --}}
-    <div class="grid grid-cols-1 {{ ($isTeacher ?? false) ? 'md:grid-cols-2' : 'md:grid-cols-3' }} gap-6 mt-8">
-        {{-- Total Classes --}}
-        <div class="rounded-2xl p-6 text-white flex items-center justify-between shadow-sm transition-transform duration-200 hover:scale-[1.01]" style="background-color: #1A3A6B;">
-            <div>
-                <p class="text-xs font-bold uppercase tracking-wider opacity-70 mb-2">Total Classes</p>
-                <p class="text-4xl font-black">{{ $stats['total_classes'] }}</p>
-            </div>
-            <div class="bg-white/10 p-3 rounded-xl">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                </svg>
-            </div>
-        </div>
+    {{-- ── BOUTON FLOTANT "NOUVELLE CLASSE" ─────────────────────────────── --}}
+    @can('manage-classes')
+        @if($activeYear && $selectedYear?->isClosed() === false)
+        <a href="{{ route('classes.create') }}"
+           class="group fixed bottom-3 right-3 sm:bottom-4 sm:right-4 md:bottom-5 md:right-5 lg:bottom-6 lg:right-6
+                  z-50 flex items-center justify-center gap-1.5 sm:gap-2
+                  w-12 h-12 sm:w-13 sm:h-13 md:w-14 md:h-14 lg:w-16 lg:h-16
+                  rounded-full shadow-lg transition-all duration-300
+                  hover:w-auto hover:px-3 sm:hover:px-4 md:hover:px-5 lg:hover:px-6
+                  hover:pr-3 sm:hover:pr-4 md:hover:pr-5 lg:hover:pr-6
+                  text-white font-semibold text-xs sm:text-xs md:text-sm lg:text-sm
+                  hover:shadow-xl hover:scale-105 active:scale-95"
+           style="background-color: #E87722;">
 
-        {{-- Étudiants Actifs --}}
-        <div class="bg-white border border-gray-150 rounded-2xl p-6 flex items-center justify-between shadow-sm transition-transform duration-200 hover:scale-[1.01]">
-            <div>
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Étudiants Actifs</p>
-                <p class="text-4xl font-black" style="color: #1A3A6B;">{{ number_format($stats['total_students']) }}</p>
-            </div>
-            <div class="bg-gray-50 p-3 rounded-xl" style="color: #1A3A6B;">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-            </div>
-        </div>
+            <svg class="w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7
+                        group-hover:hidden transition-all duration-300"
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      stroke-width="2.5" d="M12 4v16m8-8H4"/>
+            </svg>
 
-        {{-- Occupation Moyenne (administration uniquement) --}}
-        @unless($isTeacher ?? false)
-        <div class="bg-white border border-gray-150 rounded-2xl p-6 flex items-center justify-between shadow-sm transition-transform duration-200 hover:scale-[1.01]">
-            <div>
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Occupation Moyenne</p>
-                <p class="text-4xl font-black" style="color: #1A3A6B;">{{ $occupationRate }}%</p>
-            </div>
-            <div class="relative flex items-center justify-center">
-                <svg class="w-16 h-16 transform -rotate-90">
-                    <circle cx="32" cy="32" r="26" stroke="#F3F4F6" stroke-width="6" fill="transparent" />
-                    <circle cx="32" cy="32" r="26" stroke="#A24E0C" stroke-width="6" fill="transparent"
-                            stroke-dasharray="163.3" stroke-dashoffset="{{ 163.3 * (1 - $occupationRate / 100) }}" />
+            <span class="hidden group-hover:flex items-center gap-1 sm:gap-1.5 md:gap-2 lg:gap-2
+                         transition-all duration-300 whitespace-nowrap">
+                <svg class="w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5 lg:w-6 lg:h-6"
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          stroke-width="2.5" d="M12 4v16m8-8H4"/>
                 </svg>
-                <span class="absolute text-xs font-black" style="color: #A24E0C;">{{ $occupationRate }}%</span>
-            </div>
-        </div>
-        @endunless
-    </div>
+                <span class="text-xs sm:text-xs md:text-sm lg:text-sm">
+                    Nouvelle classe
+                </span>
+            </span>
+        </a>
+        @endif
+    @endcan
 
 </div>
 

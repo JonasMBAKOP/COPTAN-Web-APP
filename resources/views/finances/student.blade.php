@@ -240,7 +240,7 @@
     </div>
 
     {{-- ── Historique des paiements ─────────────────────────────────── --}}
-    <div class="space-y-4">
+    <div class="space-y-4 h-full lg:col-span-1 flex flex-col">
 
         {{-- Résumé --}}
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
@@ -292,7 +292,7 @@
         </div>
 
         {{-- Historique --}}
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 flex-1 flex flex-col">
             <div class="px-4 py-3 border-b border-gray-100">
                 <h3 class="text-sm font-semibold uppercase tracking-wider
                            text-gray-400">
@@ -305,7 +305,7 @@
                 Aucun paiement enregistré.
             </p>
             @else
-            <div class="divide-y divide-gray-50 max-h-72 overflow-y-auto">
+            <div class="divide-y divide-gray-50 flex-1 overflow-y-auto min-h-0">
                 @foreach($payments as $p)
                 <div class="px-4 py-3">
                     <div class="flex items-start justify-between gap-2">

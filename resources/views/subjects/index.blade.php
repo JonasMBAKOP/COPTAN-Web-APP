@@ -6,7 +6,7 @@
 
 @section('content')
 
-<div x-data="{ tab: 'all' }">
+<div x-data="{ tab: '{{ request('tab', 'all') }}' }">
 
 {{-- ── BARRE PRINCIPALE ────────────────────────────────────────────────── --}}
 <div class="flex flex-col sm:flex-row sm:items-center
@@ -31,7 +31,7 @@
         @endforeach
     </div>
 
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-3 flex-wrap justify-end">
         {{-- Filtre type --}}
         <div x-show="tab === 'all'" class="flex items-center gap-2">
             <span class="text-xs font-semibold text-gray-400 uppercase
@@ -59,6 +59,42 @@
             </form>
         </div>
 
+        <div x-show="tab === 'section'" class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                Filtrer par :
+            </span>
+            <form method="GET" action="{{ route('subjects.index') }}" class="flex items-center gap-2">
+                <input type="hidden" name="tab" value="section">
+                <select name="section_id" onchange="this.form.submit()"
+                        class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none bg-white min-w-[180px]">
+                    <option value="">Toutes les sections</option>
+                    @foreach($sections as $section)
+                        <option value="{{ $section->id }}" {{ request('section_id') == $section->id ? 'selected' : '' }}>
+                            {{ $section->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </form>
+        </div>
+
+        <div x-show="tab === 'assign'" class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                Filtrer par :
+            </span>
+            <form method="GET" action="{{ route('subjects.index') }}" class="flex items-center gap-2">
+                <input type="hidden" name="tab" value="assign">
+                <select name="section_id" onchange="this.form.submit()"
+                        class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none bg-white min-w-[180px]">
+                    <option value="">Toutes les sections</option>
+                    @foreach($sections as $section)
+                        <option value="{{ $section->id }}" {{ request('section_id') == $section->id ? 'selected' : '' }}>
+                            {{ $section->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </form>
+        </div>
+
         {{-- Bouton nouvelle matière --}}
         @can('manage-subjects')
         <a href="{{ route('subjects.create') }}"
@@ -71,7 +107,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round"
                       stroke-width="2.5" d="M12 4v16m8-8H4"/>
             </svg>
-            + Nouvelle matière
+            Nouvelle matière
         </a>
         @endcan
     </div>
@@ -466,8 +502,16 @@
 {{-- ONGLET : PAR SECTION                                                  --}}
 {{-- ════════════════════════════════════════════════════════════════════ --}}
 <div x-show="tab === 'section'" x-transition>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pb-20">
-        @foreach($sectionData as $data)
+    @php
+        $filteredSectionData = $sectionData;
+        if (request('section_id')) {
+            $filteredSectionData = $sectionData->filter(function ($data) {
+                return $data['section']->id == request('section_id');
+            })->values();
+        }
+    @endphp
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-20">
+        @foreach($filteredSectionData as $data)
         @php
             $section      = $data['section'];
             $sectionSubs  = $data['subjects'];
@@ -587,6 +631,11 @@
                 ->withCount('classSubjects')
                 ->orderBy('name')
                 ->get()
+                ->when(request('section_id'), function ($collection) {
+                    return $collection->filter(function ($class) {
+                        return $class->level?->section_id == request('section_id');
+                    })->values();
+                })
                 ->groupBy('level.section.name')
             : collect();
     @endphp

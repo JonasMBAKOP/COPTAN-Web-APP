@@ -4,7 +4,7 @@
 @section('page-title', 'Nouvelle Année Scolaire')
 @section('page-subtitle', 'Configurer le calendrier scolaire')
 
-@section('breadcrumb')
+{{-- @section('breadcrumb')
     <a href="{{ route('academic-years.index') }}" class="hover:text-gray-700">
         Années scolaires
     </a>
@@ -13,7 +13,7 @@
               stroke-width="2" d="M9 5l7 7-7 7"/>
     </svg>
     <span class="text-gray-700">Nouvelle année</span>
-@endsection
+@endsection --}}
 
 @section('content')
 
@@ -21,10 +21,10 @@
       x-data="academicYearForm()">
     @csrf
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] gap-6">
 
         {{-- Colonne principale --}}
-        <div class="lg:col-span-2 space-y-6">
+        <div class="space-y-6">
 
             {{-- ── Informations générales ──────────────────────────────── --}}
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -33,8 +33,8 @@
                     Informations générales
                 </h3>
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                    <div class="xl:col-span-1">
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             Libellé <span class="text-red-500">*</span>
                         </label>
@@ -55,7 +55,7 @@
                         </p>
                     </div>
 
-                    <div>
+                    <div class="xl:col-span-1">
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             Date de début <span class="text-red-500">*</span>
                         </label>
@@ -70,7 +70,7 @@
                         @enderror
                     </div>
 
-                    <div>
+                    <div class="xl:col-span-1">
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             Date de fin <span class="text-red-500">*</span>
                         </label>
@@ -190,7 +190,11 @@
                 </div>
             </div>
 
-            {{-- ── Copie depuis une année précédente ───────────────────── --}}
+        </div>
+
+        {{-- Colonne résumé --}}
+        <div class="space-y-4">
+            {{-- Copie depuis une année précédente --}}
             @if($previousYears->isNotEmpty())
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
                  x-data="{ copyEnabled: false }">
@@ -208,13 +212,13 @@
                 </div>
 
                 <div x-show="copyEnabled" x-transition>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                        <div>
+                    <div class="grid grid-cols-1 gap-4 mb-4">
+                        <div class="w-full max-w-full">
                             <label class="block text-sm font-medium text-gray-700 mb-1">
                                 Copier depuis
                             </label>
                             <select name="copy_from"
-                                    class="w-full px-3 py-2.5 border border-gray-200
+                                    class="w-full min-w-0 px-3 py-2.5 border border-gray-200
                                            rounded-lg text-sm focus:outline-none
                                            bg-white">
                                 <option value="">Sélectionner une année...</option>
@@ -287,11 +291,6 @@
                 </div>
             </div>
             @endif
-
-        </div>
-
-        {{-- Colonne résumé --}}
-        <div class="space-y-4">
 
             {{-- Résumé --}}
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">

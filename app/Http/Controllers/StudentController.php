@@ -417,15 +417,17 @@ class StudentController extends Controller
             Storage::disk('public')->delete($student->photo);
         }
 
-        $enrollmentIds = $student->enrollments()->pluck('id');
+        $enrollmentIds = $student->enrollments()->withTrashed()->pluck('id');
 
         // Supprimer tous les paiements liés aux inscriptions, y compris les paiements en bloc et leurs allocations
         if ($enrollmentIds->isNotEmpty()) {
-            StudentPayment::whereIn('student_enrollment_id', $enrollmentIds)->forceDelete();
+            StudentPayment::whereHas('studentEnrollment', fn ($query) =>
+                $query->whereIn('id', $enrollmentIds)
+            )->forceDelete();
         }
 
         // Supprimer toutes les inscriptions (forceDelete pour suppression permanente)
-        $student->enrollments()->forceDelete();
+        $student->enrollments()->withTrashed()->forceDelete();
 
         // Supprimer l'élève lui-même (forceDelete pour suppression permanente, pas soft delete)
         $student->forceDelete();

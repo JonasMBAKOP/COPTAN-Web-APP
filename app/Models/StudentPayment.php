@@ -23,10 +23,42 @@ class StudentPayment extends Model
     protected function casts(): array
     {
         return [
-            'amount_paid'  => 'decimal:0',
-            'payment_date' => 'date',
-            'is_bulk'      => 'boolean',
+            'amount_paid'               => 'decimal:0',
+            'payment_date'              => 'date',
+            'is_bulk'                   => 'boolean',
+            'snapshot_total_due'        => 'integer',
+            'snapshot_total_paid'       => 'integer',
+            'snapshot_total_remaining'  => 'integer',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::created(function (self $payment): void {
+            if (
+                ! is_null($payment->snapshot_total_due)
+                && ! is_null($payment->snapshot_total_paid)
+                && ! is_null($payment->snapshot_total_remaining)
+            ) {
+                return;
+            }
+
+            $enrollment = $payment->studentEnrollment()->first();
+            if (! $enrollment) {
+                return;
+            }
+
+            $feeStructure = $enrollment->classGroup()->with('feeStructures.installments')->first()?->feeStructures->first();
+            $totalDue = (int) ($feeStructure?->installments->sum('amount') ?? 0);
+            $totalPaid = (int) static::visible()->where('student_enrollment_id', $enrollment->id)->sum('amount_paid');
+            $totalRemaining = max(0, $totalDue - $totalPaid);
+
+            $payment->forceFill([
+                'snapshot_total_due'       => $totalDue,
+                'snapshot_total_paid'      => $totalPaid,
+                'snapshot_total_remaining' => $totalRemaining,
+            ])->saveQuietly();
+        });
     }
 
     // ── Relations ──────────────────────────────────────────────────────────

@@ -255,9 +255,9 @@
         border-top: 2.5px solid #E4C978;
         padding: 6px 14px;
         text-align: center;
-        font-size: 11.5px;
-        font-weight: 900;
-        color: #7A5F20;
+        font-size: 10px;
+        font-weight: 700;
+        color: black;
         letter-spacing: 0.5px;
     }
 
@@ -273,7 +273,7 @@
 <body>
 
 <div class="print-btn no-print">
-    <button onclick="window.print()"><svg style="width:14px;height:14px;vertical-align:-2px;margin-right:6px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V4h12v5M6 18H5a2 2 0 01-2-2v-5a2 2 0 012-2h14a2 2 0 012 2v5a2 2 0 01-2 2h-1M7 14h10v6H7z"/></svg>Imprimer le reçu global</button>
+    <button onclick="window.print()"><svg style="width:14px;height:14px;vertical-align:-2px;margin-right:6px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V4h12v5M6 18H5a2 2 0 01-2-2v-5a2 2 0 012-2h14a2 2 0 012 2v5a2 2 0 01-2 2h-1M7 14h10v6H7z"/></svg>{{ $isEnglishReceipt ? 'Print Global Receipt' : 'Imprimer le reçu global' }}</button>
 </div>
 
 <div class="page">
@@ -283,7 +283,7 @@
         <div class="header-left">
             @if($school->logo)
                 <img src="{{ asset('storage/' . $school->logo) }}" alt="Logo de l'établissement"
-                     style="
+                     style="height:44px;width:46px;
                             flex-shrink:0;">
                 {{-- <img src="{{ asset('storage/' . $school->logo) }}"
                      style="height:46px;width:46px;object-fit:contain;
@@ -295,33 +295,33 @@
             @endif
             <div>
                 <div class="school-name">
-                    {{ strtoupper($school->full_name ?? 'COLLÈGE POLYVALENT NTANKEU') }}
+                    {{ $isEnglishReceipt ? strtoupper($school->full_name_en) : strtoupper($school->full_name) }}
                 </div>
                 <div class="school-sub">
                     @if($phones->isNotEmpty())
-                        Tél :
+                        {{ $isEnglishReceipt ? 'Phone' : 'Tél' }} :
                         @foreach($phones->take(2) as $phone)
                             {{ $phone->number }}{{ !$loop->last ? ' / ' : '' }}
                         @endforeach
                     @elseif($school->phone_1)
-                        Tél : {{ $school->phone_1 }}
+                        {{ $isEnglishReceipt ? 'Phone' : 'Tél' }} : {{ $school->phone_1 }}
                     @endif
                     @if($school->address) &nbsp;|&nbsp; {{ $school->address }} @endif
                 </div>
                 <div class="school-sub">
-                    @if($school->postal_box) BP : {{ $school->postal_box }} @endif
+                    @if($school->postal_box) {{ $isEnglishReceipt ? 'P.O. Box' : 'BP' }} : {{ $school->postal_box }} @endif
                 </div>
                 <div class="school-sub">
-                    @if($school->ministry) {{ $school->ministry }} @endif
+                    @if($school->ministry) {{ $isEnglishReceipt ? $school->ministry_en : $school->ministry }} @endif
                 </div>
             </div>
         </div>
         <div class="header-right" style="text-align: center;">
-            <div class="doc-title">Reçu de Versement Officiel</div>
-            <div class="doc-sub">Exemplaire Élève</div>
+            <div class="doc-title">{{ $isEnglishReceipt ? 'Official Payment Receipt' : 'Reçu de Versement Officiel' }}</div>
+            <div class="doc-sub">{{ $isEnglishReceipt ? 'Student Copy' : 'Exemplaire Élève' }}</div>
             <div class="doc-date">
-                Année Scolaire : {{ $enrollment->academicYear->label }}
-                &nbsp;&nbsp;Date : {{ now()->format('d/m/Y') }}
+                {{ $isEnglishReceipt ? 'Academic Year' : 'Année Scolaire' }} : {{ $enrollment->academicYear->label }}
+                &nbsp;&nbsp;{{ $isEnglishReceipt ? 'Date' : 'Date' }} : {{ now()->format('d/m/Y') }}
             </div>
         </div>
     </div>
@@ -329,37 +329,37 @@
     {{-- ── BLOC ÉLÈVE ───────────────────────────────────────────────────── --}}
     <div class="student-block">
         <div class="student-col">
-            <div class="col-badge">Identité de l'élève</div>
+            <div class="col-badge">{{ $isEnglishReceipt ? 'Student Identity' : 'Identité de l\'élève' }}</div>
             <div class="col-row">
-                <span class="col-lbl">Nom et prénom :</span>
+                <span class="col-lbl">{{ $isEnglishReceipt ? 'Name' : 'Nom et prénom' }} :</span>
                 <span class="col-val">
                     {{ strtoupper($enrollment->student->full_name) }}
                 </span>
             </div>
             <div class="col-row">
-                <span class="col-lbl">Matricule :</span>
+                <span class="col-lbl">{{ $isEnglishReceipt ? 'Registration N°' : 'Matricule' }} :</span>
                 <span class="col-val">{{ $enrollment->student->matricule }}</span>
             </div>
         </div>
         <div class="student-col">
-            <div class="col-badge">Naissance</div>
+            <div class="col-badge">{{ $isEnglishReceipt ? 'Born On' : 'Naissance' }}</div>
             <div class="col-row">
-                <span class="col-lbl">Date :</span>
+                <span class="col-lbl">{{ $isEnglishReceipt ? 'Date' : 'Date' }} :</span>
                 <span class="col-val">
                     {{ $enrollment->student->date_of_birth?->format('d/m/Y') ?? '—' }}
                 </span>
             </div>
             <div class="col-row">
-                <span class="col-lbl">Lieu :</span>
+                <span class="col-lbl">{{ $isEnglishReceipt ? 'Place of Birth' : 'Lieu' }} :</span>
                 <span class="col-val">
                     {{ strtoupper($enrollment->student->place_of_birth ?? '—') }}
                 </span>
             </div>
         </div>
         <div class="student-col">
-            <div class="col-badge">Scolarité</div>
+            <div class="col-badge">{{ $isEnglishReceipt ? 'Schooling' : 'Scolarité' }}</div>
             <div class="col-row">
-                <span class="col-lbl">Classe :</span>
+                <span class="col-lbl">{{ $isEnglishReceipt ? 'Class' : 'Classe' }} :</span>
                 <span class="col-val">
                     {{ $enrollment->classGroup->full_name }}
                 </span>
@@ -374,7 +374,7 @@
     </div>
 
     {{-- ── TOUS LES VERSEMENTS ──────────────────────────────────────────── --}}
-    <div class="section-title">Tous les Versements</div>
+<div class="section-title">{{ $isEnglishReceipt ? 'All Payments' : 'Tous les Versements' }}</div>
 
     @if($payments->isEmpty())
     <div style="padding:12px 14px; font-size:11px; color:#666; font-style:italic;">
@@ -384,12 +384,12 @@
     <table class="t-versements">
         <thead>
             <tr>
-                <th style="width:22%">N° Reçu</th>
-                <th style="width:20%">Objet</th>
-                <th style="width:13%">Mode</th>
-                <th style="width:20%">Date / Heure</th>
-                <th style="width:16%">Caissier(e)</th>
-                <th style="width:9%; text-align:right;">Montant</th>
+                <th style="width:22%">{{ $isEnglishReceipt ? 'Receipt No.' : 'N° Reçu' }}</th>
+                <th style="width:20%">{{ $isEnglishReceipt ? 'Purpose' : 'Objet' }}</th>
+                <th style="width:13%">{{ $isEnglishReceipt ? 'Method' : 'Mode' }}</th>
+                <th style="width:20%">{{ $isEnglishReceipt ? 'Date / Time' : 'Date / Heure' }}</th>
+                <th style="width:16%">{{ $isEnglishReceipt ? 'Cashier' : 'Caissier(e)' }}</th>
+                <th style="width:9%; text-align:right;">{{ $isEnglishReceipt ? 'Amount' : 'Montant' }}</th>
             </tr>
         </thead>
         <tbody>
@@ -399,7 +399,7 @@
                     <span class="receipt-id">{{ $p->receipt_number }}</span>
                 </td>
                 <td style="font-weight:900;">
-                    {{ $p->feeInstallment?->label ?? '—' }}
+                    {{ $p->is_bulk ? 'Paiement groupé' : ($p->feeInstallment?->label ?? '—') }}
                 </td>
                 <td>
                     <span class="mode-badge">{{ $p->payment_method_label }}</span>
@@ -416,7 +416,7 @@
         <tfoot>
             <tr>
                 <td colspan="5" style="font-weight:900; letter-spacing:1px;">
-                    TOTAL DES VERSEMENTS
+                    {{ $isEnglishReceipt ? 'TOTAL PAYMENTS' : 'TOTAL DES VERSEMENTS' }}
                 </td>
                 <td>{{ number_format($totalPaid, 0, ',', ' ') }} FCFA</td>
             </tr>
@@ -426,7 +426,7 @@
 
     {{-- ── ÉTAT GÉNÉRAL DES FRAIS ──────────────────────────────────────── --}}
     <div class="section-title" style="margin-top:0; border-top:2px solid #DDECF6;">
-        État Général des Frais
+        {{ $isEnglishReceipt ? 'Fee Summary' : 'État Général des Frais' }}
     </div>
 
     @if($installmentSummary->isEmpty())
@@ -437,11 +437,11 @@
     <table class="t-etat">
         <thead>
             <tr>
-                <th style="width:30%">Désignation</th>
-                <th style="width:18%">Échéance</th>
-                <th class="right" style="width:17%">Montant Total</th>
-                <th class="right" style="width:17%">Déjà Payé</th>
-                <th class="right" style="width:18%">Restant</th>
+                <th style="width:30%">{{ $isEnglishReceipt ? 'Description' : 'Désignation' }}</th>
+                <th style="width:18%">{{ $isEnglishReceipt ? 'Due Date' : 'Échéance' }}</th>
+                <th class="right" style="width:17%">{{ $isEnglishReceipt ? 'Total Amount' : 'Montant Total' }}</th>
+                <th class="right" style="width:17%">{{ $isEnglishReceipt ? 'Already Paid' : 'Déjà Payé' }}</th>
+                <th class="right" style="width:18%">{{ $isEnglishReceipt ? 'Remaining' : 'Restant' }}</th>
             </tr>
         </thead>
         <tbody>
@@ -468,7 +468,7 @@
         <tfoot>
             <tr>
                 <td colspan="2" style="font-weight:900; letter-spacing:1px;">
-                    TOTAL GÉNÉRAL
+                    {{ $isEnglishReceipt ? 'GRAND TOTAL' : 'TOTAL GÉNÉRAL' }}
                 </td>
                 <td class="right gold">
                     {{ number_format($totalDue, 0, ',', ' ') }} FCFA
@@ -487,15 +487,18 @@
     {{-- ── FOOTER ───────────────────────────────────────────────────────── --}}
     <div class="footer-row">
         <div class="footer-cashier">
-            Émis le : <span>{{ now()->format('d/m/Y à H:i') }}</span>
+            {{ $isEnglishReceipt ? 'Issued on' : 'Émis le' }} : <span>{{ now()->format('d/m/Y à H:i') }}</span>
         </div>
         <div class="footer-cashier">
-            Par : <span>{{ auth()->user()?->name ?? 'Système' }}</span>
+            {{ $isEnglishReceipt ? 'By' : 'Par' }} : <span>{{ auth()->user()?->name ?? 'Système' }}</span>
         </div>
         <div class="footer-sig">Signature &amp; Cachet Établissement</div>
     </div>
     <div class="nb-bar">
-        <svg style="width:13px;height:13px;vertical-align:-2px;margin-right:5px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg> NB : AUCUN FRAIS N'EST REMBOURSABLE !
+        <svg style="width:13px;height:13px;vertical-align:-2px;margin-right:5px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        </svg>
+        {{ $isEnglishReceipt ? 'NB : NO FEES ARE REFUNDABLE !' : 'NB : AUCUN FRAIS N\'EST REMBOURSABLE !' }}
     </div>
 
 </div>

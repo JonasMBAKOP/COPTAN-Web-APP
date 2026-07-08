@@ -5,7 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Student;
 use App\Services\StudentDocumentService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Response;
 use Illuminate\View\View;
+use PhpOffice\PhpWord\Element\Section;
+use PhpOffice\PhpWord\IOFactory;
+use PhpOffice\PhpWord\PhpWord;
+use PhpOffice\PhpWord\Shared\Html as WordHtml;
 
 class StudentDocumentController extends Controller
 {
@@ -116,6 +121,48 @@ class StudentDocumentController extends Controller
         ));
     }
 
+    public function bulkListsWord(Request $request)
+    {
+        $year    = $this->documents->yearFromRequest($request->integer('year_id') ?: null);
+        $filters = $this->filtersFromRequest($request);
+
+        abort_if(! $year, 422, 'Aucune année scolaire sélectionnée.');
+
+        $groups = $this->documents->getListGroups($year, $filters);
+
+        abort_if($groups === [], 404, 'Aucun élève trouvé pour cette sélection.');
+
+        return $this->downloadListWordDocument(
+            $year,
+            $groups,
+            $filters,
+            $this->documents->schoolContext(),
+            'liste-eleves-' . $year->id . '.docx'
+        );
+    }
+
+    public function enrollmentTotalsReportWord(Request $request)
+    {
+        $year    = $this->documents->yearFromRequest($request->integer('year_id') ?: null);
+        $filters = $this->filtersFromRequest($request);
+
+        abort_if(! $year, 422, 'Aucune année scolaire sélectionnée.');
+        abort_if(($filters['scope'] ?? null) === 'class', 422,
+            'Le rapport des effectifs s\'exporte uniquement par section ou pour tout l\'établissement.');
+
+        $report = $this->documents->getEnrollmentTotalsReport($year, $filters);
+
+        abort_if($report['sections'] === [], 404, 'Aucune classe trouvée pour cette sélection.');
+
+        return $this->downloadEnrollmentReportWordDocument(
+            $year,
+            $report,
+            $filters,
+            $this->documents->schoolContext(),
+            'effectifs-' . $year->id . '.docx'
+        );
+    }
+
     private function bulk(Request $request, string $type): View
     {
         $year    = $this->documents->yearFromRequest($request->integer('year_id') ?: null);
@@ -137,6 +184,189 @@ class StudentDocumentController extends Controller
             'class_id'   => $request->integer('class_id') ?: null,
             'section_id' => $request->integer('section_id') ?: null,
         ];
+    }
+
+    private function describeScope(array $filters, $year): string
+    {
+        $scope = $filters['scope'] ?? 'class';
+
+        if ($scope === 'section' && ! empty($filters['section_id'])) {
+            $section = \App\Models\Section::find($filters['section_id']);
+
+            return 'Section ' . ($section?->name ?? $filters['section_id']);
+        }
+
+        if ($scope === 'class' && ! empty($filters['class_id'])) {
+            $class = \App\Models\ClassGroup::find($filters['class_id']);
+
+            return 'Classe ' . ($class?->full_name ?? $filters['class_id']);
+        }
+
+        return 'Établissement';
+    }
+
+    private function downloadListWordDocument($year, array $groups, array $filters, array $schoolContext, string $filename)
+    {
+        $phpWord = new PhpWord();
+        $phpWord->setDefaultFontName('Calibri');
+        $phpWord->setDefaultFontSize(11);
+
+        $section = $phpWord->addSection([
+            'marginTop' => 720,
+            'marginRight' => 720,
+            'marginBottom' => 720,
+            'marginLeft' => 720,
+        ]);
+
+        $this->appendListWordContent($section, $year, $groups, $filters, $schoolContext);
+
+        return $this->saveWordDocument($phpWord, $filename);
+    }
+
+    private function downloadEnrollmentReportWordDocument($year, array $report, array $filters, array $schoolContext, string $filename)
+    {
+        $phpWord = new PhpWord();
+        $phpWord->setDefaultFontName('Calibri');
+        $phpWord->setDefaultFontSize(11);
+
+        $section = $phpWord->addSection([
+            'marginTop' => 720,
+            'marginRight' => 720,
+            'marginBottom' => 720,
+            'marginLeft' => 720,
+        ]);
+
+        $this->appendEnrollmentReportWordContent($section, $year, $report, $filters, $schoolContext);
+
+        return $this->saveWordDocument($phpWord, $filename);
+    }
+
+    private function saveWordDocument(PhpWord $phpWord, string $filename)
+    {
+        $tempFile = tempnam(sys_get_temp_dir(), 'docx');
+
+        $objWriter = IOFactory::createWriter($phpWord, 'Word2007');
+        $objWriter->save($tempFile);
+
+        return Response::file($tempFile, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ])->deleteFileAfterSend(true);
+    }
+
+    private function appendListWordContent($section, $year, array $groups, array $filters, array $schoolContext): void
+    {
+        $schoolName = $schoolContext['school']->full_name ?? 'COPTAN';
+        $section->addText($schoolName, ['bold' => true, 'size' => 16, 'color' => '1A3A6B']);
+        $section->addText('Liste des élèves', ['bold' => true, 'size' => 20, 'color' => '9C4005']);
+        $section->addText('Année scolaire ' . ($year->label ?? ''), ['size' => 11]);
+        $section->addText('Périmètre : ' . $this->describeScope($filters, $year), ['size' => 11]);
+        $section->addTextBreak(1);
+
+        $totalStudents = 0;
+        $isSingleClass = ($filters['scope'] ?? '') === 'class';
+
+        foreach ($groups as $group) {
+            if (! $isSingleClass) {
+                $section->addText('Section : ' . ($group['section']->name ?? ''), ['bold' => true, 'size' => 13, 'color' => '1A3A6B']);
+            }
+
+            foreach ($group['classes'] as $block) {
+                $totalStudents += $block['students']->count();
+                $section->addText('Classe : ' . ($block['class']->full_name ?? ''), ['bold' => true, 'size' => 12, 'color' => '9C4005']);
+                $section->addText(($block['students']->count()) . ' élève(s) inscrit(s)', ['size' => 10]);
+                $section->addTextBreak(0.5);
+
+                $table = $section->addTable([
+                    'borderSize' => 6,
+                    'borderColor' => 'B7C0CC',
+                    'cellMargin' => 80,
+                    'tblLayout' => 'fixed',
+                ]);
+
+                $table->addRow(260);
+                $table->addCell(500)->addText('N°', ['bold' => true]);
+                $table->addCell(1800)->addText('Matricule', ['bold' => true]);
+                $table->addCell(2200)->addText('Nom', ['bold' => true]);
+                $table->addCell(2200)->addText('Prénom(s)', ['bold' => true]);
+                $table->addCell(600)->addText('Sexe', ['bold' => true]);
+                $table->addCell(1400)->addText('Date naiss.', ['bold' => true]);
+
+                foreach ($block['students'] as $index => $student) {
+                    $table->addRow(240);
+                    $table->addCell(500)->addText((string) ($index + 1), ['size' => 9]);
+                    $table->addCell(1800)->addText((string) ($student->matricule ?? ''), ['size' => 9]);
+                    $table->addCell(2200)->addText((string) ($student->last_name ?? ''), ['size' => 9]);
+                    $table->addCell(2200)->addText((string) ($student->first_name ?? ''), ['size' => 9]);
+                    $table->addCell(600)->addText($student->gender === 'M' ? 'M' : 'F', ['size' => 9]);
+                    $table->addCell(1400)->addText($student->date_of_birth?->format('d/m/Y') ?? '—', ['size' => 9]);
+                }
+
+                $section->addTextBreak(1);
+            }
+        }
+
+        $section->addText('Total général : ' . $totalStudents . ' élève(s)', ['bold' => true, 'size' => 10, 'color' => '4B5563']);
+        $section->addText('Document généré le ' . now()->format('d/m/Y à H:i'), ['size' => 9, 'color' => '6B7280']);
+    }
+
+    private function appendEnrollmentReportWordContent($section, $year, array $report, array $filters, array $schoolContext): void
+    {
+        $schoolName = $schoolContext['school']->full_name ?? 'COPTAN';
+        $section->addText($schoolName, ['bold' => true, 'size' => 16, 'color' => '1A3A6B']);
+        $section->addText('Rapport des effectifs totaux', ['bold' => true, 'size' => 20, 'color' => '9C4005']);
+        $section->addText('Année scolaire ' . ($year->label ?? ''), ['size' => 11]);
+        $section->addTextBreak(1);
+
+        $isSectionScope = ($filters['scope'] ?? 'school') === 'section';
+
+        if (! $isSectionScope) {
+            $section->addText('Synthèse générale par section', ['bold' => true, 'size' => 13, 'color' => '1A3A6B']);
+            $table = $section->addTable(['borderSize' => 6, 'borderColor' => 'B7C0CC', 'cellMargin' => 80]);
+            $table->addRow(260);
+            $table->addCell(3000)->addText('Sections', ['bold' => true]);
+            $table->addCell(1200)->addText('Filles', ['bold' => true]);
+            $table->addCell(1200)->addText('Garçons', ['bold' => true]);
+            $table->addCell(1200)->addText('Total', ['bold' => true]);
+            foreach ($report['sections'] as $sectionReport) {
+                $table->addRow(240);
+                $table->addCell(3000)->addText($sectionReport['section']->name ?? '', ['size' => 9]);
+                $table->addCell(1200)->addText((string) ($sectionReport['totals']['girls'] ?? 0), ['size' => 9]);
+                $table->addCell(1200)->addText((string) ($sectionReport['totals']['boys'] ?? 0), ['size' => 9]);
+                $table->addCell(1200)->addText((string) ($sectionReport['totals']['total'] ?? 0), ['size' => 9]);
+            }
+            $table->addRow(260);
+            $table->addCell(3000)->addText('TOTAL', ['bold' => true]);
+            $table->addCell(1200)->addText((string) ($report['totals']['girls'] ?? 0), ['bold' => true]);
+            $table->addCell(1200)->addText((string) ($report['totals']['boys'] ?? 0), ['bold' => true]);
+            $table->addCell(1200)->addText((string) ($report['totals']['total'] ?? 0), ['bold' => true]);
+            $section->addTextBreak(1);
+        }
+
+        foreach ($report['sections'] as $sectionReport) {
+            $section->addText('Détail par classe — ' . ($sectionReport['section']->name ?? ''), ['bold' => true, 'size' => 13, 'color' => '1A3A6B']);
+            $table = $section->addTable(['borderSize' => 6, 'borderColor' => 'B7C0CC', 'cellMargin' => 80]);
+            $table->addRow(260);
+            $table->addCell(3000)->addText('Classes', ['bold' => true]);
+            $table->addCell(1200)->addText('Filles', ['bold' => true]);
+            $table->addCell(1200)->addText('Garçons', ['bold' => true]);
+            $table->addCell(1200)->addText('Total', ['bold' => true]);
+            foreach ($sectionReport['rows'] as $row) {
+                $table->addRow(240);
+                $table->addCell(3000)->addText($row['class']->full_name ?? '', ['size' => 9]);
+                $table->addCell(1200)->addText((string) ($row['girls'] ?? 0), ['size' => 9]);
+                $table->addCell(1200)->addText((string) ($row['boys'] ?? 0), ['size' => 9]);
+                $table->addCell(1200)->addText((string) ($row['total'] ?? 0), ['size' => 9]);
+            }
+            $table->addRow(260);
+            $table->addCell(3000)->addText('TOTAL', ['bold' => true]);
+            $table->addCell(1200)->addText((string) ($sectionReport['totals']['girls'] ?? 0), ['bold' => true]);
+            $table->addCell(1200)->addText((string) ($sectionReport['totals']['boys'] ?? 0), ['bold' => true]);
+            $table->addCell(1200)->addText((string) ($sectionReport['totals']['total'] ?? 0), ['bold' => true]);
+            $section->addTextBreak(1);
+        }
+
+        $section->addText('Document généré le ' . now()->format('d/m/Y à H:i'), ['size' => 9, 'color' => '6B7280']);
     }
 
     private function renderDocument(

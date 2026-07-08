@@ -148,16 +148,31 @@
                     {{ $doc['scope'] }}
                 </span>
             </div>
-            <button type="button"
-                    @click="openPrint('{{ route($doc['route']) }}', {{ ($doc['section_only'] ?? false) ? 'true' : 'false' }}, {{ ($doc['class_only'] ?? false) ? 'true' : 'false' }})"
-                    class="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-all mt-auto inline-flex items-center justify-center gap-2"
-                    style="background-color:#1A3A6B;"
-                    :class="{ 'opacity-60 cursor-not-allowed': scope !== 'class' && {{ ($doc['class_only'] ?? false) ? 'true' : 'false' }} }">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V4h12v5M6 18H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1M7 14h10v6H7z"/>
-                </svg>
-                Ouvrir l'aperçu &amp; imprimer
-            </button>
+            <div class="mt-auto space-y-2">
+                <button type="button"
+                        @click="openPrint('{{ route($doc['route']) }}', {{ ($doc['section_only'] ?? false) ? 'true' : 'false' }}, {{ ($doc['class_only'] ?? false) ? 'true' : 'false' }})"
+                        class="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-all inline-flex items-center justify-center gap-2"
+                        style="background-color:#1A3A6B;"
+                        :class="{ 'opacity-60 cursor-not-allowed': !isDocumentActionAllowed('{{ $doc['route'] }}') }"
+                        :disabled="!isDocumentActionAllowed('{{ $doc['route'] }}')">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V4h12v5M6 18H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1M7 14h10v6H7z"/>
+                    </svg>
+                    Ouvrir l'aperçu &amp; imprimer
+                </button>
+                @if(in_array($doc['route'], ['students.documents.lists', 'students.documents.enrollment-totals-report'], true))
+                <button type="button"
+                        @click="openWordExport('{{ ($doc['route'] === 'students.documents.lists') ? route('students.documents.lists.word') : route('students.documents.enrollment-totals-report.word') }}')"
+                        class="w-full py-2.5 rounded-lg text-sm font-semibold text-[#1A3A6B] border border-[#1A3A6B] bg-white transition-all inline-flex items-center justify-center gap-2"
+                        :class="{ 'opacity-60 cursor-not-allowed': !isDocumentActionAllowed('{{ $doc['route'] }}') }"
+                        :disabled="!isDocumentActionAllowed('{{ $doc['route'] }}')">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h6m-6 4h10M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/>
+                    </svg>
+                    Exporter Word
+                </button>
+                @endif
+            </div>
         </div>
         @endforeach
     </div>
@@ -196,9 +211,33 @@ function documentsHub() {
             return p.toString();
         },
 
+        isDocumentActionAllowed(routeName) {
+            if (routeName === 'students.documents.enrollment-totals-report') {
+                return this.scope === 'section' ? !!this.sectionId : this.scope === 'school';
+            }
+
+            if (routeName === 'students.documents.booklets') {
+                return this.scope === 'class' && !!this.classId;
+            }
+
+            if (this.scope === 'class') {
+                return !!this.classId;
+            }
+
+            if (this.scope === 'section') {
+                return !!this.sectionId;
+            }
+
+            return this.scope === 'school';
+        },
+
         openPrint(baseUrl, sectionOnly = false, classOnly = false) {
             if (!this.yearId) {
                 alert('Veuillez sélectionner une année scolaire.');
+                return;
+            }
+            if (!this.isDocumentActionAllowed('students.documents.enrollment-totals-report') && baseUrl.includes('enrollment-totals-report')) {
+                alert("Le rapport des effectifs s'imprime uniquement par section ou pour tout l'établissement.");
                 return;
             }
             if (classOnly && this.scope !== 'class') {
@@ -209,12 +248,24 @@ function documentsHub() {
                 alert("Le rapport des effectifs s'imprime uniquement par section ou pour tout l'établissement. Sélectionnez une section ou le périmètre établissement.");
                 return;
             }
-            if (this.scope === 'class' && !this.classId) {
-                alert('Veuillez sélectionner une classe.');
+            if (!this.isDocumentActionAllowed('students.documents.' + (baseUrl.includes('enrollment-totals-report') ? 'enrollment-totals-report' : 'lists'))) {
+                alert('Veuillez sélectionner les filtres requis avant d’ouvrir ce document.');
                 return;
             }
-            if (this.scope === 'section' && !this.sectionId) {
-                alert('Veuillez sélectionner une section.');
+            window.open(baseUrl + '?' + this.buildQuery(), '_blank');
+        },
+
+        openWordExport(baseUrl) {
+            if (!this.yearId) {
+                alert('Veuillez sélectionner une année scolaire.');
+                return;
+            }
+            if (!this.isDocumentActionAllowed('students.documents.enrollment-totals-report') && baseUrl.includes('enrollment-totals-report')) {
+                alert("L'export Word du rapport des effectifs est disponible uniquement pour une section ou pour tout l'établissement.");
+                return;
+            }
+            if (!this.isDocumentActionAllowed('students.documents.lists') && !baseUrl.includes('enrollment-totals-report')) {
+                alert('Veuillez sélectionner les filtres requis avant d’exporter ce document.');
                 return;
             }
             window.open(baseUrl + '?' + this.buildQuery(), '_blank');

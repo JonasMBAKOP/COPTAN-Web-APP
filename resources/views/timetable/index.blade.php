@@ -108,7 +108,7 @@
         <div class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
             <div class="border-b border-gray-100 px-5 py-4">
                 <h3 class="font-black text-[#1A3A6B]">Emploi du temps de la classe</h3>
-                <p class="text-xs text-gray-500">Chaque cellule correspond à une pÃ©riode configurée pour l'école.</p>
+                <p class="text-xs text-gray-500">Chaque cellule correspond à une période configurée pour l'école.</p>
             </div>
             <div class="overflow-x-auto">
                 @include('timetable.partials.grid', [

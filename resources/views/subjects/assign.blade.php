@@ -4,21 +4,6 @@
 @section('page-title', 'Attribution des Matières aux Classes')
 @section('page-subtitle', 'Gérer les matières et enseignants par classe')
 
-@section('breadcrumb')
-    <a href="{{ route('classes.index') }}" class="hover:text-gray-700">Classes</a>
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round"
-              stroke-width="2" d="M9 5l7 7-7 7"/>
-    </svg>
-    <a href="{{ route('classes.show', $classGroup) }}"
-       class="hover:text-gray-700">{{ $classGroup->full_name }}</a>
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round"
-              stroke-width="2" d="M9 5l7 7-7 7"/>
-    </svg>
-    <span style="color:#1A3A6B;" class="font-medium">Attribution</span>
-@endsection
-
 @section('content')
 
 @php
