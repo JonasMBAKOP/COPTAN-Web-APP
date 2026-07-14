@@ -12,6 +12,7 @@ use App\Models\FeeStructure;
 use App\Models\Section;
 use App\Models\StudentEnrollment;
 use App\Models\StudentPayment;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -396,8 +397,14 @@ class FinanceController extends Controller
     // ── LISTE DE TOUS LES PAIEMENTS ───────────────────────────────────────
     public function payments(Request $request)
     {
-        $activeYear     = AcademicYear::active();
-        $selectedYearId = $request->input('year_id', $activeYear?->id);
+        /** @var \App\Models\User $user */
+        $user              = Auth::user();
+        $isAdmin           = $user->hasRole('super-admin')
+            || $user->hasRole('directeur')
+            || $user->hasRole('fondateur');
+        $activeYear        = AcademicYear::active();
+        $selectedYearId    = $request->input('year_id', $activeYear?->id);
+        $selectedResponsible = $request->input('responsible', $isAdmin ? 'global' : 'me');
 
         $query = StudentPayment::visible()
             ->with([
@@ -435,8 +442,16 @@ class FinanceController extends Controller
             );
         }
 
+        if (! $isAdmin) {
+            $query->where('recorded_by', $user->id);
+        } elseif ($selectedResponsible === 'me') {
+            $query->where('recorded_by', $user->id);
+        } elseif ($selectedResponsible !== 'global') {
+            $query->where('recorded_by', $selectedResponsible);
+        }
+
         $payments = $query->orderByDesc('payment_date')
-                          ->orderByDesc('created_at') //Ajout
+                          ->orderByDesc('created_at')
                           ->paginate(20)
                           ->withQueryString();
 
@@ -448,10 +463,29 @@ class FinanceController extends Controller
 
         $totalFiltered = $query->sum('amount_paid');
 
+        $recorders = $isAdmin
+            ? User::whereIn('id', StudentPayment::visible()
+                    ->when($selectedYearId, fn($q) => $q->whereHas('studentEnrollment', fn($q2) =>
+                        $q2->where('academic_year_id', $selectedYearId)
+                    ))
+                    ->when($request->filled('class_id'), fn($q) => $q->whereHas('studentEnrollment', fn($q2) =>
+                        $q2->where('class_group_id', $request->class_id)
+                    ))
+                    ->whereNotNull('recorded_by')
+                    ->pluck('recorded_by')
+                    ->unique()
+                    ->filter()
+                    ->toArray())
+                ->where('id', '!=', $user->id)
+                ->orderBy('name')
+                ->get()
+            : collect([$user]);
+
         return view('finances.payments', compact(
             'payments', 'years', 'classes',
-            'selectedYearId', 'totalFiltered'
-        )); // Retirer 'totalFiltered' plutard
+            'selectedYearId', 'totalFiltered',
+            'recorders', 'selectedResponsible', 'isAdmin'
+        ));
     }
 
     // // ── REÇU ──────────────────────────────────────────────────────────────
@@ -575,6 +609,7 @@ class FinanceController extends Controller
                 'studentEnrollment.academicYear',
                 'studentEnrollment.classGroup.feeStructures.installments',
                 'feeInstallment',
+                'allocations.feeInstallment',
                 'recordedBy',
             ])
             ->orderByDesc('payment_date')
@@ -582,6 +617,9 @@ class FinanceController extends Controller
 
         $school = \App\Models\SchoolSetting::instance();
         $phones = \App\Models\SchoolPhone::orderByDesc('is_primary')->orderBy('id')->get();
+        $isEnglishReceipt = $payments->contains(function ($payment) {
+            return $payment->studentEnrollment->classGroup->level->section?->isAnglophone() ?? false;
+        });
 
         $receiptsData = $payments->map(function($payment) {
             $enrollment   = $payment->studentEnrollment;
@@ -595,7 +633,7 @@ class FinanceController extends Controller
         });
 
         return view('finances.receipt-batch',
-            compact('receiptsData', 'school', 'phones'));
+            compact('receiptsData', 'school', 'phones', 'isEnglishReceipt'));
     }
 
     // ── LISTE PAIEMENTS (tri du plus récent au plus ancien) ───────────────

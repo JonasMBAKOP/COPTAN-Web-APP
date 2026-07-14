@@ -27,8 +27,8 @@
             align-items: center;
         }
         .card-slot .id-card {
-            width: 95mm;
-            height: 60mm;
+            width: 90mm;
+            height: 58mm;
             transform: none;
         }
         @media print {
@@ -43,6 +43,10 @@
     </div>
 
     <div class="cards-container">
+        <div class="cards-intro">
+            <div class="cards-intro__title">Cartes professionnelles — Personnel</div>
+            <div class="cards-intro__meta">{{ $staff->count() }} carte(s) prête(s) à l’impression</div>
+        </div>
         @foreach($staff->chunk(8) as $chunk)
             <div class="cards-page">
                 @foreach($chunk as $s)

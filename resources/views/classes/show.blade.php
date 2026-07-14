@@ -178,8 +178,9 @@
                             @foreach($classGroup->studentEnrollments as $index => $enrollment)
                             @php $student = $enrollment->student; @endphp
                             @if($student)
-                            <tr class="hover:bg-gray-50/70 transition-colors"
-                                x-show="searchStudent === '' || '{{ strtolower($student->full_name) }}'.includes(searchStudent.toLowerCase()) || '{{ strtolower($student->matricule) }}'.includes(searchStudent.toLowerCase())">
+                            <tr x-data="{ studentName: @json(strtolower($student->full_name)), studentMatricule: @json(strtolower($student->matricule)) }"
+                                class="hover:bg-gray-50/70 transition-colors"
+                                x-show="searchStudent === '' || studentName.includes(searchStudent.toLowerCase()) || studentMatricule.includes(searchStudent.toLowerCase())">
                                 <td class="px-4 py-3.5 text-center font-bold text-gray-400">
                                     {{ sprintf('%02d', $index + 1) }}
                                 </td>

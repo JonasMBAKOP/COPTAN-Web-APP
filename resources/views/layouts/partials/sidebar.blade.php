@@ -144,17 +144,22 @@
             {{-- label="Personnel" --}}
             label="Enseignants & Staff"
             href="{{ route('staff.index') }}"
-            :active="request()->routeIs('staff.*')" />
-        @endcan
-
-        {{-- ── ÉVALUATIONS ───────────────────────────────────────── --}}
-        @canany(['view-grades', 'enter-grades', 'view-bulletins'])
-        <p class="px-3 pt-4 pb-1 text-white/40 text-xs font-semibold
-                  uppercase tracking-wider">
-            Évaluations
-        </p>
+            :active="request()->routeIs('staff.*') && !request()->routeIs('staff.salaries') && !request()->routeIs('staff.salary.edit')" />
+        
+        <x-sidebar-item
+            icon="bank"
+            label="Salaires"
+            href="{{ route('staff.salaries') }}"
+            :active="request()->routeIs('staff.salaries', 'staff.salary.edit')" />
+            
+        
 
         @can('manage-academic-years')
+        <p class="px-3 pt-4 pb-1 text-white/40 text-xs font-semibold
+                  uppercase tracking-wider">
+            évaluations
+        </p>
+
         <x-sidebar-item
             icon="eye"
             label="Vue Globale"

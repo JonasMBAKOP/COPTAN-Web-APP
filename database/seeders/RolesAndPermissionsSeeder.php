@@ -99,6 +99,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-announcements',
             'view-messages', 'send-messages',
             'view-reports', 'export-reports',
+            'view-staff', 'manage-staff',
         ]);
 
         // 5. ENSEIGNANT
@@ -118,8 +119,11 @@ class RolesAndPermissionsSeeder extends Seeder
         // 6. SURVEILLANT GÉNÉRAL
         $surveillant = Role::firstOrCreate(['name' => 'surveillant-general']);
         $surveillant->syncPermissions([
-            'view-students',
-            'view-classes',
+            'view-students', 'manage-students',
+            'view-classes', 'manage-classes',
+            'view-subjects',
+            'view-grades', 'enter-grades',
+            'view-bulletins', 'manage-bulletins',
             'view-enrollments',
             'view-absences', 'manage-absences',
             'view-discipline', 'manage-discipline',

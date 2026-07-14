@@ -182,10 +182,10 @@
                 </div>
                 <div class="min-w-0">
                     <p class="text-sm font-bold text-gray-800 truncate">
-                        {{ $ab->studentEnrollment?->student?->full_name }}
+                        {{ $ab->studentEnrollment?->student?->full_name ?? 'Élève transféré ou supprimé' }}
                     </p>
                     <p class="text-xs text-gray-400">
-                        {{ $ab->studentEnrollment?->classGroup?->full_name }}
+                        {{ $ab->studentEnrollment?->classGroup?->full_name ?? 'Classe inconnue' }}
                         @if($ab->classSubject)
                         · {{ $ab->classSubject->subject->name_fr }}
                         @endif

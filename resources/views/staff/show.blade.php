@@ -1,7 +1,8 @@
 @extends('layouts.app')
 
 @section('title', $staff->full_name)
-@section('page-title'){{ $staff->full_name }}@endsection
+@section('page-title', 'Fiche du Personnel : ' . $staff->full_name)
+@section('page-subtitle', 'Détails et informations complètes du personnel ' . $staff->full_name)
 
 @section('breadcrumb')
     <a href="{{ route('staff.index') }}" class="hover:text-gray-700">
@@ -414,55 +415,53 @@
     {{-- 3. EMPLOI DU TEMPS --}}
     <div x-show="tab === 'schedule'" class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6" x-transition>
         <h3 class="text-lg font-bold text-[#0c3260] mb-4">Emploi du temps hebdomadaire</h3>
-        
-        <div class="overflow-x-auto">
-            <table class="w-full min-w-[600px] border-collapse border border-gray-200 text-sm">
-                <thead>
-                    <tr class="bg-gray-50">
-                        <th class="border border-gray-200 p-2 text-left w-24">Période</th>
-                        <th class="border border-gray-200 p-2 text-center">Lundi</th>
-                        <th class="border border-gray-200 p-2 text-center">Mardi</th>
-                        <th class="border border-gray-200 p-2 text-center">Mercredi</th>
-                        <th class="border border-gray-200 p-2 text-center">Jeudi</th>
-                        <th class="border border-gray-200 p-2 text-center">Vendredi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @php
-                        $days = ['Monday' => 'Lundi', 'Tuesday' => 'Mardi', 'Wednesday' => 'Mercredi', 'Thursday' => 'Jeudi', 'Friday' => 'Vendredi'];
-                        $hours = [
-                            '1' => '07h30 - 09h00',
-                            '2' => '09h00 - 10h30',
-                            'Pause' => '10h30 - 11h00',
-                            '3' => '11h00 - 12h30',
-                            '4' => '12h30 - 14h00',
-                            '5' => '14h00 - 15h30'
-                        ];
-                    @endphp
-                    @foreach($hours as $period => $label)
-                        @if($period === 'Pause')
-                            <tr class="bg-gray-50/50">
-                                <td class="border border-gray-200 p-2 font-bold text-center text-xs text-gray-400">{{ $label }}</td>
-                                <td colspan="5" class="border border-gray-200 p-2 text-center font-bold text-xs uppercase tracking-wider text-gray-400">RÉCRÉATION</td>
-                            </tr>
-                        @else
-                            <tr>
-                                <td class="border border-gray-200 p-2">
-                                    <div class="font-bold text-gray-900">Période {{ $period }}</div>
-                                    <div class="text-[10px] text-gray-400">{{ $label }}</div>
-                                </td>
-                                @foreach(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] as $day)
-                                    <td class="border border-gray-200 p-2 text-center">
-                                        <div class="text-xs text-gray-300 italic">Libre</div>
-                                    </td>
-                                @endforeach
-                            </tr>
-                        @endif
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-        <p class="text-xs text-gray-400 mt-4 italic">Note : L'emploi du temps complet peut être configuré dans le module de planification générale.</p>
+
+        @php
+            $days = [1 => 'Lundi', 2 => 'Mardi', 3 => 'Mercredi', 4 => 'Jeudi', 5 => 'Vendredi'];
+        @endphp
+
+        @if($scheduleSlots->isEmpty())
+            <div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-10 text-center text-gray-500">
+                <p class="font-semibold">Aucun emploi du temps disponible pour cet enseignant cette année.</p>
+                <p class="text-sm mt-2">Vérifiez les attributions de classe ou le planning dans le module d'emploi du temps.</p>
+            </div>
+        @else
+            <div class="grid gap-4 lg:grid-cols-[1.4fr_1fr_1fr] mb-6">
+                <div class="bg-[#F8FBFE] rounded-2xl border border-[#E5EDF5] p-4">
+                    <p class="text-xs font-bold uppercase tracking-wide text-gray-400">Cours par semaine</p>
+                    <p class="mt-2 text-3xl font-black text-[#1A3A6B]">{{ $scheduleSlots->count() }}</p>
+                </div>
+                <div class="bg-[#F8FBFE] rounded-2xl border border-[#E5EDF5] p-4">
+                    <p class="text-xs font-bold uppercase tracking-wide text-gray-400">Périodes totales</p>
+                    <p class="mt-2 text-3xl font-black text-[#1A5C2A]">{{ $scheduleTotalHours }}</p>
+                </div>
+                <div class="bg-[#F8FBFE] rounded-2xl border border-[#E5EDF5] p-4">
+                    <p class="text-xs font-bold uppercase tracking-wide text-gray-400">Matières</p>
+                    <p class="mt-2 text-3xl font-black text-[#0C3260]">{{ $scheduleTeacherSubjectCount }}</p>
+                </div>
+            </div>
+
+            <div class="tt-note rounded-2xl p-4 text-sm font-semibold mb-4">
+                Chaque période est comptée comme <strong>1 heure</strong> pour l'horaire enseignant.
+            </div>
+
+            <div class="tt-panel overflow-hidden rounded-2xl">
+                <div class="border-b border-gray-100 px-5 py-4">
+                    <h3 class="font-black text-[#1A3A6B]">Emploi du temps du professeur</h3>
+                    <p class="text-xs text-gray-500">Les cours sont groupés par classe et discipline.</p>
+                </div>
+                <div class="tt-grid-wrap overflow-x-auto p-4">
+                    @include('timetable.partials.grid', [
+                        'mode' => 'teacher',
+                        'printable' => false,
+                        'days' => $days,
+                        'gridRows' => $gridRows,
+                        'slots' => $scheduleSlots,
+                        'teacherSubjectCount' => $scheduleTeacherSubjectCount,
+                    ])
+                </div>
+            </div>
+        @endif
     </div>
 
     {{-- 4. PRÉSENCES --}}

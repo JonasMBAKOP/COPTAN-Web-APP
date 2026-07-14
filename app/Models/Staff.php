@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Staff extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     public const POSITIONS = [
         'enseignant',
@@ -45,6 +46,9 @@ class Staff extends Model
         'diploma',
         'start_date',
         'contract_type',
+        'monthly_salary',
+        'hourly_rate',
+        'period_rate',
         'is_active',
     ];
 
@@ -54,6 +58,9 @@ class Staff extends Model
             'date_of_birth' => 'date',
             'start_date'    => 'date',
             'is_active'     => 'boolean',
+            'monthly_salary'=> 'integer',
+            'hourly_rate'   => 'integer',
+            'period_rate'   => 'integer',
         ];
     }
 
@@ -123,6 +130,31 @@ class Staff extends Model
     public function getDiplomaLabelAttribute(): ?string
     {
         return $this->diploma;
+    }
+
+    public function getSalaryDisplayAttribute(): string
+    {
+        if ($this->contract_type === 'permanent') {
+            return $this->monthly_salary
+                ? number_format($this->monthly_salary) . ' FCFA / mois'
+                : 'À renseigner';
+        }
+
+        if ($this->contract_type === 'vacataire') {
+            return $this->hourly_rate
+                ? number_format($this->hourly_rate) . ' FCFA / h'
+                : 'À renseigner';
+        }
+
+        $parts = [];
+        if ($this->hourly_rate) {
+            $parts[] = number_format($this->hourly_rate) . ' FCFA / h';
+        }
+        if ($this->period_rate) {
+            $parts[] = number_format($this->period_rate) . ' FCFA / période';
+        }
+
+        return $parts ? implode(' / ', $parts) : 'À renseigner';
     }
 
     public function isTeacher(): bool

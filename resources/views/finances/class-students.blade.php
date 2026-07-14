@@ -135,6 +135,14 @@
                            text-gray-400 uppercase tracking-wider">
                     Élève
                 </th>
+                <th class="text-left px-4 py-3.5 text-xs font-semibold
+                           text-gray-400 uppercase tracking-wider">
+                    Lieu de naissance
+                </th>
+                <th class="text-left px-4 py-3.5 text-xs font-semibold
+                           text-gray-400 uppercase tracking-wider">
+                    Inscrit(e) le
+                </th>
                 @if($feeStructure)
                 @foreach($feeStructure->installments->sortBy('installment_number')
                     as $inst)
@@ -202,6 +210,16 @@
                             </p>
                         </div>
                     </div>
+                </td>
+                <td class="px-4 py-3.5">
+                    <p class="text-sm text-gray-700">
+                        {{ strtoupper($enr->student->place_of_birth ?? '—') }}
+                    </p>
+                </td>
+                <td class="px-4 py-3.5">
+                    <p class="text-sm text-gray-700">
+                        {{ $enr->enrollment_date?->format('d/m/Y') ?? '—' }}
+                    </p>
                 </td>
 
                 @if($feeStructure)
@@ -319,6 +337,10 @@
                         {{ $enr->student->matricule }}
                     </p>
                 </div>
+            </div>
+            <div class="text-xs text-gray-500 mt-2 space-y-1">
+                <div><strong>Lieu:</strong> {{ strtoupper($enr->student->place_of_birth ?? '—') }}</div>
+                <div><strong>Inscrit(e):</strong> {{ $enr->enrollment_date?->format('d/m/Y') ?? '—' }}</div>
             </div>
             <span class="px-2.5 py-0.5 rounded-full text-xs font-medium
                          flex-shrink-0"

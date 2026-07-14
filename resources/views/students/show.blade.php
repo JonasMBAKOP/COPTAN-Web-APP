@@ -2,11 +2,11 @@
 
 @section('title', $student->full_name)
 @section('page-title', 'Fiche Élève')
-@section('page-subtitle', 'Détails et informations complètes')
+@section('page-subtitle', 'Détails et informations complètes de l\'élève ' . $student->full_name)
 
-@section('breadcrumb')
+{{-- @section('breadcrumb')
     <a href="{{ route('students.index') }}" class="hover:text-gray-700">
-        Étudiants
+        Élèves
     </a>
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round"
@@ -15,7 +15,7 @@
     <span style="color:#1A3A6B;" class="font-medium">
         {{ $student->full_name }}
     </span>
-@endsection
+@endsection --}}
 
 @section('content')
 
@@ -790,50 +790,198 @@
 {{-- ONGLET : NOTES & MOYENNES                                               --}}
 {{-- ══════════════════════════════════════════════════════════════════════ --}}
 <div x-show="tab === 'notes'" x-transition>
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-10
-                text-center">
-        <div class="w-16 h-16 rounded-full flex items-center justify-center
-                    mx-auto mb-4" style="background-color:#EBF3FB;">
-            <svg class="w-8 h-8" style="color:#1A3A6B;" fill="none"
-                 stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      stroke-width="1.5"
-                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2
-                         a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2
-                         2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2
-                         v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-            </svg>
+    @if($activeEnrollment)
+        @php
+            $notesItems = collect();
+            if ($activeEnrollment->classGroup) {
+                $notesItems = $activeEnrollment->classGroup->classSubjects
+                    ->filter(fn ($classSubject) => (bool) $classSubject->is_active)
+                    ->map(function ($classSubject) use ($activeEnrollment) {
+                        $grades = $activeEnrollment->grades
+                            ->where('class_subject_id', $classSubject->id)
+                            ->filter(fn ($grade) => $grade->class_subject_id === $classSubject->id);
+
+                        $validGrades = $grades->filter(fn ($grade) => $grade->grade !== null && ! $grade->is_absent);
+                        $latestGrade = $validGrades->sortByDesc(fn ($grade) => $grade->sequence?->number ?? 0)->first();
+                        $average = $validGrades->isNotEmpty() ? round($validGrades->avg('grade'), 2) : null;
+
+                        return (object) [
+                            'classSubject' => $classSubject,
+                            'subjectName' => $classSubject->subject?->name_fr ?? $classSubject->subject?->name_en ?? 'Matière',
+                            'average' => $average,
+                            'latestGrade' => $latestGrade,
+                            'gradeCount' => $validGrades->count(),
+                        ];
+                    })
+                    ->filter(fn ($item) => $item->subjectName !== 'Matière' || $item->gradeCount > 0)
+                    ->values();
+            }
+
+            $notesAverage = $notesItems->filter(fn ($item) => $item->average !== null)->avg('average');
+        @endphp
+
+        <div class="space-y-5">
+            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                        <div class="inline-flex items-center gap-2 rounded-full bg-[#EBF3FB] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#1A3A6B]">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                            Notes & Moyennes
+                        </div>
+                        <h3 class="mt-3 text-lg font-black text-[#1A3A6B]">Suivi académique de {{ $student->first_name }}</h3>
+                        <p class="mt-1 text-sm text-gray-500">Vue synthétique des moyennes disponibles pour l’année active.</p>
+                    </div>
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                        <div class="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Moyenne générale</div>
+                        <div class="mt-1 text-2xl font-black text-[#1A3A6B]">
+                            {{ $notesAverage !== null ? number_format((float) $notesAverage, 2, ',', ' ') : '—' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid gap-4 lg:grid-cols-2">
+                @forelse($notesItems as $item)
+                    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-sm font-semibold text-slate-900">{{ $item->subjectName }}</p>
+                                <p class="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                                    {{ $item->gradeCount > 0 ? $item->gradeCount . ' note(s) saisie(s)' : 'Aucune note saisie' }}
+                                </p>
+                            </div>
+                            <div class="rounded-full bg-[#F7F5FF] px-3 py-1 text-sm font-black text-[#1A3A6B]">
+                                {{ $item->average !== null ? number_format((float) $item->average, 2, ',', ' ') : '—' }}
+                            </div>
+                        </div>
+                        @if($item->latestGrade)
+                            <div class="mt-4 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                                <span class="font-semibold text-slate-700">Dernière note :</span>
+                                {{ $item->latestGrade->grade }}
+                                @if($item->latestGrade->sequence)
+                                    <span class="ml-2 text-slate-400">• {{ $item->latestGrade->sequence->label }}</span>
+                                @endif
+                            </div>
+                        @else
+                            <div class="mt-4 rounded-xl border border-dashed border-slate-200 px-3 py-2 text-sm text-slate-400">
+                                Aucune note validée n’est encore disponible pour cette matière.
+                            </div>
+                        @endif
+                    </div>
+                @empty
+                    <div class="lg:col-span-2 rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
+                        Aucune matière n’est encore associée à cette inscription.
+                    </div>
+                @endforelse
+            </div>
         </div>
-        <p class="text-gray-500 font-medium mb-1">
-            Notes & Moyennes
-        </p>
-        <p class="text-sm text-gray-400">
-            Disponible après la configuration du module Notes (4.7)
-        </p>
-    </div>
+    @else
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 text-center">
+            <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color:#FEF3EA;">
+                <svg class="w-8 h-8" style="color:#E87722;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+            </div>
+            <p class="text-gray-500 font-medium mb-1">Aucune inscription active</p>
+            <p class="text-sm text-gray-400">Impossible de consulter les notes tant que l’élève n’a pas d’inscription active pour l’année en cours.</p>
+        </div>
+    @endif
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════════════ --}}
 {{-- ONGLET : ABSENCES                                                       --}}
 {{-- ══════════════════════════════════════════════════════════════════════ --}}
 <div x-show="tab === 'absences'" x-transition>
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-10
-                text-center">
-        <div class="w-16 h-16 rounded-full flex items-center justify-center
-                    mx-auto mb-4" style="background-color:#FEF3EA;">
-            <svg class="w-8 h-8" style="color:#E87722;" fill="none"
-                 stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      stroke-width="1.5"
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0
-                         00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+    @if($activeEnrollment)
+    <div class="space-y-5">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <div class="inline-flex items-center gap-2 rounded-full bg-[#FEF3EA] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#E87722]">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        Suivi des absences
+                    </div>
+                    <h3 class="mt-3 text-lg font-black text-[#1A3A6B]">Historique des absences de {{ $student->first_name }}</h3>
+                    <p class="mt-1 text-sm text-gray-500">Vue synthétique pour l’année active, avec accès au détail complet.</p>
+                </div>
+                <a href="{{ route('absences.student', $activeEnrollment) }}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E87722] px-4 py-2 text-sm font-semibold text-[#E87722] transition hover:bg-[#FFF7ED]">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7m0 0l-7 7m7-7H4"/>
+                    </svg>
+                    Voir toutes les absences
+                </a>
+            </div>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-3">
+            @php
+                $absenceTotal = (float) $activeEnrollment->absences->sum('hours');
+                $absenceJustified = (float) $activeEnrollment->absences->where('is_justified', true)->sum('hours');
+                $absenceUnjustified = (float) $activeEnrollment->absences->where('is_justified', false)->sum('hours');
+            @endphp
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <p class="text-xs font-bold uppercase tracking-wide text-gray-400">Total heures</p>
+                <p class="mt-2 text-2xl font-black text-[#1A3A6B]">{{ number_format($absenceTotal, 1, ',', ' ') }} h</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <p class="text-xs font-bold uppercase tracking-wide text-gray-400">Justifiées</p>
+                <p class="mt-2 text-2xl font-black text-[#1A5C2A]">{{ number_format($absenceJustified, 1, ',', ' ') }} h</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <p class="text-xs font-bold uppercase tracking-wide text-gray-400">Non justifiées</p>
+                <p class="mt-2 text-2xl font-black text-[#E87722]">{{ number_format($absenceUnjustified, 1, ',', ' ') }} h</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="border-b border-gray-100 px-5 py-4">
+                <h4 class="font-black text-[#1A3A6B]">Dernières absences enregistrées</h4>
+            </div>
+            @if($activeEnrollment->absences->isEmpty())
+                <div class="px-6 py-10 text-center text-sm text-gray-500">
+                    Aucune absence n’a encore été enregistrée pour cet élève.
+                </div>
+            @else
+                <div class="divide-y divide-gray-100">
+                    @foreach($activeEnrollment->absences->take(8) as $absence)
+                        <div class="flex flex-col gap-3 px-5 py-4 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="text-sm font-semibold text-gray-800">{{ $absence->absence_date?->format('d/m/Y') ?? '—' }}</span>
+                                    @if($absence->is_justified)
+                                        <span class="rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-green-700">Justifiée</span>
+                                    @else
+                                        <span class="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-700">Non justifiée</span>
+                                    @endif
+                                </div>
+                                <p class="mt-1 text-sm text-gray-500">
+                                    {{ $absence->classSubject?->subject?->name_fr ?? 'Absence générale' }} · {{ number_format((float) $absence->hours, 1, ',', ' ') }} h
+                                </p>
+                            </div>
+                            <div class="text-sm text-gray-500">
+                                {{ $absence->period ?? 'Journée' }}
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    </div>
+    @else
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 text-center">
+        <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color:#FEF3EA;">
+            <svg class="w-8 h-8" style="color:#E87722;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>
         </div>
-        <p class="text-gray-500 font-medium mb-1">Absences</p>
-        <p class="text-sm text-gray-400">
-            Disponible après la configuration du module Absences (4.9)
-        </p>
+        <p class="text-gray-500 font-medium mb-1">Aucune inscription active</p>
+        <p class="text-sm text-gray-400">Impossible de consulter les absences tant que l’élève n’a pas d’inscription active pour l’année en cours.</p>
     </div>
+    @endif
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════════════ --}}

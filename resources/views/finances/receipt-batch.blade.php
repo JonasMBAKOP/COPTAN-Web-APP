@@ -1,24 +1,24 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ $isEnglishReceipt ? 'en' : 'fr' }}">
 <head>
 <meta charset="UTF-8">
-<title>Impression groupée — {{ $receiptsData->count() }} reçu(s)</title>
+<title>{{ $isEnglishReceipt ? 'Batch Receipt Printing' : 'Impression groupée' }} — {{ $receiptsData->count() }} {{ $isEnglishReceipt ? 'receipt(s)' : 'reçu(s)' }}</title>
 <style>
 /* ── PRINT ──────────────────────────────────────────────────────────── */
 @page {
     size: A4 portrait;     /* ← papier portrait */
-    margin: 10mm 12mm;
+    margin: 4mm;
 }
 @media print { .no-print { display: none !important; } }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 10px;
+    font-size: 11.5px;
     font-weight: 700;
-    color: #334155;
+    color: black;
     background: #F7FAFC;
-    padding: 10px;
+    padding: 6px;
 }
 
 /*
@@ -31,24 +31,26 @@ body {
 /* ── CONTENEUR D'UNE PAGE (2 reçus empilés) ─────────────────────────── */
 .receipt-page {
     display: flex;
-    flex-direction: column;       /* ← empilés verticalement */
+    flex-direction: column;
     gap: 10mm;
     page-break-after: always;
-    margin-bottom: 20px;
-    margin-top: 20px;
-    /* En impression : hauteur gérée par le contenu */
+    page-break-inside: avoid;
+    margin-bottom: 10mm;
+    margin-top: 10mm;
 }
 .receipt-page:last-child { page-break-after: auto; }
 
-/* ── CARTE REÇU (forme paysage dans un papier portrait) ──────────────── */
+/* ── CARTE REÇU ─────────────────────────────────────────────────────── */
 .receipt-card {
     width: 100%;
     background: #fff;
-    border: 2.5px solid #7FA6C4;
-    border-radius: 3px;
+    border: 3px solid #7FA6C4;
+    border-radius: 4px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    page-break-inside: avoid;
+    break-inside: avoid;
 }
 .receipt-card.empty {
     height: 132mm;
@@ -63,81 +65,153 @@ body {
 }
 
 /* ── HEADER ───────────────────────────────────────────────────────────── */
-.card-header {
-    background: #7FA6C4;
-    color: #fff;
+.card-header,
+.header {
+    background: #F4F9FD;
+    color: black;
     display: flex;
     align-items: stretch;
     flex-shrink: 0;
+    border-bottom: 2px solid #7FA6C4;
 }
-.card-header-left {
+.card-header-left,
+.header-school {
     flex: 3;
-    padding: 7px 10px;
-    border-right: 2px solid #EDF6FC;
+    padding: 10px 14px;
+    border-right: 2px solid #7FA6C4;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     min-width: 0;
+}
+.logo-sm,
+.header-school img {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    flex-shrink: 0;
 }
 .logo-sm {
-    width: 34px; height: 34px;
     background: #EDF6FC;
     border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 900;
-    color: #A87B24; flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 900;
+    color: #A87B24;
 }
-.school-nm { font-size: 10px; font-weight: 900; line-height: 1.3; }
-.school-sm { font-size: 8px; font-weight: 700; color: #F6FAFD; margin-top: 1px; }
+.school-nm,
+.school-name { font-size: 13px; font-weight: 900; line-height: 1.3; }
+.school-sm,
+.school-sub { font-size: 9.5px; font-weight: 700; color: black; margin-top: 3px; }
 
-.card-header-right {
-    flex: 1.3;
-    padding: 7px 10px;
-    display: flex; flex-direction: column;
-    justify-content: center; gap: 3px;
-    min-width: 0;
+.card-header-right,
+.header-right {
+    flex: 1.85;
+    padding: 10px 8px 10px 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    text-align: center;
+    gap: 4px;
+    min-width: 110px;
 }
-.card-title { font-size: 9.5px; font-weight: 900; color: #A87B24; text-transform: uppercase; }
-.card-num   { font-size: 9.5px; font-weight: 900; color: #fff; font-family: 'Courier New', monospace; }
-.card-year  { font-size: 8px; font-weight: 700; color: #F6FAFD; }
+.card-title,
+.receipt-title { font-size: 12px; font-weight: 900; letter-spacing: 0.8px; color: #A87B24; text-transform: uppercase; }
+.card-num,
+.receipt-num { font-size: 11px; font-weight: 900; color: black; font-family: 'Courier New', monospace; }
+.card-year,
+.receipt-date-head { font-size: 9.5px; font-weight: 700; color: black; }
 
 /* ── INFORMATIONS ÉLÈVE ──────────────────────────────────────────────── */
-.card-student {
-    display: grid;
-    grid-template-columns: 1fr 1fr;  /* ← 2 colonnes côte à côte */
-    border-bottom: 1.5px solid #7FA6C4;
+.card-student,
+.student-section {
+    display: flex;
+    border-bottom: 2px solid #7FA6C4;
     flex-shrink: 0;
 }
-.card-stu-col {
-    padding: 6px 10px;
-    border-right: 1.5px solid #E4EEF7;
+.card-stu-col,
+.student-left {
+    flex: 1;
+    padding: 9px 14px;
+    border-right: 2px solid #7FA6C4;
+    min-width: 0;
 }
-.card-stu-col:last-child { border-right: none; }
+.card-stu-col:last-child,
+.student-right { border-right: none; }
+.student-right {
+    flex: 1;
+    padding: 9px 12px;
+    min-width: 0;
+}
 
-.mini-badge {
-    font-size: 7px; font-weight: 900; text-transform: uppercase;
-    letter-spacing: 1px; color: #7FA6C4; background: #F4F9FD;
-    padding: 1px 5px; border-radius: 2px;
-    display: inline-block; margin-bottom: 4px;
+.mini-badge,
+.section-label {
+    font-size: 10px; font-weight: 900; text-transform: uppercase;
+    letter-spacing: 1.5px; color: #7FA6C4; background: #F4F9FD;
+    padding: 3px 7px; border-radius: 2px;
+    display: inline-block; margin-bottom: 6px;
 }
-.mini-row  { display: flex; gap: 4px; margin-bottom: 2px; align-items: baseline; }
-.mini-lbl  { font-size: 7.5px; font-weight: 900; color: #64748B; min-width: 60px; text-transform: uppercase; }
-.mini-val  { font-size: 9px; font-weight: 900; color: #334155; }
+.mini-row,
+.info-row { display: flex; gap: 5px; margin-bottom: 4px; align-items: baseline; }
+.mini-lbl,
+.info-label { font-size: 10.5px; font-weight: 900; color: #64748B; min-width: 80px; text-transform: uppercase; white-space: nowrap; }
+.mini-val,
+.info-value { font-size: 12px; font-weight: 900; color: #334155; }
 
 /* ── OBJET ────────────────────────────────────────────────────────────── */
-.card-object {
-    background: #F4F9FD; border-bottom: 1.5px solid #7FA6C4;
-    padding: 5px 10px; display: flex;
-    align-items: center; gap: 10px;
+.card-object,
+.object-bar {
+    background: #F4F9FD; border-bottom: 2px solid #7FA6C4;
+    padding: 7px 14px; display: flex; align-items: center; gap: 12px;
     flex-shrink: 0;
 }
-.obj-lbl { font-size: 7.5px; font-weight: 900; text-transform: uppercase; color: #64748B; }
-.obj-val { font-size: 10.5px; font-weight: 900; color: #7FA6C4; text-transform: uppercase; }
-.mode-sm {
-    margin-left: auto;
-    background: #7FA6C4; color: #fff;
-    font-size: 8.5px; font-weight: 900;
-    padding: 2px 8px; border-radius: 2px; text-transform: uppercase;
+.obj-lbl,
+.object-label { font-size: 10.5px; font-weight: 900; text-transform: uppercase; color: #64748B; }
+.obj-val,
+.object-value { font-size: 13px; font-weight: 900; color: #7FA6C4; text-transform: uppercase; }
+.mode-sm,
+.mode-pill {
+    margin-left: auto; background: #7FA6C4; color: #fff;
+    font-size: 11px; font-weight: 900; padding: 4px 11px;
+    border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+/* ── CACHET ────────────────────────────────────────────────────────── */
+.card-amounts-wrapper {
+    position: relative;
+    margin-top: 4px;
+}
+.card-seal {
+    position: absolute;
+    top: 72px;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    z-index: 2;
+}
+.card-seal img,
+.card-seal .seal-placeholder {
+    width: 96px;
+    height: 96px;
+}
+.card-seal img {
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+.card-seal .seal-placeholder svg {
+    width: 100%;
+    height: 100%;
+    display: block;
 }
 
 /* ── MONTANTS ────────────────────────────────────────────────────────── */
@@ -145,50 +219,56 @@ body {
 .amt-row {
     display: flex; justify-content: space-between;
     align-items: center;
-    padding: 5px 10px;
-    border-bottom: 1px solid #E4EEF7;
+    padding: 7px 14px;
+    border-bottom: 1.5px solid #E4EEF7;
 }
 .amt-row:last-child { border-bottom: none; }
-.amt-lbl { font-size: 9px; font-weight: 800; color: #374151; }
+.amt-lbl { font-size: 12px; font-weight: 800; color: #374151; }
 .amt-val {
-    font-size: 11.5px; font-weight: 900;
+    font-size: 14px; font-weight: 900;
     font-family: 'Courier New', monospace;
-    color: #7FA6C4;
+    color: #334155;
 }
-.amt-row.highlight { background: #7FA6C4; }
-.amt-row.highlight .amt-lbl { color: #fff; font-size: 9px; }
+.amt-row.highlight { background: #F4F9FD; }
+.amt-row.highlight .amt-lbl { color: black; font-size: 12px; }
 .amt-row.highlight .amt-lbl::before { content: '▶ '; }
-.amt-row.highlight .amt-val { color: #A87B24; font-size: 14px; }
+.amt-row.highlight .amt-val { color: #A87B24; font-size: 16px; }
 
 /* ── PIED DE CARTE ───────────────────────────────────────────────────── */
-.card-footer {
-    background: #7FA6C4;
-    padding: 5px 10px;
+.card-footer,
+.footer-bar {
+    background: #F4F9FD;
+    padding: 7px 14px;
     display: flex; align-items: center;
     justify-content: space-between;
     flex-shrink: 0;
+    border-top: 2px solid #7FA6C4;
 }
-.foot-cashier { font-size: 8.5px; font-weight: 900; color: #F6FAFD; }
-.foot-cashier span { color: #fff; }
-.foot-sig {
-    font-size: 8px; font-weight: 800; color: #F6FAFD;
+.foot-cashier,
+.footer-cashier { font-size: 10px; font-weight: 900; color: black; }
+.foot-cashier span,
+.footer-cashier span { color: black; font-size: 11px; }
+.foot-sig,
+.footer-signature {
+    font-size: 9.5px; font-weight: 800; color: black;
     border-top: 1px solid #F6FAFD; padding-top: 2px;
-    min-width: 90px; text-align: center;
+    min-width: 120px; text-align: center;
 }
-.card-nb {
-    background: #FFF9EC; border-top: 2px solid #E4C978;
-    padding: 4px 10px; text-align: center;
-    font-size: 9px; font-weight: 900; color: #7A5A16;
+.card-nb,
+.nb-bar {
+    background: #FFF9EC; border-top: 2.5px solid #E4C978;
+    padding: 6px 14px; text-align: center;
+    font-size: 10px; font-weight: 700; color: black; letter-spacing: 0.5px;
     flex-shrink: 0;
 }
 
 /* ── SÉPARATEUR ENTRE LES 2 REÇUS (visible à l'écran, invisible à l'impression) */
 .receipt-separator {
-    height: 10px;
+    height: 14px;
     background: repeating-linear-gradient(
-        to right, #000 0, black 6px, transparent 6px, transparent 12px
+        to right, #000 0, #000 6px, transparent 6px, transparent 12px
     );
-    margin: 0 0 2px 0;
+    margin: 6px 0;
 }
 @media print { .receipt-separator { display: none; } }
 
@@ -209,17 +289,17 @@ body {
 
 <div class="print-btn no-print">
     <div class="info-bar">
-        {{ $receiptsData->count() }} reçu(s) —
-        {{ ceil($receiptsData->count() / 2) }} page(s) A4 portrait
-        (2 reçus par page, empilés)
+        {{ $receiptsData->count() }} {{ $isEnglishReceipt ? 'receipt(s)' : 'reçu(s)' }} —
+        {{ ceil($receiptsData->count() / 2) }} {{ $isEnglishReceipt ? 'A4 portrait page(s)' : 'page(s) A4 portrait' }}
+        ({{ $isEnglishReceipt ? '2 receipts per page, stacked' : '2 reçus par page, empilés' }})
     </div>
     <button onclick="window.print()">
-        <svg style="width:14px;height:14px;vertical-align:-2px;margin-right:6px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V4h12v5M6 18H5a2 2 0 01-2-2v-5a2 2 0 012-2h14a2 2 0 012 2v5a2 2 0 01-2 2h-1M7 14h10v6H7z"/></svg>Imprimer {{ $receiptsData->count() }} reçu(s)
+        <svg style="width:14px;height:14px;vertical-align:-2px;margin-right:6px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V4h12v5M6 18H5a2 2 0 01-2-2v-5a2 2 0 012-2h14a2 2 0 012 2v5a2 2 0 01-2 2h-1M7 14h10v6H7z"/></svg>{{ $isEnglishReceipt ? 'Print' : 'Imprimer' }} {{ $receiptsData->count() }} {{ $isEnglishReceipt ? 'receipt(s)' : 'reçu(s)' }}
     </button>
 </div>
 
 {{-- ── GROUPER PAR PAIRES (un en haut, un en bas) ─────────────────────── --}}
-@foreach($receiptsData->chunk(3) as $pair)
+@foreach($receiptsData->chunk(2) as $pair)
 <div class="receipt-page">
 
     @foreach($pair as $index => $item)
@@ -240,11 +320,9 @@ body {
         <div class="card-header">
             <div class="card-header-left">
                 @if($school->logo)
-                    <img src="{{ asset('storage/' . $school->logo) }}"
-                         style="width:34px;height:34px;border-radius:50%;
-                                object-fit:contain;flex-shrink:0;">
+                    <img src="{{ asset('storage/' . $school->logo) }}" alt="Logo" style="width:44px;height:44px;flex-shrink:0;">
                 @else
-                    <div class="logo-sm">
+                    <div class="header-school-placeholder">
                         {{ strtoupper(substr($school->short_name ?? 'C', 0, 1)) }}
                     </div>
                 @endif
@@ -254,26 +332,33 @@ body {
                     </div>
                     <div class="school-sm">
                         @if($phones->isNotEmpty())
-                            Tél :
+                            {{ $isEnglishReceipt ? 'Phone' : 'Tél' }} :
                             @foreach($phones->take(2) as $ph)
                                 {{ $ph->number }}{{ !$loop->last ? ' / ' : '' }}
                             @endforeach
                         @elseif($school->phone_1)
-                            Tél : {{ $school->phone_1 }}
+                            {{ $isEnglishReceipt ? 'Phone' : 'Tél' }} : {{ $school->phone_1 }}
                         @endif
                         @if($school->address) &nbsp;|&nbsp; {{ $school->address }} @endif
                     </div>
                     <div class="school-sm">
-                        Ministère des Enseignements Secondaires — République du Cameroun
+                        @if($school->postal_box) {{ $isEnglishReceipt ? 'P.O. Box' : 'BP' }} : {{ $school->postal_box }} @endif
+                    </div>
+                    <div class="school-sm">
+                        @if($school->ministry) {{ $school->ministry }} @endif
                     </div>
                 </div>
             </div>
-            <div class="card-header-right">
-                <div class="card-title">Reçu de Paiement Officiel</div>
-                <div class="card-num">N° {{ $p->receipt_number }}</div>
+            <div class="card-header-right" style="text-align: center;">
+                <div class="card-title">{{ $isEnglishReceipt ? 'Official Payment Receipt' : 'Reçu de Paiement Officiel' }}</div>
+                <div class="card-num">{{ $isEnglishReceipt ? 'No.' : 'N°' }} {{ $p->receipt_number }}</div>
                 <div class="card-year">
-                    Année : {{ $enr->academicYear->label }}
-                    &nbsp;|&nbsp; Exemplaire Élève
+                    {{ $isEnglishReceipt ? 'Student Copy' : 'Exemplaire Élève' }}
+                </div>
+                <div class="card-year">
+                    {{ $isEnglishReceipt ? 'Academic Year' : 'Année Scolaire' }} : {{ $enr->academicYear->label }}
+                    &nbsp;|&nbsp;
+                    {{ $isEnglishReceipt ? 'Date' : 'Date' }} : {{ now()->format('d/m/Y') }}
                 </div>
             </div>
         </div>
@@ -281,19 +366,19 @@ body {
         {{-- ── INFOS ÉLÈVE (2 colonnes) ────────────────────────────────── --}}
         <div class="card-student">
             <div class="card-stu-col">
-                <div class="mini-badge">Identité Élève</div>
+                <div class="mini-badge">{{ $isEnglishReceipt ? 'Student Identity' : 'Identité Élève' }}</div>
                 <div class="mini-row">
-                    <span class="mini-lbl">Nom & prénom :</span>
+                    <span class="mini-lbl">{{ $isEnglishReceipt ? 'Name' : 'Nom & prénom' }} :</span>
                     <span class="mini-val">
                         {{ strtoupper($enr->student->full_name) }}
                     </span>
                 </div>
                 <div class="mini-row">
-                    <span class="mini-lbl">Matricule :</span>
+                    <span class="mini-lbl">{{ $isEnglishReceipt ? 'Registration N°' : 'Matricule' }} :</span>
                     <span class="mini-val">{{ $enr->student->matricule }}</span>
                 </div>
                 <div class="mini-row">
-                    <span class="mini-lbl">Né(e) le :</span>
+                    <span class="mini-lbl">{{ $isEnglishReceipt ? 'Born On' : 'Né(e) le' }} :</span>
                     <span class="mini-val">
                         {{ $enr->student->date_of_birth?->format('d/m/Y') ?? '—' }}
                         @if($enr->student->place_of_birth)
@@ -304,21 +389,21 @@ body {
                 </div>
             </div>
             <div class="card-stu-col">
-                <div class="mini-badge">Scolarité</div>
+                <div class="mini-badge">{{ $isEnglishReceipt ? 'Schooling' : 'Scolarité' }}</div>
                 <div class="mini-row">
-                    <span class="mini-lbl">Classe :</span>
+                    <span class="mini-lbl">{{ $isEnglishReceipt ? 'Class' : 'Classe' }} :</span>
                     <span class="mini-val">
                         {{ $enr->classGroup->full_name }}
                     </span>
                 </div>
                 <div class="mini-row">
-                    <span class="mini-lbl">Section :</span>
+                    <span class="mini-lbl">{{ $isEnglishReceipt ? 'Section' : 'Section' }} :</span>
                     <span class="mini-val" style="font-size:8.5px;">
                         {{ $enr->classGroup->level->section->name }}
                     </span>
                 </div>
                 <div class="mini-row">
-                    <span class="mini-lbl">Date paiement :</span>
+                    <span class="mini-lbl">{{ $isEnglishReceipt ? 'Payment Date' : 'Date paiement' }} :</span>
                     <span class="mini-val">
                         {{ $p->payment_date->format('d/m/Y') }}
                         {{ $p->created_at->format('H:i') }}
@@ -329,12 +414,13 @@ body {
 
         {{-- ── OBJET ────────────────────────────────────────────────────── --}}
         <div class="card-object">
-            <span class="obj-lbl">Objet :</span>
+            <span class="obj-lbl">{{ $isEnglishReceipt ? 'Purpose' : 'Objet' }} :</span>
             <span class="obj-val">
-                {{ $p->feeInstallment?->label ?? '—' }}
+                {{-- For bulk payments, show the allocation summary (fees included) --}}
+                {{ $p->is_bulk ? ($p->allocation_summary ?: ($p->feeInstallment?->label ?? 'Paiement groupé')) : ($p->feeInstallment?->label ?? '—') }}
             </span>
             @if($p->reference)
-                <span class="obj-lbl">Réf :</span>
+                <span class="obj-lbl">{{ $isEnglishReceipt ? 'Ref.' : 'Réf' }} :</span>
                 <span class="obj-val" style="font-size:9px;">
                     {{ $p->reference }}
                 </span>
@@ -342,24 +428,46 @@ body {
             <span class="mode-sm">{{ $p->payment_method_label }}</span>
         </div>
 
-        {{-- ── MONTANTS ─────────────────────────────────────────────────── --}}
-        <div class="card-amounts">
-            <div class="amt-row">
-                <span class="amt-lbl">Total des frais scolaires</span>
-                <span class="amt-val">
-                    {{ number_format($item['totalDue'], 0, ',', ' ') }} FCFA
-                </span>
+        {{-- ── CACHET ────────────────────────────────────────────────── --}}
+        @php
+            $sealPath = null;
+            $recordedByUser = $p->recordedBy;
+            if ($recordedByUser) {
+                $sealPath = $recordedByUser->hasAnyRole(['directeur', 'fondateur'])
+                    ? $school->signature_seal
+                    : $recordedByUser->signature_seal;
+            }
+        @endphp
+        <div class="card-amounts-wrapper">
+            <div class="card-seal">
+                @if($sealPath)
+                    <img src="{{ asset('storage/' . $sealPath) }}" alt="Cachet">
+                @else
+                    <div class="seal-placeholder">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#1A3A6B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M8 13.5L10.8 16.3L16 11" />
+                        </svg>
+                    </div>
+                @endif
             </div>
+            <div class="card-amounts">
+                <div class="amt-row">
+                    <span class="amt-lbl">{{ $isEnglishReceipt ? 'Total school fees' : 'Total des frais scolaires' }}</span>
+                    <span class="amt-val">
+                        {{ number_format($item['totalDue'], 0, ',', ' ') }} FCFA
+                    </span>
+                </div>
             <div class="amt-row highlight">
-                <span class="amt-lbl">MONTANT DU PRÉSENT PAIEMENT</span>
+                <span class="amt-lbl">{{ $isEnglishReceipt ? 'AMOUNT OF THIS PAYMENT' : 'MONTANT DU PRÉSENT PAIEMENT' }}</span>
                 <span class="amt-val">
                     {{ number_format($p->amount_paid, 0, ',', ' ') }} FCFA
                 </span>
             </div>
             <div class="amt-row">
                 <span class="amt-lbl"
-                      style="color:{{ $rem > 0 ? '#B76E79' : '#60906F' }};">
-                    Reste à payer après ce paiement
+                      style="color:black;">
+                    {{ $isEnglishReceipt ? 'Balance after this payment' : 'Reste à payer après ce paiement' }}
                 </span>
                 <span class="amt-val"
                       style="color:{{ $rem > 0 ? '#B76E79' : '#60906F' }};">
@@ -367,17 +475,18 @@ body {
                 </span>
             </div>
         </div>
+    </div>
 
         {{-- ── PIED DE CARTE ────────────────────────────────────────────── --}}
         <div class="card-footer">
             <div class="foot-cashier">
-                Caissier(e) :
+                {{ $isEnglishReceipt ? 'Cashier' : 'Caissier(e)' }} :
                 <span>{{ $p->recordedBy?->name ?? 'Système' }}</span>
             </div>
-            <div class="foot-sig">Signature &amp; Cachet</div>
+            {{-- <div class="foot-sig">{{ $isEnglishReceipt ? 'Signature & Seal' : 'Signature & Cachet' }}</div> --}}
         </div>
         <div class="card-nb">
-            <svg style="width:13px;height:13px;vertical-align:-2px;margin-right:5px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg> NB : AUCUN FRAIS N'EST REMBOURSABLE !
+            <svg style="width:13px;height:13px;vertical-align:-2px;margin-right:5px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg> {{ $isEnglishReceipt ? 'NB : NO FEES ARE REFUNDABLE !' : 'NB : AUCUN FRAIS N\'EST REMBOURSABLE !' }}
         </div>
 
     </div>{{-- fin receipt-card --}}

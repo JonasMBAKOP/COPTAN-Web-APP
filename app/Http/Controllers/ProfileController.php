@@ -87,10 +87,35 @@ class ProfileController extends Controller
             $user->photo = $request->file('photo')->store('users/photos', 'public');
         }
 
+        // Traiter le cachet/signature (sauf pour les enseignants)
+        if ($request->hasFile('signature_seal') && !$user->hasRole('enseignant')) {
+            if ($user->signature_seal) {
+                Storage::disk('public')->delete($user->signature_seal);
+            }
+            $user->signature_seal = $request->file('signature_seal')->store('users/seals', 'public');
+        }
+
         $user->save();
 
         return redirect()->route('profile.show')
             ->with('success', 'Votre profil a été mis à jour avec succès.');
+    }
+
+    // ── SUPPRIMER LE CACHET ────────────────────────────────────────────────
+    public function deleteSeal()
+    {
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+        
+        if ($user->hasRole('enseignant')) {
+            abort(403, 'Non autorisé');
+        }
+        
+        if ($user->signature_seal) {
+            Storage::disk('public')->delete($user->signature_seal);
+            $user->update(['signature_seal' => null]);
+        }
+        return back()->with('success', 'Cachet supprimé.');
     }
 
     // ── SUPPRIMER LA PHOTO ─────────────────────────────────────────────────

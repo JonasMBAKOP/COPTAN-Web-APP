@@ -24,7 +24,8 @@
 
 @section('content')
 
-<form method="POST" action="{{ route('staff.update', $staff) }}" enctype="multipart/form-data">
+<form method="POST" action="{{ route('staff.update', $staff) }}" enctype="multipart/form-data"
+      x-data="salaryContractForm('{{ old('contract_type', $staff->contract_type) }}')">
       {{-- x-data="staffEditForm({{ json_encode($staff->positions->map(fn($p) => ['name' => $p->position, 'primary' => $p->is_primary])) }})"> --}}
     @csrf @method('PUT')
 
@@ -44,10 +45,7 @@
                         </label>
                         <input type="text" name="last_name"
                                value="{{ old('last_name', $staff->last_name) }}"
-                               class="w-full px-3 py-2.5 border rounded-lg
-                                      text-sm uppercase focus:outline-none
-                                      @error('last_name') border-red-400
-                                      @else border-gray-200 @enderror">
+                               class="w-full px-3 py-2.5 border rounded-lg text-sm uppercase focus:outline-none {{ $errors->has('last_name') ? 'border-red-400' : 'border-gray-200' }}">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -55,10 +53,7 @@
                         </label>
                         <input type="text" name="first_name"
                                value="{{ old('first_name', $staff->first_name) }}"
-                               class="w-full px-3 py-2.5 border rounded-lg
-                                      text-sm focus:outline-none
-                                      @error('first_name') border-red-400
-                                      @else border-gray-200 @enderror">
+                               class="w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none {{ $errors->has('first_name') ? 'border-red-400' : 'border-gray-200' }}">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -107,10 +102,7 @@
                         </label>
                         <input type="email" name="email"
                                value="{{ old('email', $staff->email) }}"
-                               class="w-full px-3 py-2.5 border rounded-lg
-                                      text-sm focus:outline-none
-                                      @error('email') border-red-400
-                                      @else border-gray-200 @enderror">
+                               class="w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none {{ $errors->has('email') ? 'border-red-400' : 'border-gray-200' }}">
                     </div>
                 </div>
             </div>
@@ -146,13 +138,13 @@
                             Type de contrat <span class="text-red-500">*</span>
                         </label>
                         <select name="contract_type"
+                                x-model="contractType"
                                 class="w-full px-3 py-2.5 border border-gray-200
                                        rounded-lg text-sm focus:outline-none bg-white">
                             @foreach([
                                 'permanent' => 'Permanent',
-                                'temporary' => 'Temporaire / CDD',
-                                'part_time' => 'Temps partiel',
-                                'volunteer' => 'Bénévole',
+                                'vacataire' => 'Vacataire',
+                                'stagiaire' => 'Stagiaire',
                             ] as $val => $lbl)
                             <option value="{{ $val }}"
                                     {{ old('contract_type',
@@ -162,6 +154,29 @@
                             </option>
                             @endforeach
                         </select>
+                    </div>
+
+                    <div class="sm:col-span-6" x-show="contractType === 'permanent'" x-cloak>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Salaire mensuel
+                        </label>
+                        <input type="number" name="monthly_salary"
+                               x-bind:disabled="contractType !== 'permanent'"
+                               value="{{ old('monthly_salary', $staff->monthly_salary) }}"
+                               min="0" step="100"
+                               class="w-full px-3 py-2.5 border border-gray-200
+                                      rounded-lg text-sm focus:outline-none">
+                    </div>
+                    <div class="sm:col-span-6" x-show="contractType !== 'permanent'" x-cloak>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Tarif horaire
+                        </label>
+                        <input type="number" name="hourly_rate"
+                               x-bind:disabled="contractType === 'permanent'"
+                               value="{{ old('hourly_rate', $staff->hourly_rate) }}"
+                               min="0" step="50"
+                               class="w-full px-3 py-2.5 border border-gray-200
+                                      rounded-lg text-sm focus:outline-none">
                     </div>
                 </div>
             </div>
@@ -379,6 +394,12 @@
 </form>
 
 <script>
+function salaryContractForm(initialContractType) {
+    return {
+        contractType: initialContractType || 'permanent',
+    }
+}
+
 // function staffEditForm(initialPositions) {
 //     return {
 //         positions: initialPositions.length > 0

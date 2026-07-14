@@ -312,12 +312,17 @@ body {
 .cert-official-header__side {
     min-height: 48mm;
     font-family: Georgia, 'Times New Roman', serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
 }
 .cert-official-header__side--fr {
-    text-align: left;
+    text-align: center;
 }
 .cert-official-header__side--en {
-    text-align: right;
+    text-align: center;
 }
 .cert-official-header__republic {
     font-size: 12.5px;

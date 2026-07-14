@@ -91,6 +91,29 @@
             @endforeach
         </select>
 
+        <select name="responsible" onchange="this.form.submit()"
+                class="px-3 py-2 border border-gray-200 rounded-lg text-sm
+                       focus:outline-none bg-white">
+            @if($isAdmin)
+                <option value="global" {{ $selectedResponsible === 'global' ? 'selected' : '' }}>
+                    Responsable : Tous
+                </option>
+                <option value="me" {{ $selectedResponsible === 'me' ? 'selected' : '' }}>
+                    Responsable : Moi ({{ auth()->user()->name }})
+                </option>
+                @foreach($recorders as $recorder)
+                    <option value="{{ $recorder->id }}"
+                            {{ (string) $selectedResponsible === (string) $recorder->id ? 'selected' : '' }}>
+                        Responsable : {{ $recorder->name }}
+                    </option>
+                @endforeach
+            @else
+                <option value="me" selected>
+                    Responsable : Moi ({{ auth()->user()->name }})
+                </option>
+            @endif
+        </select>
+
         <div class="relative flex-1 min-w-40">
             <input type="text" name="search"
                    value="{{ request('search') }}"
@@ -108,7 +131,7 @@
             </span>
         </div>
 
-        @if(request()->hasAny(['year_id','class_id','method','search']))
+        @if(request()->hasAny(['year_id','class_id','method','search','responsible']))
         <a href="{{ route('finances.payments') }}"
            class="px-3 py-2 border border-gray-200 rounded-lg text-sm
                   text-gray-500 hover:bg-gray-50"><svg class="inline h-4 w-4 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></a>

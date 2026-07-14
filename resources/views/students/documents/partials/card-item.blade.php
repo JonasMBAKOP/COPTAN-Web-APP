@@ -75,9 +75,9 @@
         <div class="id-card__school-header">
             <div class="id-card__school-info">
                 <div class="id-card__school-name">{{ strtoupper($school->full_name) }}</div>
-                @if($school->short_name)
+                {{-- @if($school->short_name)
                     <div class="id-card__school-acronym">{{ strtoupper($school->short_name) }}</div>
-                @endif
+                @endif --}}
             </div>
             <div class="id-card__title-section">
                 <div class="id-card__title">CARTE D'IDENTITÉ SCOLAIRE / STUDENT IDENTITY CARD</div>

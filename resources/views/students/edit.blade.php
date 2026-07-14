@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @section('title', 'Modifier — ' . $student->full_name)
+@section('page-title', 'Modifier Fiche Élève')
+@section('page-subtitle', 'Formulaire de modification des informations de l\'élève ' . $student->full_name)
 
 @section('breadcrumb')
     <a href="{{ route('students.index') }}" class="hover:text-gray-700">Élèves</a>

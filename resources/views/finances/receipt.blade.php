@@ -4,17 +4,17 @@
 <meta charset="UTF-8">
 <title>Reçu {{ $payment->receipt_number }}</title>
 <style>
-@page { size: A4 portrait; margin: 10mm 12mm; }
+@page { size: A4 portrait; margin: 4mm; }
 @media print { .no-print { display:none!important; } }
 
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 11.5px;
+    font-size: 14.5px;
     font-weight: 700;
-    color: #334155;
+    color: black;
     background: #F7FAFC;
-    padding: 16px;
+    padding: 8px;
 }
 
 .receipt {
@@ -28,15 +28,16 @@ body {
 
 /* ── HEADER ─ fix point 2 : header-right rapproché ───────────────── */
 .header {
-    background: #7FA6C4;
-    color: #fff;
+    background: #F4F9FD;
+    color: black;
     display: flex;
     align-items: stretch;
+    border-bottom: 2px solid #7FA6C4;
 }
 .header-school {
     flex: 3;                    /* ← flex proportionnel au lieu de flex:1 */
     padding: 10px 14px;
-    border-right: 2px solid #EDF6FC;
+    border-right: 2px solid #7FA6C4;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -50,19 +51,21 @@ body {
     width: 44px; height: 44px;
     background: #EDF6FC; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 16px; font-weight: 900; color: #fff; flex-shrink: 0;
+    font-size: 16px; font-weight: 900; color: black; flex-shrink: 0;
 }
 .school-name { font-size: 13px; font-weight: 900; line-height: 1.3; }
-.school-sub  { font-size: 9.5px; font-weight: 700; color: #F6FAFD; margin-top: 3px; }
+.school-sub  { font-size: 9.5px; font-weight: 700; color: black; margin-top: 3px; }
 
 .header-right {
-    flex: 1.3;                  /* ← flex proportionnel, plus compact */
-    padding: 10px 13px;
+    flex: 1.85;
+    padding: 10px 8px 10px 6px;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    align-items: flex-start;
     gap: 4px;
-    min-width: 0;
+    min-width: 110px;
+    text-align: left;
 }
 .receipt-title {
     font-size: 12px; font-weight: 900;
@@ -70,9 +73,9 @@ body {
 }
 .receipt-num {
     font-size: 11px; font-weight: 900;
-    color: #fff; font-family: 'Courier New', monospace;
+    color: black; font-family: 'Courier New', monospace;
 }
-.receipt-date-head { font-size: 9.5px; font-weight: 700; color: #F6FAFD; }
+.receipt-date-head { font-size: 9.5px; font-weight: 700; color: black; }
 
 /* ── SECTION ÉTUDIANT ─ fix point 3 : student-right beaucoup rapproché */
 .student-section {
@@ -91,71 +94,97 @@ body {
     min-width: 0;
 }
 .section-label {
-    font-size: 8.5px; font-weight: 900;
+    font-size: 10px; font-weight: 900;
     text-transform: uppercase; letter-spacing: 1.5px;
     color: #7FA6C4; background: #F4F9FD;
-    padding: 2px 6px; border-radius: 2px;
+    padding: 2px 7px; border-radius: 2px;
     display: inline-block; margin-bottom: 6px;
 }
 .info-row {
     display: flex; align-items: baseline;
-    gap: 5px; margin-bottom: 3px;
+    gap: 5px; margin-bottom: 4px;
 }
 .info-label {
-    font-size: 9px; font-weight: 900;
+    font-size: 10.5px; font-weight: 900;
     color: #64748B; text-transform: uppercase;
-    white-space: nowrap; min-width: 75px;
+    white-space: nowrap; min-width: 80px;
 }
-.info-value { font-size: 11px; font-weight: 900; color: #334155; }
+.info-value { font-size: 12.5px; font-weight: 900; color: #334155; }
 
 /* ── BANDE OBJET ──────────────────────────────────────────────────── */
 .object-bar {
     background: #F4F9FD; border-bottom: 2px solid #7FA6C4;
     padding: 7px 14px; display: flex; align-items: center; gap: 12px;
 }
-.object-label  { font-size: 9px; font-weight: 900; text-transform: uppercase; color: #64748B; }
-.object-value  { font-size: 12px; font-weight: 900; color: #7FA6C4; text-transform: uppercase; }
+.object-label  { font-size: 10.5px; font-weight: 900; text-transform: uppercase; color: #64748B; }
+.object-value  { font-size: 13.5px; font-weight: 900; color: #7FA6C4; text-transform: uppercase; }
 .mode-pill {
     margin-left: auto; background: #7FA6C4; color: #fff;
-    font-size: 10px; font-weight: 900; padding: 3px 10px;
+    font-size: 11px; font-weight: 900; padding: 4px 11px;
     border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px;
 }
 
 /* ── MONTANTS ──────────────────────────────────────────────────────── */
+.amounts-wrapper { position: relative; margin-top: 8px; }
 .amounts-table { width: 100%; border-collapse: collapse; }
 .amounts-table tr { border-bottom: 1.5px solid #E4EEF7; }
 .amounts-table tr:last-child { border-bottom: none; }
-.amounts-table td { padding: 7px 14px; font-size: 11px; font-weight: 800; }
+.amounts-table td { padding: 8px 14px; font-size: 12.5px; font-weight: 800; }
 .amounts-table td:last-child {
-    text-align: right; font-size: 13px; font-weight: 900;
+    text-align: right; font-size: 14.5px; font-weight: 900;
     font-family: 'Courier New', monospace;
 }
 .row-total td:last-child { color: #7FA6C4; }
-.row-paid { background: #7FA6C4; }
-.row-paid td { color: #fff !important; }
-.row-paid td:first-child::before { content: '▶ '; font-size: 9px; }
-.row-paid td:last-child { color: #A87B24 !important; font-size: 15px !important; }
+.row-paid { background: #F4F9FD; }
+.row-paid td { color: black !important; }
+.row-paid td:first-child::before { content: '▶ '; font-size: 10px; }
+.row-paid td:last-child { color: #A87B24 !important; font-size: 16px !important; }
 .row-remaining td:last-child {
     color: {{ $totalRemaining > 0 ? '#B76E79' : '#60906F' }} !important;
 }
 
+.seal-overlay {
+    position: absolute;
+    top: 72px;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    z-index: 2;
+}
+.seal-overlay img {
+    width: 96px;
+    height: 96px;
+    object-fit: contain;
+}
+.seal-overlay svg {
+    width: 84px;
+    height: 84px;
+}
+
 /* ── FOOTER ───────────────────────────────────────────────────────── */
 .footer-bar {
-    background: #7FA6C4; padding: 7px 14px;
+    background: #F4F9FD; padding: 7px 14px;
     display: flex; align-items: center;
     justify-content: space-between; border-top: 2px solid #7FA6C4;
 }
-.footer-cashier { font-size: 10px; font-weight: 900; color: #F6FAFD; }
-.footer-cashier span { color: #fff; font-size: 11px; }
+.footer-cashier { font-size: 11.5px; font-weight: 900; color: black; }
+.footer-cashier span { color: black; font-size: 12px; }
 .footer-signature {
-    font-size: 9.5px; font-weight: 800; color: #F6FAFD;
+    font-size: 11px; font-weight: 800; color: black;
     border-top: 1px solid #F6FAFD; padding-top: 2px;
     min-width: 120px; text-align: center;
 }
 .nb-bar {
     background: #FFF9EC; border-top: 2.5px solid #E4C978;
     padding: 6px 14px; text-align: center;
-    font-size: 10px; font-weight: 700; color: black; letter-spacing: 0.5px;
+    font-size: 11px; font-weight: 700; color: black; letter-spacing: 0.5px;
 }
 
 /* ── BOUTON ───────────────────────────────────────────────────────── */
@@ -210,7 +239,7 @@ body {
                 </div>
             </div>
         </div>
-        <div class="header-right" style="text-align: center;">
+        <div class="header-right">
             <div class="receipt-title">{{ $isEnglishReceipt ? 'Official Payment Receipt' : 'Reçu de Paiement Officiel' }}</div>
             <div class="receipt-num">N° {{ $payment->receipt_number }}</div>
             <div class="receipt-date-head">
@@ -305,12 +334,32 @@ body {
         <span class="mode-pill">{{ $payment->payment_method_label }}</span>
     </div>
 
-    {{-- ── MONTANTS ─────────────────────────────────────────────────────── --}}
-    <table class="amounts-table">
-        <tr class="row-total">
-            <td>{{ $isEnglishReceipt ? 'Total School Fees' : 'Total des frais scolaires' }}</td>
-            <td>{{ number_format($totalDue, 0, ',', ' ') }} FCFA</td>
-        </tr>
+    {{-- ── CACHET ───────────────────────────────────────────────────────── --}}
+    @php
+        $sealPath = null;
+        $recordedByUser = $payment->recordedBy;
+        if ($recordedByUser) {
+            $sealPath = $recordedByUser->hasAnyRole(['directeur', 'fondateur'])
+                ? $school->signature_seal
+                : $recordedByUser->signature_seal;
+        }
+    @endphp
+    <div class="amounts-wrapper">
+        <div class="seal-overlay">
+            @if($sealPath)
+                <img src="{{ asset('storage/' . $sealPath) }}" alt="Cachet">
+            @else
+                <svg viewBox="0 0 24 24" fill="none" stroke="#1A3A6B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M8 13.5L10.8 16.3L16 11" />
+                </svg>
+            @endif
+        </div>
+        <table class="amounts-table">
+            <tr class="row-total">
+                <td>{{ $isEnglishReceipt ? 'Total School Fees' : 'Total des frais scolaires' }}</td>
+                <td>{{ number_format($totalDue, 0, ',', ' ') }} FCFA</td>
+            </tr>
         <tr class="row-paid">
             <td>{{ $isEnglishReceipt ? 'AMOUNT OF THIS PAYMENT' : 'MONTANT DU PRÉSENT PAIEMENT' }}</td>
             <td>{{ number_format($payment->amount_paid, 0, ',', ' ') }} FCFA</td>
@@ -327,7 +376,7 @@ body {
             {{ $isEnglishReceipt ? 'Cashier' : 'Caissier(e)' }} :&nbsp;
             <span>{{ $payment->recordedBy?->name ?? 'Système' }}</span>
         </div>
-        <div class="footer-signature">Signature &amp; Cachet</div>
+        {{-- <div class="footer-signature">Signature &amp; Cachet</div> --}}
     </div>
     <div class="nb-bar">
         <svg style="width:13px;height:13px;vertical-align:-2px;margin-right:5px" fill="none" stroke="currentColor" viewBox="0 0 24 24">

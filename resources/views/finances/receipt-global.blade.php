@@ -5,18 +5,18 @@
 <title>Reçu Global — {{ $enrollment->student->full_name }}</title>
 <style>
     /* ── PRINT ──────────────────────────────────────────────────────────── */
-    @page { size: A4 portrait; margin: 8mm 10mm; }
-    @media print { .no-print { display:none!important; } }
+@page { size: A4 portrait; margin: 4mm; }
+@media print { .no-print { display:none!important; } }
 
-    /* ── BASE ───────────────────────────────────────────────────────────── */
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body {
-        font-family: Arial, Helvetica, sans-serif;
-        font-size: 11px;
-        font-weight: 700;
-        color: #334155;
-        background: #F7FAFC;
-        padding: 14px;
+/* ── BASE ───────────────────────────────────────────────────────────── */
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #334155;
+    background: #F7FAFC;
+    padding: 8px;
     }
 
     /* ── PAGE ────────────────────────────────────────────────────────────── */
@@ -31,9 +31,10 @@
 
     /* ── HEADER ─────────────────────────────────────────────────────────── */
     .header {
-        background: #7FA6C4;
+        background: #F4F9FD;
         display: flex;
         align-items: stretch;
+        border-bottom: 2px solid #7FA6C4;
     }
     .header-left {
         flex: 3;                    /* ← proportionnel */
@@ -41,7 +42,7 @@
         align-items: center;
         gap: 10px;
         padding: 10px 14px;
-        border-right: 2px solid #DDECF6;
+        border-right: 2px solid #7FA6C4;
         min-width: 0;
     }
     .logo-circle {
@@ -52,23 +53,25 @@
         font-size: 17px; font-weight: 900; color: #A87B24;
         flex-shrink: 0;
     }
-    .school-name { font-size: 13.5px; font-weight: 900; color: #fff; }
-    .school-sub  { font-size: 9.5px; font-weight: 700; color: #F6FAFD; margin-top: 2px; }
+    .school-name { font-size: 13.5px; font-weight: 900; color: black; }
+    .school-sub  { font-size: 9.5px; font-weight: 700; color: black; margin-top: 2px; }
     .header-right {
-        flex: 1.3;                  /* ← proportionnel, plus compact */
-        padding: 10px 13px;
+        flex: 1.85;
+        padding: 10px 8px 10px 6px;
         display: flex;
         flex-direction: column;
         justify-content: center;
+        align-items: flex-start;
         gap: 3px;
-        min-width: 0;
+        min-width: 110px;
+        text-align: left;
     }
     .doc-title {
         font-size: 13px; font-weight: 900;
         color: #A87B24; text-transform: uppercase; letter-spacing: 1px;
     }
-    .doc-sub  { font-size: 9.5px; font-weight: 700; color: #F6FAFD; }
-    .doc-date { font-size: 10.5px; font-weight: 900; color: #fff; }
+    .doc-sub  { font-size: 9.5px; font-weight: 700; color: black; }
+    .doc-date { font-size: 10.5px; font-weight: 900; color: black; }
 
     /* ── BLOC ÉLÈVE ──────────────────────────────────────────────────────── */
     .student-block {
@@ -82,39 +85,39 @@
     }
     .student-col:last-child { border-right: none; }
     .col-badge {
-        font-size: 8px; font-weight: 900; text-transform: uppercase;
+        font-size: 9.5px; font-weight: 900; text-transform: uppercase;
         letter-spacing: 1.5px; color: #7FA6C4; background: #F4F9FD;
-        padding: 2px 6px; border-radius: 2px;
+        padding: 3px 7px; border-radius: 2px;
         display: inline-block; margin-bottom: 5px;
     }
-    .col-row { display: flex; gap: 6px; margin-bottom: 3px; align-items: baseline; }
-    .col-lbl { font-size: 9px; font-weight: 900; color: #64748B; min-width: 70px; }
-    .col-val { font-size: 11px; font-weight: 900; color: #334155; }
+    .col-row { display: flex; gap: 6px; margin-bottom: 4px; align-items: baseline; }
+    .col-lbl { font-size: 10.5px; font-weight: 900; color: #64748B; min-width: 75px; }
+    .col-val { font-size: 12px; font-weight: 900; color: #334155; }
 
     /* ── SECTION TITRE ──────────────────────────────────────────────────── */
     .section-title {
         background: #7FA6C4;
         color: #fff;
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 900;
         text-transform: uppercase;
         letter-spacing: 1.5px;
-        padding: 6px 13px;
+        padding: 7px 13px;
     }
 
     /* ── TABLEAU VERSEMENTS ─────────────────────────────────────────────── */
     .t-versements {
         width: 100%;
         border-collapse: collapse;
-        font-size: 10.5px;
+        font-size: 11.5px;
     }
     .t-versements thead tr {
         background: #F4F9FD;
     }
     .t-versements thead th {
-        padding: 6px 8px;
+        padding: 7px 8px;
         text-align: left;
-        font-size: 9.5px;
+        font-size: 10.5px;
         font-weight: 900;
         color: #7FA6C4;
         text-transform: uppercase;
@@ -126,7 +129,7 @@
     .t-versements tbody tr { border-bottom: 1px solid #D8E4F0; }
     .t-versements tbody tr:nth-child(even) { background: #F7FAFE; }
     .t-versements tbody td {
-        padding: 5px 8px;
+        padding: 6px 8px;
         font-weight: 800;
         color: #334155;
         border-right: 1px solid #D8E4F0;
@@ -137,7 +140,7 @@
         text-align: right;
         font-weight: 900;
         font-family: 'Courier New', monospace;
-        font-size: 11px;
+        font-size: 12px;
         color: #7FA6C4;
     }
     .receipt-id {
@@ -177,13 +180,13 @@
     .t-etat {
         width: 100%;
         border-collapse: collapse;
-        font-size: 11px;
+        font-size: 12px;
     }
     .t-etat thead tr { background: #F4F9FD; }
     .t-etat thead th {
-        padding: 6px 10px;
+        padding: 7px 10px;
         text-align: left;
-        font-size: 10px;
+        font-size: 11px;
         font-weight: 900;
         color: #7FA6C4;
         text-transform: uppercase;
@@ -198,7 +201,7 @@
     .t-etat tbody tr { border-bottom: 1px solid #D8E4F0; }
     .t-etat tbody tr:nth-child(even) { background: #F7FAFE; }
     .t-etat tbody td {
-        padding: 6px 10px;
+        padding: 7px 10px;
         font-weight: 800;
         color: #334155;
         border-right: 1px solid #D8E4F0;
@@ -231,6 +234,16 @@
     .t-etat tfoot td.right.green { color: #D6F2DF; }
     .t-etat tfoot td.right.red   { color: #F5D5D9; }
     .t-etat tfoot td.right.gold  { color: #A87B24; }
+
+    /* ── CACHET ──────────────────────────────────────────────────────── */
+    .seal-section {
+        padding: 12px 14px; text-align: center; background: #FAFBFC;
+        border-top: 1px solid #E4EEF7; border-bottom: 1px solid #E4EEF7;
+    }
+    .seal-section img {
+        height: 48px; width: 48px; object-fit: contain;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
 
     /* ── FOOTER ──────────────────────────────────────────────────────────── */
     .footer-row {
@@ -316,7 +329,7 @@
                 </div>
             </div>
         </div>
-        <div class="header-right" style="text-align: center;">
+        <div class="header-right">
             <div class="doc-title">{{ $isEnglishReceipt ? 'Official Payment Receipt' : 'Reçu de Versement Officiel' }}</div>
             <div class="doc-sub">{{ $isEnglishReceipt ? 'Student Copy' : 'Exemplaire Élève' }}</div>
             <div class="doc-date">
@@ -399,7 +412,7 @@
                     <span class="receipt-id">{{ $p->receipt_number }}</span>
                 </td>
                 <td style="font-weight:900;">
-                    {{ $p->is_bulk ? 'Paiement groupé' : ($p->feeInstallment?->label ?? '—') }}
+                    {{ $p->is_bulk ? ($p->allocation_summary ?: ($p->feeInstallment?->label ?? 'Paiement groupé')) : ($p->feeInstallment?->label ?? '—') }}
                 </td>
                 <td>
                     <span class="mode-badge">{{ $p->payment_method_label }}</span>
@@ -423,6 +436,29 @@
         </tfoot>
     </table>
     @endif
+
+    {{-- ── CACHET ──────────────────────────────────────────────────────── --}}
+    @php
+        $sealPath = null;
+        $currentUser = auth()->user();
+        if ($currentUser && $currentUser->hasAnyRole(['directeur', 'fondateur'])) {
+            $sealPath = $school->signature_seal;
+        } else {
+            $sealPath = $currentUser?->signature_seal;
+        }
+    @endphp
+    <div class="seal-section">
+        @if($sealPath)
+            <img src="{{ asset('storage/' . $sealPath) }}" alt="Cachet">
+        @else
+            <div class="seal-placeholder">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="#7FA6C4" stroke-width="2" fill="rgba(127, 166, 196, 0.15)"/>
+                    <path d="M8 13.5L10.8 16.3L16 11" stroke="#1A3A6B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+        @endif
+    </div>
 
     {{-- ── ÉTAT GÉNÉRAL DES FRAIS ──────────────────────────────────────── --}}
     <div class="section-title" style="margin-top:0; border-top:2px solid #DDECF6;">

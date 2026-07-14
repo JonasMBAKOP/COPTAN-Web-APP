@@ -6,7 +6,7 @@ use App\Models\Staff;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
-// use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rule;
 
 class StoreStaffRequest extends FormRequest
 {
@@ -37,16 +37,21 @@ class StoreStaffRequest extends FormRequest
             'start_date'    => ['nullable', 'date'],
             'contract_type' => ['required',
                                 'in:permanent,vacataire,stagiaire'],
+            'monthly_salary' => ['nullable', 'numeric', 'min:0',
+                                'required_if:contract_type,permanent'],
+            'hourly_rate'    => ['nullable', 'numeric', 'min:0',
+                                'required_if:contract_type,vacataire,stagiaire'],
+            'period_rate'    => ['nullable', 'numeric', 'min:0'],
             'is_active'     => ['nullable', 'boolean'],
             'user_id'       => ['nullable', 'exists:users,id'],
 
             // Postes (checkboxes simples)
             'positions'          => ['required', 'array', 'min:1'],
-            'positions.*'        => ['string'],
-            'primary_position'   => ['required', 'string', 'in:enseignant,directeur,fondateur,censeur,econome,surveillant_general,secretaire'],
+            'positions.*'        => ['string', Rule::in(Staff::POSITIONS)],
+            'primary_position'   => ['required', 'string', Rule::in(Staff::POSITIONS)],
 
             // Nouveau compte
-            'user_option'       => ['nullable', 'in:existing,create'],
+            'user_option'       => ['nullable', 'in:none,existing,create'],
             'new_user_name'     => ['required_if:user_option,create', 'nullable',
                                     'string', 'max:191'],
             'new_user_email'    => ['required_if:user_option,create', 'nullable',
@@ -77,6 +82,8 @@ class StoreStaffRequest extends FormRequest
             'last_name.required'           => 'Le nom est obligatoire.',
             'gender.required'              => 'Le genre est obligatoire.',
             'contract_type.required'       => 'Le type de contrat est obligatoire.',
+            'monthly_salary.required_if'   => 'Le salaire mensuel est requis pour un contrat permanent.',
+            'hourly_rate.required_if'      => 'Le tarif horaire est requis pour un contrat vacataire ou stagiaire.',
             'positions.required'           => 'Veuillez sélectionner au moins un poste.',
             // 'positions.min'                => 'Veuillez sélectionner au moins un poste.',
             // 'primary_position.required'    => 'Veuillez indiquer le poste principal.',

@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'COPTAN') — Gestion Scolaire</title>
+    <link rel="icon" href="{{ asset('images/logo.jpg') }}" type="image/jpeg">
+    <link rel="shortcut icon" href="{{ asset('images/logo.jpg') }}" type="image/jpeg">
+    <link rel="apple-touch-icon" href="{{ asset('images/logo.jpg') }}">
+    <link rel="mask-icon" href="{{ asset('images/logo.jpg') }}" color="#1A3A6B">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         /* Scrollbar sidebar */

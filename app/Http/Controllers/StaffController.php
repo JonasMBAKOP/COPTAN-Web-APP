@@ -8,8 +8,12 @@ use App\Models\AcademicYear;
 use App\Models\AuditLog;
 use App\Models\Staff;
 use App\Models\TeacherAssignment;
+use App\Models\TimetableSetting;
+use App\Models\TimetableSlot;
 use App\Models\User;
+use App\Services\TimetableGridService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
@@ -18,6 +22,14 @@ use Illuminate\Support\Facades\Hash;
 
 class StaffController extends Controller
 {
+    private const DAYS = [
+        1 => 'Lundi',
+        2 => 'Mardi',
+        3 => 'Mercredi',
+        4 => 'Jeudi',
+        5 => 'Vendredi',
+    ];
+
     // ── LISTE ─────────────────────────────────────────────────────────────
     public function index(Request $request)
     {
@@ -83,12 +95,7 @@ class StaffController extends Controller
     // ── FORMULAIRE CRÉATION ───────────────────────────────────────────────
     public function create()
     {
-        // Comptes utilisateurs sans dossier staff
-        $availableUsers = User::whereDoesntHave('staff')
-                              ->orderBy('name')->get();
-
-        return view('staff.create', compact('availableUsers'));
-        // return view('staff.create', $this->formData());
+        return view('staff.create', $this->formData());
     }
 
     // ── ENREGISTREMENT ────────────────────────────────────────────────────
@@ -111,6 +118,12 @@ class StaffController extends Controller
             $staffMember = DB::transaction(function () use ($request, $data) {
                 // Gérer le compte utilisateur
                 if ($request->input('user_option') === 'create') {
+                    if ($request->filled('new_user_role') &&
+                        ! $this->canAssignRole(Auth::user(), $request->new_user_role)) {
+                        return back()->withInput()
+                            ->with('error', 'Vous ne pouvez pas attribuer ce rôle.');
+                    }
+
                     $user = User::create([
                         'name'      => $request->new_user_name,
                         'email'     => $request->new_user_email,
@@ -221,23 +234,108 @@ class StaffController extends Controller
         $currentAssignments = $staff->teacherAssignments
             ->filter(fn($ta) => $ta->academic_year_id === $activeYear?->id);
 
-        // $assignments = collect();
-        // if ($activeYear) {
-        //     $assignments = TeacherAssignment::where('staff_id', $staff->id)
-        //         ->where('academic_year_id', $activeYear->id)
-        //         ->with([
-        //             'classSubject.subject',
-        //             'classSubject.classGroup.level.section',
-        //         ])
-        //         ->get()
-        //         ->groupBy(fn ($a) =>
-        //             $a->classSubject?->classGroup?->full_name ?? 'Non assigné'
-        //         );
-        // }
+        $scheduleSlots = collect();
+        $gridRows = [];
+        $scheduleTeacherSubjectCount = 0;
+        $scheduleTotalHours = 0;
+
+        if ($staff->isTeacher() && $activeYear) {
+            $classSubjectIds = $staff->teacherAssignments
+                ->where('academic_year_id', $activeYear->id)
+                ->pluck('class_subject_id')
+                ->filter()
+                ->values();
+
+            if ($classSubjectIds->isNotEmpty()) {
+                $scheduleSlots = TimetableSlot::whereIn('class_subject_id', $classSubjectIds)
+                    ->where('academic_year_id', $activeYear->id)
+                    ->with(['classGroup.level.section', 'classSubject.subject'])
+                    ->orderBy('day_of_week')
+                    ->orderBy('period_index')
+                    ->orderBy('start_time')
+                    ->get();
+            }
+
+            $setting = TimetableSetting::current();
+            $gridRows = app(TimetableGridService::class)
+                ->buildGrid($setting, self::DAYS)['rows'];
+
+            $scheduleTeacherSubjectCount = $scheduleSlots
+                ->map(fn($slot) => $slot->classSubject?->subject?->name_fr)
+                ->filter()
+                ->unique()
+                ->count();
+
+            $scheduleTotalHours = $scheduleSlots->sum('periods_count');
+        }
 
         return view('staff.show', compact(
-            'staff', 'activeYear', 'currentAssignments'
+            'staff', 'activeYear', 'currentAssignments',
+            'scheduleSlots', 'gridRows', 'scheduleTeacherSubjectCount', 'scheduleTotalHours'
         ));
+    }
+
+    // ── SALAIRES DU PERSONNEL ───────────────────────────────────────────────
+    public function salaries(Request $request)
+    {
+        $query = Staff::with(['positions', 'user'])
+            ->orderBy('last_name')
+            ->orderBy('first_name');
+
+        if ($request->filled('contract')) {
+            $query->where('contract_type', $request->contract);
+        }
+
+        if ($request->filled('search')) {
+            $query->where(fn($q) =>
+                $q->where('first_name', 'like', "%{$request->search}%")
+                  ->orWhere('last_name',  'like', "%{$request->search}%")
+                  ->orWhere('email',      'like', "%{$request->search}%")
+                  ->orWhere('phone',      'like', "%{$request->search}%")
+            );
+        }
+
+        $staff = $query->paginate(20)->withQueryString();
+
+        $contractCounts = Staff::select('contract_type')
+            ->selectRaw('count(*) as total')
+            ->groupBy('contract_type')
+            ->pluck('total', 'contract_type')
+            ->toArray();
+
+        return view('staff.salaries', compact('staff', 'contractCounts'));
+    }
+
+    // ── EDITION DU SALAIRE DU PERSONNEL ─────────────────────────────────────
+    public function editSalary(Staff $staff)
+    {
+        $staff->load('positions', 'user');
+
+        return view('staff.salary-edit', compact('staff'));
+    }
+
+    public function updateSalary(Request $request, Staff $staff)
+    {
+        $data = $request->validate([
+            'monthly_salary' => ['nullable', 'numeric', 'min:0'],
+            'hourly_rate'    => ['nullable', 'numeric', 'min:0'],
+            'period_rate'    => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        if ($staff->contract_type === 'permanent') {
+            $request->validate([
+                'monthly_salary' => ['required'],
+            ]);
+        } elseif (in_array($staff->contract_type, ['vacataire', 'stagiaire'], true)) {
+            $request->validate([
+                'hourly_rate' => ['required'],
+            ]);
+        }
+
+        $staff->update($data);
+
+        return redirect()->route('staff.salaries')
+            ->with('success', "Salaire mis à jour pour {$staff->full_name}.");
     }
 
     // ── FORMULAIRE MODIFICATION ─────────────────────────────────────────────
@@ -245,15 +343,10 @@ class StaffController extends Controller
     {
         $staff->load('positions', 'user');
 
-        $availableUsers = User::whereDoesntHave('staff')
-            ->orWhere('id', $staff->user_id)
-            ->orderBy('name')->get();
-
-        return view('staff.edit', compact('staff', 'availableUsers'));
-        // return view('staff.edit', array_merge(
-        //     ['staff' => $staff],
-        //     $this->formData($staff)
-        // ));
+        return view('staff.edit', array_merge(
+            ['staff' => $staff],
+            $this->formData($staff)
+        ));
     }
 
     // ── MISE À JOUR ─────────────────────────────────────────────────────────
@@ -278,6 +371,12 @@ class StaffController extends Controller
 
         // Gérer le compte utilisateur
         if ($request->input('user_option') === 'create') {
+            if ($request->filled('new_user_role') &&
+                ! $this->canAssignRole(Auth::user(), $request->new_user_role)) {
+                return back()->withInput()
+                    ->with('error', 'Vous ne pouvez pas attribuer ce rôle.');
+            }
+
             $user = User::create([
                 'name'      => $request->new_user_name,
                 'email'     => $request->new_user_email,
@@ -288,13 +387,11 @@ class StaffController extends Controller
                 $user->assignRole($request->new_user_role);
             }
             $data['user_id'] = $user->id;
-        } 
-        // elseif ($request->input('user_option') === 'existing') {
-        //     $data['user_id'] = $request->user_id ?: null;
-        // } 
-        // elseif ($request->input('user_option') === 'none') {
-        //     $data['user_id'] = null;
-        // }
+        } elseif ($request->input('user_option') === 'existing') {
+            $data['user_id'] = $request->user_id ?: null;
+        } elseif ($request->input('user_option') === 'none') {
+            $data['user_id'] = null;
+        }
 
         $old = $staff->toArray();
         $staff->update($data);
@@ -422,6 +519,8 @@ class StaffController extends Controller
     // ── HELPERS ───────────────────────────────────────────────────────────
     private function formData(?Staff $staff = null): array
     {
+        $authUser = Auth::user();
+
         $linkedUserIds = Staff::whereNotNull('user_id')
             ->when($staff, fn ($q) => $q->where('id', '!=', $staff->id))
             ->pluck('user_id');
@@ -438,9 +537,7 @@ class StaffController extends Controller
             ->orderBy('name')
             ->get();
 
-        $roles = Role::where('name', '!=', 'super-admin')
-            ->orderBy('name')
-            ->get();
+        $roles = $this->allowedAccountRoles($authUser);
 
         return compact('availableUsers', 'roles') + [
             'positionLabels' => Staff::positionLabels(),
@@ -468,6 +565,22 @@ class StaffController extends Controller
         }
 
         return $request->user_id ?: null;
+    }
+
+    private function allowedAccountRoles(User $authUser)
+    {
+        $referenceUser = new User();
+
+        return Role::orderBy('name')->get()->filter(function ($role) use ($authUser, $referenceUser) {
+            return $authUser->hasRole('super-admin')
+                || $authUser->getRoleLevel() > $referenceUser->getRoleLevelByName($role->name);
+        });
+    }
+
+    private function canAssignRole(User $authUser, string $roleName): bool
+    {
+        return $authUser->hasRole('super-admin')
+            || $authUser->getRoleLevel() > $authUser->getRoleLevelByName($roleName);
     }
 
     private function syncPositions(

@@ -20,7 +20,8 @@
 {{-- <form method="POST" action="{{ route('staff.store') }}"
       enctype="multipart/form-data"
       x-data="staffForm()"> --}}
-<form method="POST" action="{{ route('staff.store') }}" enctype="multipart/form-data">
+<form method="POST" action="{{ route('staff.store') }}" enctype="multipart/form-data"
+      x-data="salaryContractForm('{{ old('contract_type', 'permanent') }}')">
     @csrf
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -43,11 +44,7 @@
                         <input type="text" name="last_name"
                                value="{{ old('last_name') }}"
                                placeholder="Ex: KAMGA"
-                               class="w-full px-3 py-2.5 border rounded-lg
-                                      text-sm uppercase focus:outline-none
-                                      focus:ring-2 focus:ring-blue-200
-                                      @error('last_name') border-red-400
-                                      @else border-gray-200 @enderror">
+                               class="w-full px-3 py-2.5 border rounded-lg text-sm uppercase focus:outline-none focus:ring-2 focus:ring-blue-200 {{ $errors->has('last_name') ? 'border-red-400' : 'border-gray-200' }}">
                         @error('last_name')
                         <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                         @enderror
@@ -60,11 +57,7 @@
                         <input type="text" name="first_name"
                                value="{{ old('first_name') }}"
                                placeholder="Ex: Jean-Paul"
-                               class="w-full px-3 py-2.5 border rounded-lg
-                                      text-sm focus:outline-none
-                                      focus:ring-2 focus:ring-blue-200
-                                      @error('first_name') border-red-400
-                                      @else border-gray-200 @enderror">
+                               class="w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 {{ $errors->has('first_name') ? 'border-red-400' : 'border-gray-200' }}">
                         @error('first_name')
                         <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                         @enderror
@@ -125,10 +118,7 @@
                         <input type="email" name="email"
                                value="{{ old('email') }}"
                                placeholder="prenom.nom@coptan.cm"
-                               class="w-full px-3 py-2.5 border rounded-lg
-                                      text-sm focus:outline-none
-                                      @error('email') border-red-400
-                                      @else border-gray-200 @enderror">
+                               class="w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none {{ $errors->has('email') ? 'border-red-400' : 'border-gray-200' }}">
                         @error('email')
                         <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                         @enderror
@@ -171,6 +161,7 @@
                             Type de contrat <span class="text-red-500">*</span>
                         </label>
                         <select name="contract_type"
+                                x-model="contractType"
                                 class="w-full px-3 py-2.5 border border-gray-200
                                        rounded-lg text-sm focus:outline-none
                                        bg-white">
@@ -188,6 +179,28 @@
                         </select>
                     </div>
 
+                    <div class="sm:col-span-6" x-show="contractType === 'permanent'" x-cloak>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Salaire mensuel
+                        </label>
+                        <input type="number" name="monthly_salary"
+                               x-bind:disabled="contractType !== 'permanent'"
+                               value="{{ old('monthly_salary') }}"
+                               min="0" step="100"
+                               class="w-full px-3 py-2.5 border border-gray-200
+                                      rounded-lg text-sm focus:outline-none">
+                    </div>
+                    <div class="sm:col-span-6" x-show="contractType !== 'permanent'" x-cloak>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Tarif horaire
+                        </label>
+                        <input type="number" name="hourly_rate"
+                               x-bind:disabled="contractType === 'permanent'"
+                               value="{{ old('hourly_rate') }}"
+                               min="0" step="50"
+                               class="w-full px-3 py-2.5 border border-gray-200
+                                      rounded-lg text-sm focus:outline-none">
+                    </div>
                 </div>
             </div>
 
@@ -368,6 +381,12 @@ function photoUpload() {
             reader.onload = (ev) => this.preview = ev.target.result;
             reader.readAsDataURL(file);
         }
+    }
+}
+
+function salaryContractForm(initialContractType) {
+    return {
+        contractType: initialContractType || 'permanent',
     }
 }
 </script>

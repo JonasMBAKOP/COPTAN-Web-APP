@@ -5,10 +5,11 @@
 <title>Liste des élèves — {{ $year->label ?? '' }}</title>
 @include('students.documents.partials.base-styles')
 <style>
-@page { size: A4 portrait; margin: 4mm 5mm; }
+@page { size: A4 portrait; margin: 2mm 4mm; }
+body { margin: 0; padding: 0; }
 .student-list-page {
-    max-width: 192mm;
-    padding: 5mm 6mm;
+    max-width: 196mm;
+    padding: 3mm 4mm;
     color: #111827;
 }
 .student-list-page .cert-official-header {
@@ -106,10 +107,13 @@
                     <th>Prénom(s)</th>
                     <th>Sexe</th>
                     <th>Date naiss.</th>
+                    <th>Lieu de naissance</th>
+                    <th>Inscrit(e) le</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($block['students'] as $i => $student)
+                @php $printEnrollment = $student->printEnrollment ?? null; @endphp
                 <tr>
                     <td class="num">{{ $i + 1 }}</td>
                     <td class="mat">{{ $student->matricule }}</td>
@@ -117,6 +121,8 @@
                     <td>{{ $student->first_name }}</td>
                     <td>{{ $student->gender === 'M' ? 'M' : 'F' }}</td>
                     <td>{{ $student->date_of_birth?->format('d/m/Y') ?? '—' }}</td>
+                    <td>{{ strtoupper($student->place_of_birth ?? '—') }}</td>
+                    <td>{{ $printEnrollment?->enrollment_date?->format('d/m/Y') ?? '—' }}</td>
                 </tr>
                 @endforeach
             </tbody>

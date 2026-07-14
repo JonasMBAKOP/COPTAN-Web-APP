@@ -371,6 +371,12 @@ class ClassManagementController extends Controller
                 $q->where('status', 'active')->with('student'),
         ]);
 
+        $classGroup->studentEnrollments = $classGroup->studentEnrollments
+            ->sortBy(fn ($enrollment) => strtolower(
+                trim(($enrollment->student?->last_name ?? '') . ' ' . ($enrollment->student?->first_name ?? ''))
+            ))
+            ->values();
+
         $stats = [
             'students'     => $classGroup->studentEnrollments->count(),
             'subjects'     => $classGroup->classSubjects->count(),

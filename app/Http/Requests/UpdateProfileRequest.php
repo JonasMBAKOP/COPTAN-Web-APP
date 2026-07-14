@@ -31,6 +31,7 @@ class UpdateProfileRequest extends FormRequest
             'email'    => ['required', 'email', 'max:255', "unique:users,email,{$userId}"],
             'phone'    => ['nullable', 'string', 'max:30'],
             'photo'    => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'signature_seal' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
 
             // Mot de passe (optionnel)
             'current_password' => ['nullable', 'required_with:new_password', 'string'],

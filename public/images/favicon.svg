@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img">
+  <defs>
+    <clipPath id="rounded-corners">
+      <rect x="0" y="0" width="256" height="256" rx="40" ry="40" />
+    </clipPath>
+  </defs>
+  <rect width="256" height="256" rx="40" ry="40" fill="#ffffff" />
+  <image href="/images/logo.jpg" x="0" y="0" width="256" height="256" preserveAspectRatio="xMidYMid slice" clip-path="url(#rounded-corners)" />
+  <rect x="4" y="4" width="248" height="248" rx="36" ry="36" fill="none" stroke="rgba(26,58,107,0.18)" stroke-width="8" />
+</svg>

@@ -4,12 +4,17 @@ namespace Tests\Feature;
 
 use App\Models\AcademicYear;
 use App\Models\ClassGroup;
+use App\Models\ClassSubject;
 use App\Models\Level;
 use App\Models\Section;
+use App\Models\Sequence;
 use App\Models\Staff;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
 use App\Models\StudentPayment;
+use App\Models\Subject;
+use App\Models\SubjectCategory;
+use App\Models\Trimester;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -302,6 +307,71 @@ class StaffAndStudentFlowTest extends TestCase
         $this->assertNull(Student::withTrashed()->find($student->id));
         $this->assertNull(StudentEnrollment::withTrashed()->find($enrollment->id));
         $this->assertSame(0, StudentPayment::where('student_enrollment_id', $enrollment->id)->count());
+    }
+
+    public function test_student_detail_page_shows_real_notes_summary()
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('super-admin');
+
+        $year = AcademicYear::factory()->create(['is_active' => true]);
+        $section = Section::factory()->create();
+        $level = Level::factory()->create(['section_id' => $section->id]);
+        $class = ClassGroup::factory()->create([
+            'academic_year_id' => $year->id,
+            'level_id'        => $level->id,
+            'max_students'    => 50,
+        ]);
+        $subjectCategory = SubjectCategory::factory()->create();
+        $subject = Subject::create([
+            'subject_category_id' => $subjectCategory->id,
+            'code' => 'MATH',
+            'name_fr' => 'Mathématiques',
+            'name_en' => 'Mathematics',
+        ]);
+        $classSubject = ClassSubject::create([
+            'class_group_id' => $class->id,
+            'subject_id' => $subject->id,
+            'coefficient' => 1,
+            'hours_per_week' => 4,
+            'is_active' => true,
+        ]);
+        $trimester = Trimester::create([
+            'academic_year_id' => $year->id,
+            'number' => 1,
+            'label' => 'Trimestre 1',
+            'start_date' => now()->subMonths(2)->toDateString(),
+            'end_date' => now()->addMonths(2)->toDateString(),
+        ]);
+        $sequence = Sequence::create([
+            'academic_year_id' => $year->id,
+            'trimester_id' => $trimester->id,
+            'number' => 1,
+            'label' => 'Séquence 1',
+            'start_date' => now()->subDays(10)->toDateString(),
+            'end_date' => now()->addDays(10)->toDateString(),
+            'is_grades_locked' => false,
+        ]);
+
+        $student = Student::factory()->create();
+        $enrollment = StudentEnrollment::factory()->create([
+            'student_id' => $student->id,
+            'academic_year_id' => $year->id,
+            'class_group_id' => $class->id,
+            'status' => 'active',
+        ]);
+        $enrollment->grades()->create([
+            'class_subject_id' => $classSubject->id,
+            'sequence_id' => $sequence->id,
+            'grade' => 14.5,
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('students.show', $student));
+
+        $response->assertOk();
+        $response->assertSee('Notes & Moyennes');
+        $response->assertSee('Moyenne générale');
+        $response->assertSee('Mathématiques');
     }
 
     public function test_transfer_deletes_related_payments_for_the_old_enrollment()

@@ -1,14 +1,16 @@
 @extends('layouts.app')
 
 @section('title', 'Documents élèves')
+@section('page-title', 'Documents et Impressions')
+@section('page-subtitle', 'Générez et imprimez des documents pour les élèves de l\'établissement')
 
-@section('breadcrumb')
+{{-- @section('breadcrumb')
     <a href="{{ route('students.index') }}" class="hover:text-gray-700">Élèves</a>
     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
     </svg>
     <span class="font-medium text-gray-700">Documents &amp; impressions</span>
-@endsection
+@endsection --}}
 
 @section('content')
 <div class="max-w-6xl mx-auto space-y-6" x-data="documentsHub()">

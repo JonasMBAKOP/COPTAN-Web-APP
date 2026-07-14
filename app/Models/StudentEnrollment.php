@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use App\Models\AuditLog;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class StudentEnrollment extends Model
 {
+    use HasFactory;
+
     public const STATUS_ACTIVE         = 'active';
     public const STATUS_INACTIVE       = 'inactive';
     public const STATUS_TRANSFERRED_OUT = 'transferred_out';

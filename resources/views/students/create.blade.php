@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @section('title', 'Nouvel élève')
+@section('page-title', 'Inscrire un nouvel élève')
+@section('page-subtitle', 'Formulaire d\'inscription pour un nouvel élève dans l\'établissement')
 
 @section('breadcrumb')
     <a href="{{ route('students.index') }}" class="hover:text-gray-700">Élèves</a>

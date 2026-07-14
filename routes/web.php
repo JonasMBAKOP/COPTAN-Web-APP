@@ -227,6 +227,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/edit',     [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile',          [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile/photo', [ProfileController::class, 'deletePhoto'])->name('profile.photo.delete');
+    Route::delete('/profile/seal',  [ProfileController::class, 'deleteSeal'])->name('profile.seal.delete');
     Route::post('/profile/logout-others', [ProfileController::class, 'logoutOtherSessions'])
          ->name('profile.logout-others');
 });
@@ -381,6 +382,16 @@ Route::middleware(['auth', 'permission:view-staff'])
             Route::get('/cartes', [\App\Http\Controllers\StaffDocumentController::class, 'bulkCards'])->name('cards');
             Route::get('/carte/{staff}', [\App\Http\Controllers\StaffDocumentController::class, 'singleCard'])->name('single');
             Route::post('/cartes/print', [\App\Http\Controllers\StaffDocumentController::class, 'printBulk'])->name('cards.print');
+        });
+
+        Route::get('/salaries', [StaffController::class, 'salaries'])
+            ->name('salaries');
+
+        Route::middleware('permission:manage-staff')->group(function () {
+            Route::get('/{staff}/salary', [StaffController::class, 'editSalary'])
+                ->name('salary.edit');
+            Route::put('/{staff}/salary', [StaffController::class, 'updateSalary'])
+                ->name('salary.update');
         });
 
         Route::get('/{staff}', [StaffController::class, 'show'])->name('show');

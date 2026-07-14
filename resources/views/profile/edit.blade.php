@@ -147,6 +147,51 @@
                 </div>
             </div>
 
+            {{-- ── CACHET (sauf enseignants) ──────────────────────────────── --}}
+            @if(!auth()->user()->hasRole('enseignant'))
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5"
+                 x-data="{ sealPreview: '{{ $user->signature_seal ? asset('storage/'.$user->signature_seal) : '' }}' }">
+                <h3 class="text-sm font-black mb-4 pb-2 border-b border-gray-100"
+                    style="color:#1A3A6B;">
+                    Cachet personnel
+                </h3>
+                <p class="text-xs text-gray-500 mb-3">
+                    Votre signature ou cachet numérique apparaîtra sur les documents officiels.
+                </p>
+                <div class="flex flex-col items-center gap-3">
+                    <template x-if="sealPreview">
+                        <div class="flex items-center justify-center w-24 h-24 rounded-lg"
+                             style="background-color:#F0F7FC; border:2px dashed #7FA6C4;">
+                            <img :src="sealPreview" class="max-w-full max-h-full object-contain">
+                        </div>
+                    </template>
+                    <template x-if="!sealPreview">
+                        <div class="w-24 h-24 rounded-lg flex items-center justify-center"
+                             style="background-color:#F0F7FC; border:2px dashed #7FA6C4;">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="#7FA6C4" stroke-width="2" fill="#EFF6FF"/>
+                                <path d="M7 12.5L10.5 16L17 9.5" stroke="#1A3A6B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                    </template>
+                    <div class="flex items-center gap-3">
+                        <label class="cursor-pointer text-xs font-bold hover:underline"
+                               style="color:#1A3A6B;">
+                            {{ $user->signature_seal ? 'Changer le cachet' : 'Ajouter un cachet' }}
+                            <input type="file" name="signature_seal" class="hidden" accept="image/*"
+                                   @change="sealPreview = URL.createObjectURL($event.target.files[0])">
+                        </label>
+                        @if($user->signature_seal)
+                        <button type="button" onclick="if(confirm('Confirmer la suppression ?')) document.getElementById('deleteSealForm').submit()"
+                                class="text-xs text-red-500 hover:underline">
+                            Supprimer
+                        </button>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            @endif
+
             <button type="submit"
                     class="w-full py-3.5 rounded-xl text-white font-bold text-sm
                            flex items-center justify-center gap-2 hover:shadow-md
@@ -170,6 +215,11 @@
 
 <form method="DELETE" action="{{ route('profile.photo.delete') }}"
       id="deletePhotoForm" class="hidden">
+    @csrf @method('DELETE')
+</form>
+
+<form method="POST" action="{{ route('profile.seal.delete') }}"
+      id="deleteSealForm" class="hidden">
     @csrf @method('DELETE')
 </form>
 

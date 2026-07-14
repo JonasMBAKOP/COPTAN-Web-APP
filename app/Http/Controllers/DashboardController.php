@@ -848,7 +848,7 @@ class DashboardController extends Controller
         }
 
         $totalCollected = $activeYear
-            ? (int) StudentPayment::whereHas('studentEnrollment', fn($q) =>
+            ? (int) StudentPayment::visible()->whereHas('studentEnrollment', fn($q) =>
                 $q->where('academic_year_id', $activeYear->id)
             )->sum('amount_paid')
             : 0;
@@ -858,17 +858,21 @@ class DashboardController extends Controller
             : 0;
 
         // ── PAIEMENTS PAR CET UTILISATEUR ─────────────────────────────────
-        $todayPayments = StudentPayment::where('recorded_by', $userId)
-            ->whereDate('payment_date', today())->get();
+        $todayPayments = StudentPayment::visible()
+            ->where('recorded_by', $userId)
+            ->whereDate('payment_date', today())
+            ->get();
         $todayAmount   = (int)$todayPayments->sum('amount_paid');
         $todayCount    = $todayPayments->count();
 
-        $weekAmount = (int)StudentPayment::where('recorded_by', $userId)
+        $weekAmount = (int)StudentPayment::visible()
+            ->where('recorded_by', $userId)
             ->whereBetween('payment_date', [
                 now()->startOfWeek(), now()->endOfWeek()
             ])->sum('amount_paid');
 
-        $recentPayments = StudentPayment::where('recorded_by', $userId)
+        $recentPayments = StudentPayment::visible()
+            ->where('recorded_by', $userId)
             ->with([
                 'studentEnrollment.student',
                 'studentEnrollment.classGroup',
@@ -882,7 +886,8 @@ class DashboardController extends Controller
         $monthLabels = ['Jan','Fév','Mar','Avr','Mai','Juin',
                         'Juil','Aoû','Sep','Oct','Nov','Déc'];
 
-        $monthlyRaw = StudentPayment::where('recorded_by', $userId)
+        $monthlyRaw = StudentPayment::visible()
+            ->where('recorded_by', $userId)
             ->selectRaw(
                 'YEAR(payment_date)  AS yr,
                 MONTH(payment_date) AS mo,

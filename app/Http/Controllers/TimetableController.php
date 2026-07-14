@@ -454,8 +454,9 @@ class TimetableController extends Controller
 
     private function hoursFromSlots(Collection $slots, TimetableSetting $setting): float
     {
-        return round($slots->sum('periods_count') * $setting->period_duration_minutes / 60, 1);
+        return round($slots->sum('periods_count'), 1);
     }
+
     private function resolveClassSubject(array $data, AcademicYear $activeYear): ?ClassSubject
     {
         return ClassSubject::where('id', $data['class_subject_id'])
@@ -557,7 +558,7 @@ class TimetableController extends Controller
     private function buildClassSummary(ClassGroup $classGroup, Collection $slots, TimetableSetting $setting): array
     {
         $expectedHours = (float) $classGroup->classSubjects->sum(fn ($classSubject) => (float) $classSubject->hours_per_week);
-        $scheduledHours = round($slots->sum('periods_count') * $setting->period_duration_minutes / 60, 1);
+        $scheduledHours = round($slots->sum('periods_count'), 1);
 
         return [
             'courses' => $slots->count(),

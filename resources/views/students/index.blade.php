@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @section('title', 'Gestion des Élèves')
+@section('page-title', 'Gestion des Élèves')
+@section('page-subtitle', 'Liste des élèves inscrits dans l\'établissement')
 
 @section('content')
 <div class="space-y-6">
@@ -94,16 +96,21 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
                     </span>
-                    <input type="text" name="search"
+                    <input type="search" name="search"
                            value="{{ request('search') }}"
                            placeholder="Nom, matricule..."
-                           class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B] transition-all">
+                           class="w-full pl-9 pr-12 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B] transition-all">
+                    <button type="submit"
+                            class="absolute right-1 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-[#1A3A6B] text-white text-sm hover:bg-[#163450] transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
 
-            {{-- Année Scolaire --}}
-            <div class="w-full sm:w-48">
-                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Année scolaire</label>
+            <div class="w-full sm:w-56">
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Année</label>
                 <select name="year_id" onchange="this.form.submit()"
                         class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B] transition-all">
                     @foreach($years as $year)
@@ -197,6 +204,7 @@
                         <th class="px-4 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Photo</th>
                         <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Nom & Prénom</th>
                         <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Matricule</th>
+                        <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Inscrit(e) le</th>
                         <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Classe</th>
                         <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Section</th>
                         <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Statut</th>
@@ -263,6 +271,9 @@
                                 {{ $student->matricule }}
                             </span>
                         </td>
+                        <td class="px-6 py-4 text-sm text-gray-700">
+                            {{ $enrollment?->enrollment_date?->format('d/m/Y') ?? '—' }}
+                        </td>
                         <td class="px-6 py-4 text-sm text-gray-700 font-medium">
                             @if($enrollment?->classGroup)
                             {{ $enrollment->classGroup->name }}
@@ -284,6 +295,17 @@
                         </td>
                         <td class="px-6 py-4 text-right">
                             <div class="flex items-center justify-end gap-1">
+                                {{-- Renouveler / Inscrire --}}
+                                @if(!empty($renewalFilter) || !$enrollment || $enrollment->status !== 'active')
+                                <a href="{{ route('students.enroll', $student) }}"
+                                   class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-green-700 hover:bg-green-50 transition-colors"
+                                   title="{{ !empty($renewalFilter) ? 'Renouveler' : 'Inscrire' }}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                    </svg>
+                                </a>
+                                @endif
+
                                 {{-- Voir : toujours visible --}}
                                 <a href="{{ route('students.show', $student) }}"
                                    class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-[#1A3A6B] hover:bg-blue-50 transition-colors" title="Voir la fiche">
@@ -302,17 +324,6 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                                     </svg>
                                 </a>
-
-                                {{-- Renouveler / Inscrire --}}
-                                @if(!empty($renewalFilter) || !$enrollment || $enrollment->status !== 'active')
-                                <a href="{{ route('students.enroll', $student) }}"
-                                   class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-green-700 hover:bg-green-50 transition-colors"
-                                   title="{{ !empty($renewalFilter) ? 'Renouveler' : 'Inscrire' }}">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                                    </svg>
-                                </a>
-                                @endif
 
                                 {{-- Supprimer --}}
                                 <form method="POST" action="{{ route('students.destroy', $student) }}" class="inline"

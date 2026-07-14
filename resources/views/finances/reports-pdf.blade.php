@@ -126,24 +126,50 @@
         'showCertificateTitle' => false,
     ])
 
+    @php
+        $mainTitle = match($type) {
+            'journalier' => 'Rapport Financier Journalier',
+            'hebdomadaire' => 'Rapport Financier Hebdomadaire',
+            'entre-2-dates' => 'Rapport Financier du ' . ($startDate ? \Carbon\Carbon::parse($startDate)->format('d/m/Y') : '—') . ' au ' . ($endDate ? \Carbon\Carbon::parse($endDate)->format('d/m/Y') : '—'),
+            'mensuel' => 'Rapport Financier Mensuel',
+            'annuel' => 'Rapport Financier Annuel',
+            default => 'Rapport Financier',
+        };
+
+        $subtitleParts = [];
+        if ($type === 'journalier') {
+            $subtitleParts[] = 'Date : ' . ($date ? \Carbon\Carbon::parse($date)->format('d/m/Y') : '—');
+        } elseif ($type === 'hebdomadaire') {
+            try {
+                $weekStart = \Carbon\Carbon::parse($week . '-1')->startOfWeek(\Carbon\Carbon::MONDAY);
+            } catch (\Throwable $e) {
+                $weekStart = \Carbon\Carbon::parse(now()->format('o-\WW') . '-1')->startOfWeek(\Carbon\Carbon::MONDAY);
+            }
+            $weekEnd = $weekStart->copy()->endOfWeek(\Carbon\Carbon::SUNDAY);
+            $subtitleParts[] = 'Période : ' . $weekStart->format('d/m/Y') . ' au ' . $weekEnd->format('d/m/Y');
+        } elseif ($type === 'mensuel') {
+            $subtitleParts[] = 'Mois : ' . (['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'][$month-1] ?? '—');
+        } elseif ($type === 'entre-2-dates') {
+            $subtitleParts[] = 'Du ' . ($startDate ? \Carbon\Carbon::parse($startDate)->format('d/m/Y') : '—');
+            $subtitleParts[] = 'Au ' . ($endDate ? \Carbon\Carbon::parse($endDate)->format('d/m/Y') : '—');
+        } elseif ($type === 'annuel') {
+            $subtitleParts[] = 'Année scolaire : ' . ($selectedYear?->label ?? '—');
+        }
+        if ($selectedYear && $type !== 'annuel') {
+            $subtitleParts[] = $selectedYear->label;
+        }
+        $subtitleParts[] = $whoFilter === 'global'
+            ? 'Tous les enregistrements'
+            : ($whoFilter === 'me' ? $user->name : 'Économe');
+        $subtitleParts[] = 'Généré le ' . now()->format('d/m/Y à H:i');
+    @endphp
+
     <div class="finance-doc-title">
         <div class="main">
-            Rapport financier {{ $type === 'mensuel' ? 'mensuel' : 'annuel' }}
+            {{ $mainTitle }}
         </div>
         <div class="sub">
-            {{ $selectedYear?->label ?? '—' }}
-            @if($type === 'mensuel')
-                · {{ ['Janvier','Février','Mars','Avril','Mai','Juin',
-                    'Juillet','Août','Septembre','Octobre','Novembre','Décembre'][$month-1] }}
-            @elseif($selectedYear)
-                · {{ $selectedYear->start_date?->locale('fr')->translatedFormat('F Y') }}
-                — {{ $selectedYear->end_date?->locale('fr')->translatedFormat('F Y') }}
-            @endif
-            ·
-            @if($whoFilter === 'global') Rapport global
-            @elseif($whoFilter === 'me') {{ $user->name }}
-            @else Économe @endif
-            · Généré le {{ now()->format('d/m/Y à H:i') }}
+            {{ implode(' · ', $subtitleParts) }}
         </div>
     </div>
 

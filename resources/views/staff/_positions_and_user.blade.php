@@ -1,23 +1,47 @@
 @php
     $positionsList = [
         'enseignant'          => 'Enseignant(e)',
-        'directeur'           => 'Directeur / Principal',
-        'fondateur'           => 'Fondateur / Fondatrice',
-        'censeur'             => 'Préfet des études / Dean',
+        'directeur'           => 'Directeur',
+        'prefet_des_etudes'   => 'Préfet des études',
         'econome'             => 'Économe',
-        'surveillant_general' => 'Surveillant(e) Général(e)',
-        'secretaire'          => 'Secrétaire',
+        'surveillant_general' => 'Surveillant général',
     ];
+
     $currentPositions = old('positions',
         isset($staff)
             ? $staff->positions->pluck('position')->toArray()
             : ['enseignant']
     );
+
+    foreach ($currentPositions as $position) {
+        if (! array_key_exists($position, $positionsList)) {
+            $positionsList[$position] = \App\Models\Staff::positionLabels()[$position]
+                ?? ucfirst(str_replace(['-', '_'], ' ', $position));
+        }
+    }
     $currentPrimary = old('primary_position',
         isset($staff)
             ? ($staff->positions->where('is_primary', true)->first()?->position)
             : 'enseignant'
     );
+
+    $roleLabels = [
+        'super-admin'         => 'Super-admin',
+        'directeur'           => 'Directeur',
+        'censeur'             => 'Préfet des études',
+        'econome'             => 'Économe',
+        'surveillant-general' => 'Surveillant général',
+        'enseignant'          => 'Enseignant',
+    ];
+
+    $roleOrder = [
+        'super-admin',
+        'directeur',
+        'censeur',
+        'econome',
+        'surveillant-general',
+        'enseignant',
+    ];
 @endphp
 
 {{-- ── POSTES ─────────────────────────────────────────────────────── --}}
@@ -143,10 +167,7 @@
                 <input type="text" name="new_user_name"
                        value="{{ old('new_user_name') }}"
                        placeholder="Ex: KAMGA Jean-Paul"
-                       class="w-full px-3 py-2.5 border rounded-lg text-sm
-                              focus:outline-none
-                              @error('new_user_name') border-red-400
-                              @else border-gray-200 @enderror">
+                       class="w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none {{ $errors->has('new_user_name') ? 'border-red-400' : 'border-gray-200' }}">
                 @error('new_user_name')
                 <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                 @enderror
@@ -158,10 +179,7 @@
                 <input type="email" name="new_user_email"
                        value="{{ old('new_user_email') }}"
                        placeholder="email@coptan.cm"
-                       class="w-full px-3 py-2.5 border rounded-lg text-sm
-                              focus:outline-none
-                              @error('new_user_email') border-red-400
-                              @else border-gray-200 @enderror">
+                       class="w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none {{ $errors->has('new_user_email') ? 'border-red-400' : 'border-gray-200' }}">
                 @error('new_user_email')
                 <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                 @enderror
@@ -172,10 +190,7 @@
                 </label>
                 <input type="password" name="new_user_password"
                        placeholder="••••••••"
-                       class="w-full px-3 py-2.5 border rounded-lg text-sm
-                              focus:outline-none
-                              @error('new_user_password') border-red-400
-                              @else border-gray-200 @enderror">
+                       class="w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none {{ $errors->has('new_user_password') ? 'border-red-400' : 'border-gray-200' }}">
                 @error('new_user_password')
                 <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                 @enderror
@@ -188,15 +203,12 @@
                         class="w-full px-3 py-2.5 border border-gray-200
                                rounded-lg text-sm focus:outline-none bg-white">
                     <option value="">Sans rôle spécifique</option>
-                    @foreach(\Spatie\Permission\Models\Role::orderBy('name')
-                        ->get() as $role)
-                    @if($role->name !== 'super-admin')
+                    @foreach($roles ?? \Spatie\Permission\Models\Role::orderBy('name')->get() as $role)
                     <option value="{{ $role->name }}"
                             {{ old('new_user_role') === $role->name
                                 ? 'selected' : '' }}>
-                        {{ ucfirst(str_replace('-', ' ', $role->name)) }}
+                        {{ $roleLabels[$role->name] ?? ucfirst(str_replace('-', ' ', $role->name)) }}
                     </option>
-                    @endif
                     @endforeach
                 </select>
             </div>

@@ -25,11 +25,19 @@
 
     // Récupérer les matières dispensées
     $subjects = collect();
-    if (method_exists($staff, 'assignments')) {
-        $subjects = $staff->assignments()
-            ->with('subject')
+    $extractSubjectName = fn($assignment) => $assignment->classSubject?->subject?->name_fr
+        ?? $assignment->classSubject?->subject?->name_en;
+
+    if ($staff->relationLoaded('teacherAssignments')) {
+        $subjects = $staff->teacherAssignments
+            ->map($extractSubjectName)
+            ->filter()
+            ->unique();
+    } elseif (method_exists($staff, 'teacherAssignments')) {
+        $subjects = $staff->teacherAssignments()
+            ->with('classSubject.subject')
             ->get()
-            ->pluck('subject.name')
+            ->map($extractSubjectName)
             ->filter()
             ->unique();
     }
@@ -84,7 +92,7 @@
         <!-- ÉCOLE INFO & TITRE -->
         <div class="id-card__school-header">
             <div class="id-card__school-info">
-                <div class="id-card__school-name">{{ strtoupper($school->full_name) }}</div>
+                <div class="id-card__school-name" style="color: #1A3A6B">{{ strtoupper($school->full_name) }}</div>
                 @if($school->short_name)
                     <div class="id-card__school-acronym">{{ strtoupper($school->short_name) }}</div>
                 @endif

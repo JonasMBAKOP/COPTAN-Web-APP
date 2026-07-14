@@ -337,7 +337,13 @@ class StudentController extends Controller
     {
         $student->load([
             'enrollments' => fn($q) => $q
-                ->with(['classGroup.level.section', 'academicYear'])
+                ->with([
+                    'classGroup.level.section',
+                    'academicYear',
+                    'absences' => fn($absenceQuery) => $absenceQuery
+                        ->with(['classSubject.subject', 'recordedBy'])
+                        ->orderByDesc('absence_date'),
+                ])
                 ->orderByDesc('created_at'),
         ]);
 
@@ -345,6 +351,22 @@ class StudentController extends Controller
         $activeEnrollment = $activeYear
             ? $this->enrollments->activeEnrollmentForYear($student, $activeYear->id)
             : null;
+
+        if ($activeEnrollment) {
+            $activeEnrollment->load([
+                'classGroup.classSubjects' => fn ($query) => $query
+                    ->where('is_active', true)
+                    ->with('subject'),
+                'grades' => fn ($query) => $query
+                    ->with(['classSubject.subject', 'sequence'])
+                    ->orderByDesc('updated_at'),
+            ]);
+        }
+
+        if ($activeYear) {
+            $activeYear->load('sequences');
+        }
+
         $previousEnrollment = ($activeYear && ! $activeEnrollment)
             ? $this->enrollments->previousEnrollmentForRenewal($student, $activeYear)
             : null;
@@ -417,19 +439,18 @@ class StudentController extends Controller
             Storage::disk('public')->delete($student->photo);
         }
 
-        $enrollmentIds = $student->enrollments()->withTrashed()->pluck('id');
+        $enrollmentIds = $student->enrollments()->pluck('id');
 
         // Supprimer tous les paiements liés aux inscriptions, y compris les paiements en bloc et leurs allocations
         if ($enrollmentIds->isNotEmpty()) {
-            StudentPayment::whereHas('studentEnrollment', fn ($query) =>
-                $query->whereIn('id', $enrollmentIds)
-            )->forceDelete();
+            StudentPayment::whereIn('student_enrollment_id', $enrollmentIds)
+                ->forceDelete();
         }
 
-        // Supprimer toutes les inscriptions (forceDelete pour suppression permanente)
-        $student->enrollments()->withTrashed()->forceDelete();
+        // Supprimer toutes les inscriptions liées à l'élève
+        $student->enrollments()->delete();
 
-        // Supprimer l'élève lui-même (forceDelete pour suppression permanente, pas soft delete)
+        // Supprimer l'élève lui-même (suppression permanente)
         $student->forceDelete();
     }
 

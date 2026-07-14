@@ -1,7 +1,8 @@
 @extends('layouts.app')
 
 @section('title', 'Personnel')
-@section('page-title', 'Enseignants & Personnel')
+@section('page-title', 'Gestion du Personnel')
+@section('page-subtitle', 'Détails et informations complètes du personnel')
 
 @section('content')
 <div x-data="{ viewMode: 'grid' }">
@@ -39,118 +40,116 @@
     </div>
 
     {{-- Filters and Actions Row --}}
-    <form method="GET" action="{{ route('staff.index') }}" class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
-        <div class="flex flex-wrap items-center gap-3 flex-1">
-            {{-- Champ de recherche avec bouton × intégré --}}
-            <div class="relative w-full sm:max-w-xs">
-                <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+    <form method="GET" action="{{ route('staff.index') }}" class="flex flex-col gap-4 mb-3">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center flex-1">
+                {{-- Champ de recherche mobile-first --}}
+                <div class="relative w-full sm:max-w-[320px] lg:max-w-[360px]">
+                    <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </span>
+                    <input type="search" name="search" id="search" value="{{ request('search') }}"
+                           placeholder="Nom, poste, matière..."
+                           class="h-11 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-20 text-sm text-gray-700 shadow-sm transition focus:border-[#1A3A6B] focus:outline-none focus:ring-2 focus:ring-[#1A3A6B]/20">
+                    @if(request('search'))
+                        <a href="{{ route('staff.index', array_merge(request()->except('search', 'page'), [])) }}"
+                           class="absolute inset-y-0 right-11 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                           title="Effacer la recherche">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </a>
+                    @endif
+                    <button type="submit"
+                            class="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#1A3A6B] text-white shadow-sm transition hover:bg-[#163450] focus:outline-none focus:ring-2 focus:ring-[#1A3A6B]/20"
+                            aria-label="Lancer la recherche">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </button>
+                </div>
+
+                {{-- Filtre Matières --}}
+                <div class="relative w-full sm:w-auto">
+                    <select name="subject_id" onchange="this.form.submit()"
+                            class="h-11 w-full appearance-none rounded-xl border {{ request('subject_id') ? 'border-[#A35200] bg-[#FDF2E9] text-[#A35200] font-semibold' : 'border-gray-200 bg-white text-gray-600' }} pl-3 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer">
+                        <option value="">Toutes les matières</option>
+                        @foreach($subjects as $sub)
+                            <option value="{{ $sub->id }}" {{ request('subject_id') == $sub->id ? 'selected' : '' }}>
+                                {{ $sub->name_fr }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <span class="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
+                        @if(request('subject_id'))
+                            <a href="{{ route('staff.index', array_merge(request()->except('subject_id', 'page'), [])) }}"
+                               class="pointer-events-auto text-[#A35200] hover:text-[#7a3d00] transition-colors"
+                               title="Retirer ce filtre">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </a>
+                        @else
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        @endif
+                    </span>
+                </div>
+
+                {{-- Filtre Statut --}}
+                <div class="relative w-full sm:w-auto">
+                    <select name="status" onchange="this.form.submit()"
+                            class="h-11 w-full appearance-none rounded-xl border {{ request('status') ? 'border-[#A35200] bg-[#FDF2E9] text-[#A35200] font-semibold' : 'border-gray-200 bg-white text-gray-600' }} pl-3 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer">
+                        <option value="">Tous les statuts</option>
+                        <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Actifs</option>
+                        <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactifs</option>
+                    </select>
+                    <span class="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
+                        @if(request('status'))
+                            <a href="{{ route('staff.index', array_merge(request()->except('status', 'page'), [])) }}"
+                               class="pointer-events-auto text-[#A35200] hover:text-[#7a3d00] transition-colors"
+                               title="Retirer ce filtre">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </a>
+                        @else
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        @endif
+                    </span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 self-end sm:self-auto">
+                <button type="button" @click="viewMode = 'grid'"
+                        :class="viewMode === 'grid' ? 'bg-gray-100 border-gray-300 text-gray-800' : 'bg-white border-gray-200 text-gray-400'"
+                        class="p-2 border rounded-lg hover:bg-gray-50 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
                     </svg>
-                </span>
-                <input type="text" name="search" id="search" value="{{ request('search') }}"
-                       placeholder="Rechercher un enseignant..."
-                       class="w-full pl-9 {{ request('search') ? 'pr-8' : 'pr-4' }} py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                @if(request('search'))
-                    <a href="{{ route('staff.index', array_merge(request()->except('search', 'page'), [])) }}"
-                       class="absolute inset-y-0 right-2.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-                       title="Effacer la recherche">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </a>
-                @endif
+                </button>
+                <button type="button" @click="viewMode = 'list'"
+                        :class="viewMode === 'list' ? 'bg-gray-100 border-gray-300 text-gray-800' : 'bg-white border-gray-200 text-gray-400'"
+                        class="p-2 border rounded-lg hover:bg-gray-50 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+
+                <a href="{{ route('staff.documents.cards') }}"
+                   class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                   title="Cartes professionnelles">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18"/>
+                    </svg>
+                    Cartes
+                </a>
             </div>
-
-            {{-- Filtre Matières --}}
-            <div class="relative">
-                <select name="subject_id" onchange="this.form.submit()"
-                        class="appearance-none pl-3 pr-8 py-2 border {{ request('subject_id') ? 'border-[#A35200] bg-[#FDF2E9] text-[#A35200] font-semibold' : 'border-gray-200 bg-white text-gray-600' }} rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[160px] cursor-pointer">
-                    <option value="">Toutes les matières</option>
-                    @foreach($subjects as $sub)
-                        <option value="{{ $sub->id }}" {{ request('subject_id') == $sub->id ? 'selected' : '' }}>
-                            {{ $sub->name_fr }}
-                        </option>
-                    @endforeach
-                </select>
-                <span class="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
-                    @if(request('subject_id'))
-                        <a href="{{ route('staff.index', array_merge(request()->except('subject_id', 'page'), [])) }}"
-                           class="pointer-events-auto text-[#A35200] hover:text-[#7a3d00] transition-colors"
-                           title="Retirer ce filtre">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </a>
-                    @else
-                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                        </svg>
-                    @endif
-                </span>
-            </div>
-
-            {{-- Filtre Statut --}}
-            <div class="relative">
-                <select name="status" onchange="this.form.submit()"
-                        class="appearance-none pl-3 pr-8 py-2 border {{ request('status') ? 'border-[#A35200] bg-[#FDF2E9] text-[#A35200] font-semibold' : 'border-gray-200 bg-white text-gray-600' }} rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[160px] cursor-pointer">
-                    <option value="">Tous les statuts</option>
-                    <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Actifs</option>
-                    <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactifs</option>
-                </select>
-                <span class="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
-                    @if(request('status'))
-                        <a href="{{ route('staff.index', array_merge(request()->except('status', 'page'), [])) }}"
-                           class="pointer-events-auto text-[#A35200] hover:text-[#7a3d00] transition-colors"
-                           title="Retirer ce filtre">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </a>
-                    @else
-                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                        </svg>
-                    @endif
-                </span>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-3">
-            <button type="button" @click="viewMode = 'grid'"
-                    :class="viewMode === 'grid' ? 'bg-gray-100 border-gray-300 text-gray-800' : 'bg-white border-gray-200 text-gray-400'"
-                    class="p-2 border rounded-lg hover:bg-gray-50 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
-                </svg>
-            </button>
-            <button type="button" @click="viewMode = 'list'"
-                    :class="viewMode === 'list' ? 'bg-gray-100 border-gray-300 text-gray-800' : 'bg-white border-gray-200 text-gray-400'"
-                    class="p-2 border rounded-lg hover:bg-gray-50 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                </svg>
-            </button>
-
-            @can('manage-staff')
-            <a href="{{ route('staff.create') }}"
-               class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold transition-all hover:opacity-90 hover:shadow-sm"
-               style="background-color: #A35200;">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
-                </svg>
-                AJOUTER UN ENSEIGNANT
-            </a>
-            @endcan
-
-            <a href="{{ route('staff.documents.cards') }}"
-               class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-gray-200 hover:bg-gray-50"
-               title="Cartes professionnelles">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18"/>
-                </svg>
-                Cartes
-            </a>
         </div>
     </form>
 
@@ -440,5 +439,15 @@
             </a>
         </div>
     @endif
+
+    @can('manage-staff')
+    <a href="{{ route('staff.create') }}"
+       class="group fixed bottom-3 right-3 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#A35200] text-white shadow-lg transition-all duration-300 hover:w-auto hover:px-4 hover:shadow-xl sm:bottom-4 sm:right-4 sm:h-14 sm:w-14 md:h-14 md:w-14 lg:h-16 lg:w-16">
+        <svg class="h-5 w-5 transition-all duration-300 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+        </svg>
+        <span class="ml-2 hidden whitespace-nowrap text-sm font-semibold group-hover:inline-flex">Ajouter un Enseignant/Personnel</span>
+    </a>
+    @endcan
 </div>
 @endsection
