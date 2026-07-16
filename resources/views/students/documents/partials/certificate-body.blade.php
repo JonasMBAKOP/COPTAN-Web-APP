@@ -107,13 +107,21 @@
         <div class="cert-signature__date">
             <div>
                 <span>Fait à {{ $city }}, le</span>
-                <strong>{{ now()->format('d/m/Y') }}</strong>
+                {{-- <strong>{{ now()->format('d/m/Y') }}</strong> --}}
+                <strong>_________________</strong>
             </div>
             <div class="cert-translation">Done in {{ $city }}, on</div>
         </div>
-        <div class="cert-signature__principal">
-            <div>Le Principal</div>
-            <div class="cert-translation">The Principal</div>
+        <div>
+            <div class="cert-signature__principal">
+                <div>Le Principal</div>
+                <div class="cert-translation">The Principal</div>
+            </div>
+            @if($school->signature_seal)
+                <div class="cert-signature__seal">
+                    <img src="{{ asset('storage/' . $school->signature_seal) }}" alt="Cachet du Principal">
+                </div>
+            @endif
         </div>
     </div>
 

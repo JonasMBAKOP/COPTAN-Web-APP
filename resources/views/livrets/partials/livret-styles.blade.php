@@ -194,6 +194,15 @@
         font-size: 7px;
     }
 
+    .livret-signature-seal {
+        display: block;
+        width: 32mm;
+        max-width: 100%;
+        max-height: 32mm;
+        margin: 8px auto 0;
+        object-fit: contain;
+    }
+
     .grade-good   { color: #1A5C2A; font-weight: 700; }
     .grade-avg    { color: #92400E; font-weight: 700; }
     .grade-bad    { color: #DC2626; font-weight: 700; }

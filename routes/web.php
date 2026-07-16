@@ -410,6 +410,7 @@ Route::middleware(['auth', 'permission:view-students'])
             Route::get('/certificats', [StudentDocumentController::class, 'bulkCertificates'])->name('certificates');
             Route::get('/fiches', [StudentDocumentController::class, 'bulkInformationSheets'])->name('information-sheets');
             Route::get('/livrets', [StudentDocumentController::class, 'bulkBooklets'])->name('booklets');
+            Route::get('/saisie-notes', [StudentDocumentController::class, 'bulkGradeEntrySheets'])->name('grade-entry-sheets');
             Route::get('/listes', [StudentDocumentController::class, 'bulkLists'])->name('lists');
             Route::get('/listes/word', [StudentDocumentController::class, 'bulkListsWord'])->name('lists.word');
             Route::get('/rapport-effectifs', [StudentDocumentController::class, 'enrollmentTotalsReport'])->name('enrollment-totals-report');
@@ -679,6 +680,7 @@ Route::middleware(['auth', 'permission:view-discipline'])
         });
 
         Route::get('/reports', [DisciplineController::class, 'reports'])->name('reports');
+        Route::get('/reports/print', [DisciplineController::class, 'printReports'])->name('reports.print');
         Route::get('/{disciplineIncident}/print', [DisciplineController::class, 'printIncident'])->name('print');
         Route::get('/{disciplineIncident}/convocation', [DisciplineController::class, 'convocation'])->name('convocation');
         Route::get('/{disciplineIncident}', [DisciplineController::class, 'show'])->name('show');

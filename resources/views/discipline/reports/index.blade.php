@@ -76,7 +76,14 @@
             <h3 class="text-base font-black text-[#1A3A6B]">Rapport {{ ['journalier'=>'Journalier','hebdomadaire'=>'Hebdomadaire','mensuel'=>'Mensuel','annuel'=>'Annuel','entre-2-dates'=>'Entre 2 dates'][$type] ?? 'Discipline' }}</h3>
             <p class="text-sm text-gray-500">{{ $incidents->count() }} incident(s) trouvé(s)</p>
         </div>
-        <a href="{{ route('discipline.print', $incidents->first()) }}" target="_blank" class="rounded-xl border border-[#E87722] px-4 py-2 text-sm font-bold text-[#E87722] {{ $incidents->isEmpty() ? 'pointer-events-none opacity-50' : '' }}">Imprimer</a>
+        @php $printQuery = request()->except('page'); @endphp
+        <a href="{{ route('discipline.reports.print', $printQuery) }}"
+           target="_blank"
+           rel="noopener noreferrer"
+           class="rounded-xl border border-[#E87722] px-4 py-2 text-sm font-bold text-[#E87722] {{ $incidents->isEmpty() ? 'pointer-events-none opacity-50' : '' }}"
+           {{ $incidents->isEmpty() ? 'aria-disabled=true' : '' }}>
+            Imprimer
+        </a>
     </div>
 
     @if($incidents->isEmpty())

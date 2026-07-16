@@ -95,6 +95,7 @@
             ['route' => 'students.documents.certificates', 'icon' => 'certificate', 'title' => 'Certificats de scolarité', 'desc' => 'Un certificat par élève, une page chacun.', 'scope' => 'Classe, section ou établissement'],
             ['route' => 'students.documents.information-sheets', 'icon' => 'form', 'title' => 'Fiches de renseignement', 'desc' => 'Une fiche complète par élève, avec champs bilingues.', 'scope' => 'Classe, section ou établissement'],
             ['route' => 'students.documents.booklets', 'icon' => 'book', 'title' => 'Livrets scolaires', 'desc' => 'Structure matières/séquences (notes à venir).', 'scope' => 'Classe uniquement', 'class_only' => true],
+            ['route' => 'students.documents.grade-entry-sheets', 'icon' => 'form', 'title' => 'Fiches de saisie de notes', 'desc' => 'Fiches papier de saisie des notes — une fiche par matière de la classe.', 'scope' => 'Classe uniquement', 'class_only' => true],
             ['route' => 'students.documents.lists', 'icon' => 'list', 'title' => 'Listes des élèves', 'desc' => 'Par classe, section ou établissement entier.', 'scope' => 'Classe, section ou établissement'],
             ['route' => 'students.documents.enrollment-totals-report', 'icon' => 'chart', 'title' => 'Rapport des effectifs', 'desc' => 'Totaux F, G et T par section et pour tout l’établissement.', 'scope' => 'Section ou établissement', 'section_only' => true],
         ] as $doc)

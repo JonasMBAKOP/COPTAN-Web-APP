@@ -85,6 +85,36 @@ class StudentDocumentController extends Controller
         ]);
     }
 
+    public function bulkGradeEntrySheets(Request $request): View
+    {
+        $year    = $this->documents->yearFromRequest($request->integer('year_id') ?: null);
+        $filters = $this->filtersFromRequest($request);
+
+        abort_if(! $year, 422, 'Aucune année scolaire sélectionnée.');
+
+        $classId = $filters['class_id'];
+        abort_if(!$classId, 422, 'Aucune classe sélectionnée.');
+
+        $classGroup = \App\Models\ClassGroup::with(['level'])->findOrFail($classId);
+
+        $subjects = \App\Models\ClassSubject::where('class_group_id', $classId)
+            ->where('is_active', true)
+            ->with('subject')
+            ->orderBy('id')
+            ->get();
+
+        abort_if($subjects->isEmpty(), 404, 'Aucune matière assignée à cette classe.');
+
+        $students = $this->documents->getStudentsForPrint($year, $filters);
+
+        abort_if($students->isEmpty(), 404, 'Aucun élève trouvé pour cette classe.');
+
+        return view('students.documents.bulk.grade-entry-sheets', array_merge(
+            $this->documents->schoolContext(),
+            compact('year', 'classGroup', 'subjects', 'students', 'filters')
+        ));
+    }
+
     public function bulkLists(Request $request): View
     {
         $year    = $this->documents->yearFromRequest($request->integer('year_id') ?: null);

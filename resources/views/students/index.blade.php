@@ -91,7 +91,7 @@
             <div class="flex-1 min-w-[280px]">
                 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Rechercher un élève...</label>
                 <div class="relative">
-                    <span class="absolute inset-y-0 left-3 flex items-center text-gray-400">
+                    <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>

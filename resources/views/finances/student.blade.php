@@ -367,7 +367,7 @@
             </button>
         </div>
 
-        <form method="POST" action="{{ route('finances.bulk-pay', $enrollment) }}" class="space-y-4">
+        <form method="POST" action="{{ route('finances.bulk-pay', $enrollment) }}" class="space-y-4" onsubmit="submitBulkPaymentInNewTab(event)">
             @csrf
             <div>
                 <label class="block text-xs text-gray-500 mb-1">Montant à payer (FCFA)</label>
@@ -409,6 +409,47 @@ document.addEventListener('keydown', function (event) {
         closeBulkPaymentModal();
     }
 });
+
+function submitBulkPaymentInNewTab(event) {
+    event.preventDefault();
+
+    const form = event.target;
+    const action = form.action;
+    const formData = new FormData(form);
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+    const newTab = window.open('', '_blank');
+    if (!newTab) {
+        alert('Impossible d’ouvrir un nouvel onglet. Vérifiez votre bloqueur de fenêtres contextuelles.');
+        return;
+    }
+
+    fetch(action, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': csrfToken,
+        },
+        body: formData,
+    })
+    .then(async response => {
+        if (!response.ok) {
+            const responseText = await response.text();
+            throw new Error(responseText || 'Erreur lors du paiement.');
+        }
+
+        const redirectUrl = response.headers.get('x-redirect-url') || response.url;
+        const receiptUrl = redirectUrl || action;
+
+        newTab.location.href = receiptUrl;
+        window.location.reload();
+    })
+    .catch(error => {
+        newTab.close();
+        alert('Erreur : ' + error.message);
+    });
+}
 </script>
 
 @endsection

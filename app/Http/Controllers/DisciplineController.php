@@ -114,7 +114,12 @@ class DisciplineController extends Controller
             'studentEnrollment.student',
             'studentEnrollment.classGroup.level.section',
             'decidedBy', 'reportedBy',
-        ]);
+        ])->whereHas('studentEnrollment', function ($q) use ($activeYear) {
+            $q->where('status', StudentEnrollment::STATUS_ACTIVE)
+              ->when($activeYear, fn ($q) =>
+                  $q->where('academic_year_id', $activeYear->id)
+              );
+        });
 
         if ($request->filled('class_id')) {
             $query->whereHas('studentEnrollment',
@@ -151,11 +156,36 @@ class DisciplineController extends Controller
             : collect();
 
         $stats = [
-            'total'       => DisciplineIncident::count(),
-            'pending'     => DisciplineIncident::where('status', 'open')->count(),
-            'resolved'    => DisciplineIncident::where('status', 'closed')->count(),
-            'suspensions' => DisciplineIncident::where('sanction_type', 'temporary_suspension')->count(),
-            'exclusions'  => DisciplineIncident::where('sanction_type', 'definitive_exclusion')->count(),
+            'total'       => DisciplineIncident::whereHas('studentEnrollment', function ($q) use ($activeYear) {
+                                $q->where('status', StudentEnrollment::STATUS_ACTIVE)
+                                  ->when($activeYear, fn ($q) =>
+                                      $q->where('academic_year_id', $activeYear->id)
+                                  );
+                            })->count(),
+            'pending'     => DisciplineIncident::whereHas('studentEnrollment', function ($q) use ($activeYear) {
+                                $q->where('status', StudentEnrollment::STATUS_ACTIVE)
+                                  ->when($activeYear, fn ($q) =>
+                                      $q->where('academic_year_id', $activeYear->id)
+                                  );
+                            })->where('status', 'open')->count(),
+            'resolved'    => DisciplineIncident::whereHas('studentEnrollment', function ($q) use ($activeYear) {
+                                $q->where('status', StudentEnrollment::STATUS_ACTIVE)
+                                  ->when($activeYear, fn ($q) =>
+                                      $q->where('academic_year_id', $activeYear->id)
+                                  );
+                            })->where('status', 'closed')->count(),
+            'suspensions' => DisciplineIncident::whereHas('studentEnrollment', function ($q) use ($activeYear) {
+                                $q->where('status', StudentEnrollment::STATUS_ACTIVE)
+                                  ->when($activeYear, fn ($q) =>
+                                      $q->where('academic_year_id', $activeYear->id)
+                                  );
+                            })->where('sanction_type', 'temporary_suspension')->count(),
+            'exclusions'  => DisciplineIncident::whereHas('studentEnrollment', function ($q) use ($activeYear) {
+                                $q->where('status', StudentEnrollment::STATUS_ACTIVE)
+                                  ->when($activeYear, fn ($q) =>
+                                      $q->where('academic_year_id', $activeYear->id)
+                                  );
+                            })->where('sanction_type', 'definitive_exclusion')->count(),
         ];
 
         return view('discipline.index', compact(
@@ -481,13 +511,12 @@ class DisciplineController extends Controller
             'studentEnrollment.student',
             'studentEnrollment.classGroup.level.section',
             'reportedBy', 'decidedBy',
-        ]);
-
-        if ($selectedYear) {
-            $query->whereHas('studentEnrollment', function ($q) use ($selectedYear) {
-                $q->where('academic_year_id', $selectedYear->id);
-            });
-        }
+        ])->whereHas('studentEnrollment', function ($q) use ($selectedYear) {
+            $q->where('status', StudentEnrollment::STATUS_ACTIVE)
+              ->when($selectedYear, fn ($q) =>
+                  $q->where('academic_year_id', $selectedYear->id)
+              );
+        });
 
         switch ($type) {
             case 'journalier':
@@ -523,6 +552,71 @@ class DisciplineController extends Controller
             'schoolSettings', 'phones', 'agreements'
         ));
     }
+
+    public function printReports(Request $request)
+    {
+        $allowedTypes = ['journalier', 'hebdomadaire', 'mensuel', 'annuel', 'entre-2-dates'];
+        $type = $request->input('type', 'mensuel');
+        if (! in_array($type, $allowedTypes, true)) {
+            $type = 'mensuel';
+        }
+
+        $selectedYear = $request->filled('year_id')
+            ? AcademicYear::find($request->year_id)
+            : AcademicYear::active();
+
+        $date = $request->input('date', now()->toDateString());
+        $week = $request->input('week', now()->format('o-\WW'));
+        $month = (int) $request->input('month', now()->month);
+        $startDate = $request->input('start_date', now()->toDateString());
+        $endDate = $request->input('end_date', now()->toDateString());
+
+        $query = DisciplineIncident::with([
+            'studentEnrollment.student',
+            'studentEnrollment.classGroup.level.section',
+            'reportedBy', 'decidedBy',
+        ])->whereHas('studentEnrollment', function ($q) use ($selectedYear) {
+            $q->where('status', StudentEnrollment::STATUS_ACTIVE)
+              ->when($selectedYear, fn ($q) =>
+                  $q->where('academic_year_id', $selectedYear->id)
+              );
+        });
+
+        switch ($type) {
+            case 'journalier':
+                $query->whereDate('incident_date', $date);
+                break;
+            case 'hebdomadaire':
+                $weekStart = Carbon::parse($week)->startOfWeek();
+                $weekEnd = Carbon::parse($week)->endOfWeek();
+                $query->whereBetween('incident_date', [$weekStart->toDateString(), $weekEnd->toDateString()]);
+                break;
+            case 'mensuel':
+                $query->whereMonth('incident_date', $month);
+                break;
+            case 'annuel':
+                $query->whereYear('incident_date', $selectedYear?->start_date?->year ?? now()->year);
+                break;
+            case 'entre-2-dates':
+                $query->whereBetween('incident_date', [$startDate, $endDate]);
+                break;
+        }
+
+        $incidents = $query
+            ->orderByDesc('incident_date')
+            ->orderByDesc('incident_time')
+            ->get();
+
+        $schoolSettings = SchoolSetting::instance();
+        $phones = SchoolPhone::orderByDesc('is_primary')->get();
+        $agreements = SchoolAgreement::orderBy('cycle')->get();
+
+        return view('discipline.reports.print', compact(
+            'incidents', 'type', 'selectedYear', 'date', 'week', 'month', 'startDate', 'endDate',
+            'schoolSettings', 'phones', 'agreements'
+        ));
+    }
+
     // public function edit(DisciplineIncident $incident)
     // {
     //     $incident->load([

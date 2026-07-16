@@ -345,16 +345,11 @@ body {
         }
     @endphp
     <div class="amounts-wrapper">
-        <div class="seal-overlay">
-            @if($sealPath)
+        @if($sealPath)
+            <div class="seal-overlay">
                 <img src="{{ asset('storage/' . $sealPath) }}" alt="Cachet">
-            @else
-                <svg viewBox="0 0 24 24" fill="none" stroke="#1A3A6B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M8 13.5L10.8 16.3L16 11" />
-                </svg>
-            @endif
-        </div>
+            </div>
+        @endif
         <table class="amounts-table">
             <tr class="row-total">
                 <td>{{ $isEnglishReceipt ? 'Total School Fees' : 'Total des frais scolaires' }}</td>

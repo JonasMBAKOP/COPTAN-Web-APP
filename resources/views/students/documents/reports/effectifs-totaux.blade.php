@@ -99,6 +99,24 @@
 .enrollment-report-table .name-col {
     width: 28%;
 }
+.footer-signature-right {
+    margin-top: 60px;
+    margin-right: 20px;
+    padding-right: 10px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 900;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    float: right;
+}
+.footer-principal-seal {
+    max-width: 100px;
+    max-height: 100px;
+    margin-top: 6px;
+    display: block;
+}
 @media print {
     body { background: #fff !important; }
 }
@@ -197,9 +215,15 @@
         </section>
     @endforeach
 
-    <div class="footer-note">
-        Document généré le {{ now()->format('d/m/Y à H:i') }} — {{ $school->short_name ?? 'COPTAN' }}
+    <div class="footer-signature-right">
+        <div>Le Principal</div>
+        @if($school->signature_seal)
+            <img src="{{ asset('storage/' . $school->signature_seal) }}" alt="Cachet du Principal" class="footer-principal-seal">
+        @endif
     </div>
+    {{-- <div class="footer-note">
+        Document généré le {{ now()->format('d/m/Y à H:i') }} — {{ $school->short_name ?? 'COPTAN' }}
+    </div> --}}
 </div>
 </body>
 </html>

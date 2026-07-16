@@ -439,18 +439,11 @@ body {
             }
         @endphp
         <div class="card-amounts-wrapper">
-            <div class="card-seal">
-                @if($sealPath)
+            @if($sealPath)
+                <div class="card-seal">
                     <img src="{{ asset('storage/' . $sealPath) }}" alt="Cachet">
-                @else
-                    <div class="seal-placeholder">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#1A3A6B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10" />
-                            <path d="M8 13.5L10.8 16.3L16 11" />
-                        </svg>
-                    </div>
-                @endif
-            </div>
+                </div>
+            @endif
             <div class="card-amounts">
                 <div class="amt-row">
                     <span class="amt-lbl">{{ $isEnglishReceipt ? 'Total school fees' : 'Total des frais scolaires' }}</span>

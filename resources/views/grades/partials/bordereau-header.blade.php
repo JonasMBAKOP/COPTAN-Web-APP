@@ -59,7 +59,7 @@
         <div class="bordereau-header__doc-title">DOCUMENT ADMINISTRATIF</div>
         <div class="bordereau-header__doc-copy">Exemplaire Scolarité</div>
         <div class="bordereau-header__doc-year">Année scolaire : {{ $classGroup->academicYear->label ?? '—' }}</div>
-        <div class="bordereau-header__doc-date">{{ now()->locale('fr')->isoFormat('L, HH:mm') }}</div>
+        {{-- <div class="bordereau-header__doc-date">{{ now()->locale('fr')->isoFormat('L, HH:mm') }}</div> --}}
     </div>
 </div>
 <div class="bordereau-header__title-row">

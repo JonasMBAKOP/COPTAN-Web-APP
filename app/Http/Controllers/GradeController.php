@@ -20,6 +20,7 @@ use App\Models\TeacherAssignment;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 
 class GradeController extends Controller
@@ -178,18 +179,28 @@ class GradeController extends Controller
             ->get()->groupBy('class_group_id');
 
         // Nombres de notes saisies
-        $gradeCounts = Grade::selectRaw(
-            'class_subjects.class_group_id,
-             grades.sequence_id,
-             COUNT(*) as cnt'
-        )->join('class_subjects',
-            'class_subjects.id', '=', 'grades.class_subject_id')
-         ->where(fn($q) =>
-             $q->whereNotNull('grades.grade')
-               ->orWhere('grades.is_absent', true)
-         )
-         ->groupBy('class_subjects.class_group_id', 'grades.sequence_id')
-         ->get()->groupBy('class_group_id');
+        $gradeCounts = $activeYear
+            ? Grade::selectRaw(
+                'class_subjects.class_group_id,
+                 grades.sequence_id,
+                 COUNT(*) as cnt'
+            )->join('class_subjects',
+                'class_subjects.id', '=', 'grades.class_subject_id')
+             ->join('class_groups',
+                'class_groups.id', '=', 'class_subjects.class_group_id')
+             ->join('student_enrollments',
+                'student_enrollments.id', '=', 'grades.student_enrollment_id')
+             ->where('class_groups.academic_year_id', $activeYear->id)
+             ->where('class_subjects.is_active', true)
+             ->where('student_enrollments.status', 'active')
+             ->where('student_enrollments.academic_year_id', $activeYear->id)
+             ->where(fn($q) =>
+                 $q->whereNotNull('grades.grade')
+                   ->orWhere('grades.is_absent', true)
+             )
+             ->groupBy('class_subjects.class_group_id', 'grades.sequence_id')
+             ->get()->groupBy('class_group_id')
+            : collect();
 
         return view('grades.index', compact(
             'activeYear', 'sections', 'sequences',
@@ -234,8 +245,10 @@ class GradeController extends Controller
         $sequence      = null;
 
         if ($selectedClassId && $selectedSubjectId && $selectedSequenceId) {
-            $selectedClass = ClassGroup::find($selectedClassId);
-            $sequence      = Sequence::find($selectedSequenceId);
+            $selectedClass = ClassGroup::where('academic_year_id', $activeYear?->id)
+                ->find($selectedClassId);
+            $sequence = Sequence::where('academic_year_id', $activeYear?->id)
+                ->find($selectedSequenceId);
 
             $classSubject = ClassSubject::where([
                 'class_group_id' => $selectedClassId,
@@ -243,7 +256,7 @@ class GradeController extends Controller
                 'is_active'      => true,
             ])->with('subject')->first();
 
-            if ($classSubject) {
+            if ($selectedClass && $sequence && $classSubject) {
                 $enrollments = StudentEnrollment::where([
                     'class_group_id'   => $selectedClassId,
                     'academic_year_id' => $activeYear?->id,

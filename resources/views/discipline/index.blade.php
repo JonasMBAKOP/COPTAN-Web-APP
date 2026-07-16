@@ -92,9 +92,9 @@
                     Générer convocations sélectionnées
                 </button>
                 @endcan
-                <button type="button" id="open-report-modal" class="px-4 py-2 rounded-lg border border-[#1A3A6B] text-sm font-bold text-[#1A3A6B] hover:bg-[#F8FAFC] transition-all">
+                <a href="{{ route('discipline.reports') }}" class="px-4 py-2 rounded-lg border border-[#1A3A6B] text-sm font-bold text-[#1A3A6B] hover:bg-[#F8FAFC] transition-all">
                     Rapport d'incidents
-                </button>
+                </a>
                 <span class="text-xs text-gray-500">Sélectionnez uniquement les incidents dont les parents ont été convoqués.</span>
             </div>
             <div class="text-xs text-gray-500">Convocation disponible pour <strong>{{ $incidents->where('parent_convoked', true)->count() }}</strong> incident(s)</div>

@@ -100,7 +100,7 @@
                         @foreach([
                             ['val' => 'general',   'label' => 'Générale'],
                             ['val' => 'technical', 'label' => 'Technique'],
-                            ['val' => 'language',  'label' => 'Langue'],
+                            // ['val' => 'language',  'label' => 'Langue'],
                             // ['val' => 'sport',     'label' => 'Sport'],
                             ['val' => 'other',     'label' => 'Autre'],
                         ] as $t)

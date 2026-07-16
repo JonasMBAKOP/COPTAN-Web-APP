@@ -167,11 +167,29 @@ class AcademicYearController extends Controller
                                        ->where('status', 'active')->count(),
             'grades'   => \App\Models\Grade::whereHas('sequence', fn($q) =>
                               $q->where('academic_year_id', $academicYear->id)
-                          )->count(),
+                          )->where(fn($q) => $q->whereNotNull('grade')->orWhere('is_absent', true))->count(),
+        ];
+
+        $associated = [
+            'sections' => \App\Models\Section::whereHas('levels.classGroups', fn($q) =>
+                $q->where('academic_year_id', $academicYear->id)
+            )->count(),
+            'enrollments' => $academicYear->studentEnrollments()->count(),
+            'bulletins' => \App\Models\BulletinReport::whereHas('sequence', fn($q) =>
+                $q->where('academic_year_id', $academicYear->id)
+            )->count(),
+            'payments_count' => \App\Models\StudentPayment::visible()
+                ->whereHas('studentEnrollment', fn($q) =>
+                    $q->where('academic_year_id', $academicYear->id)
+                )->count(),
+            'payments_amount' => \App\Models\StudentPayment::visible()
+                ->whereHas('studentEnrollment', fn($q) =>
+                    $q->where('academic_year_id', $academicYear->id)
+                )->sum('amount_paid'),
         ];
 
         return view('academic-years.show',
-            compact('academicYear', 'stats'));
+            compact('academicYear', 'stats', 'associated'));
     }
 
     // ── ANNÉES SCOLAIRES — MODIFICATION ────────────────────────────────────

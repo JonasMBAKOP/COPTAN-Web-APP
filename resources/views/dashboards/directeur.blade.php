@@ -273,13 +273,13 @@
                 @endforeach
             </select>
 
-            <select id="sequence_select" name="performance_target_id" class="rounded-xl border-gray-200 text-sm text-gray-700 px-4 py-3 shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500" @if($performanceScope !== 'sequence') style="display:none;" @endif>
+            <select id="sequence_select" name="sequence_target_id" class="rounded-xl border-gray-200 text-sm text-gray-700 px-4 py-3 shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500" @if($performanceScope !== 'sequence') style="display:none;" @endif>
                 @foreach($sequences as $seq)
                 <option value="{{ $seq->id }}" @selected($performanceTargetId == $seq->id)>{{ $seq->label }}</option>
                 @endforeach
             </select>
 
-            <select id="trimester_select" name="performance_target_id" class="rounded-xl border-gray-200 text-sm text-gray-700 px-4 py-3 shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500" @if($performanceScope !== 'trimestre') style="display:none;" @endif>
+            <select id="trimester_select" name="trimester_target_id" class="rounded-xl border-gray-200 text-sm text-gray-700 px-4 py-3 shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500" @if($performanceScope !== 'trimestre') style="display:none;" @endif>
                 @foreach($trimesters as $trim)
                 <option value="{{ $trim->id }}" @selected($performanceTargetId == $trim->id)>{{ $trim->label }}</option>
                 @endforeach

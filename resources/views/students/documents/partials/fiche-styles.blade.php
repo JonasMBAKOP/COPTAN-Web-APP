@@ -86,19 +86,33 @@
 }
 .fiche-principal-signature {
     width: 56mm;
-    margin-top: -8mm;
-    margin: 10mm 5mm 0 auto;
-    margin-bottom: 12mm;
+    margin-top: 2mm;
+    margin: 2mm 5mm 0 auto;
+    margin-bottom: 8mm;
     text-align: center;
     color: #111827;
     font-size: 14px;
     font-weight: 900;
+}
+.fiche-principal-signature--tight {
+    margin-top: 0;
+    margin-bottom: 6mm;
 }
 .fiche-principal-signature__en {
     margin-top: 1px;
     font-size: 10px;
     font-style: italic;
     font-weight: 700;
+}
+.fiche-principal-signature__seal {
+    margin-top: 4px;
+}
+.fiche-principal-signature__seal img {
+    max-width: 65px;
+    max-height: 65px;
+    display: block;
+    margin: 6px auto 0;
+    margin-top: -4px;
 }
 @media print {
     .fiche-print-page { page-break-after: always; }

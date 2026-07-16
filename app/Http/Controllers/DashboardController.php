@@ -148,34 +148,84 @@ class DashboardController extends Controller
         $classGroups = ClassGroup::where('academic_year_id', $activeYear->id)
             ->with('level.section')->get();
 
-        $resultsByClass = $classGroups->map(function ($class) use ($sequences, $trimesters) {
-            $gradeBase = Grade::whereHas('classSubject', fn($q) => $q->where('class_group_id', $class->id));
-            $annualTotal = $gradeBase->whereNotNull('grade')->count();
-            $annualSuccess = $gradeBase->whereNotNull('grade')->where('grade', '>=', 10)->count();
-            $annualAvg = $gradeBase->whereNotNull('grade')->avg('grade') ?: 0;
+        $resultsByClass = $classGroups->map(function ($class) use ($sequences, $trimesters, $activeYear) {
+            $baseCriteria = fn($query) => $query
+                ->whereHas('classSubject', fn($q) => $q
+                    ->where('class_group_id', $class->id)
+                    ->where('is_active', true))
+                ->whereHas('studentEnrollment', fn($q) => $q
+                    ->where('status', 'active')
+                    ->where('academic_year_id', $activeYear->id))
+                ->whereHas('sequence', fn($q) => $q
+                    ->where('academic_year_id', $activeYear->id));
 
-            $sequenceResults = $sequences->map(function ($seq) use ($class) {
-                $query = Grade::whereHas('classSubject', fn($q) => $q->where('class_group_id', $class->id))
-                    ->where('sequence_id', $seq->id)->whereNotNull('grade');
+            $annualTotal = Grade::query()
+                ->where($baseCriteria)
+                ->whereNotNull('grade')
+                ->count();
+
+            $annualSuccess = Grade::query()
+                ->where($baseCriteria)
+                ->whereNotNull('grade')
+                ->where('grade', '>=', 10)
+                ->count();
+
+            $annualAvg = Grade::query()
+                ->where($baseCriteria)
+                ->whereNotNull('grade')
+                ->avg('grade') ?: 0;
+
+            $sequenceResults = $sequences->map(function ($seq) use ($class, $baseCriteria) {
+                $query = Grade::query()
+                    ->where($baseCriteria)
+                    ->where('sequence_id', $seq->id)
+                    ->whereNotNull('grade');
+
                 $count = $query->count();
+                $successCount = Grade::query()
+                    ->where($baseCriteria)
+                    ->where('sequence_id', $seq->id)
+                    ->whereNotNull('grade')
+                    ->where('grade', '>=', 10)
+                    ->count();
+
                 return [
                     'id' => $seq->id,
                     'label' => $seq->label,
-                    'success_pct' => $count > 0 ? round(($query->where('grade', '>=', 10)->count() / $count) * 100) : 0,
-                    'avg_grade' => $query->avg('grade') ?: 0,
+                    'success_pct' => $count > 0 ? round(($successCount / $count) * 100) : 0,
+                    'avg_grade' => Grade::query()
+                        ->where($baseCriteria)
+                        ->where('sequence_id', $seq->id)
+                        ->whereNotNull('grade')
+                        ->avg('grade') ?: 0,
                 ];
             });
 
-            $trimesterResults = $trimesters->map(function ($trimester) use ($class) {
+            $trimesterResults = $trimesters->map(function ($trimester) use ($class, $baseCriteria) {
                 $sequenceIds = $trimester->sequences->pluck('id');
-                $query = Grade::whereHas('classSubject', fn($q) => $q->where('class_group_id', $class->id))
-                    ->whereIn('sequence_id', $sequenceIds)->whereNotNull('grade');
-                $count = $query->count();
+
+                $count = Grade::query()
+                    ->where($baseCriteria)
+                    ->whereIn('sequence_id', $sequenceIds)
+                    ->whereNotNull('grade')
+                    ->count();
+
+                $successCount = Grade::query()
+                    ->where($baseCriteria)
+                    ->whereIn('sequence_id', $sequenceIds)
+                    ->whereNotNull('grade')
+                    ->where('grade', '>=', 10)
+                    ->count();
+
                 return [
                     'id' => $trimester->id,
                     'label' => $trimester->label,
-                    'success_pct' => $count > 0 ? round(($query->where('grade', '>=', 10)->count() / $count) * 100) : 0,
-                    'avg_grade' => $query->avg('grade') ?: 0,
+                    'success_pct' => $count > 0 ? round(($successCount / $count) * 100) : 0,
+                    'avg_grade' => Grade::query()
+                        ->where($baseCriteria)
+                        ->whereIn('sequence_id', $sequenceIds)
+                        ->whereNotNull('grade')
+                        ->avg('grade') ?: 0,
                 ];
             });
 
@@ -192,6 +242,16 @@ class DashboardController extends Controller
 
         $performanceScope = request('performance_scope', 'annuel');
         $performanceTargetId = request('performance_target_id');
+        $sequenceTargetId = request('sequence_target_id');
+        $trimesterTargetId = request('trimester_target_id');
+
+        if ($performanceScope === 'sequence') {
+            $performanceTargetId = $sequenceTargetId ?? $performanceTargetId;
+        } elseif ($performanceScope === 'trimestre') {
+            $performanceTargetId = $trimesterTargetId ?? $performanceTargetId;
+        } else {
+            $performanceTargetId = null;
+        }
 
         if ($performanceScope === 'sequence' && !$performanceTargetId && $sequences->isNotEmpty()) {
             $performanceTargetId = $sequences->first()->id;

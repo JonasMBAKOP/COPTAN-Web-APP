@@ -135,22 +135,13 @@ class AbsenceController extends Controller
         }
 
         // Absences récentes (filtrées par classe ou section)
-        $recentAbsences = Absence::when($selectedClassId || $selectedSectionId, function ($q) use ($selectedClassId, $selectedSectionId) {
-            $q->where(function ($q2) use ($selectedClassId, $selectedSectionId) {
-                $q2->whereHas('studentEnrollment', function ($q3) use ($selectedClassId, $selectedSectionId) {
-                    if ($selectedClassId) {
-                        $q3->where('class_group_id', $selectedClassId);
-                    }
-
-                    if (! $selectedClassId && $selectedSectionId) {
-                        $q3->whereHas('classGroup.level', fn ($q4) =>
-                            $q4->where('section_id', $selectedSectionId)
-                        );
-                    }
-                })
-                ->orWhereNull('student_enrollment_id')
-                ->orWhereDoesntHave('studentEnrollment');
-            });
+        $recentAbsences = Absence::whereHas('studentEnrollment', function ($q) use ($selectedClassId, $selectedSectionId, $activeYear) {
+            $q->where('status', 'active')
+              ->when($activeYear, fn($q2) => $q2->where('academic_year_id', $activeYear->id))
+              ->when($selectedClassId, fn($q2) => $q2->where('class_group_id', $selectedClassId))
+              ->when(!$selectedClassId && $selectedSectionId, fn($q2) => $q2->whereHas('classGroup.level', fn ($q3) =>
+                    $q3->where('section_id', $selectedSectionId)
+                ));
         })->with([
             'studentEnrollment.student',
             'studentEnrollment.classGroup',

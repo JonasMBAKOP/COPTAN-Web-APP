@@ -447,18 +447,11 @@ body {
             $sealPath = $currentUser?->signature_seal;
         }
     @endphp
-    <div class="seal-section">
-        @if($sealPath)
+    @if($sealPath)
+        <div class="seal-section">
             <img src="{{ asset('storage/' . $sealPath) }}" alt="Cachet">
-        @else
-            <div class="seal-placeholder">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="10" stroke="#7FA6C4" stroke-width="2" fill="rgba(127, 166, 196, 0.15)"/>
-                    <path d="M8 13.5L10.8 16.3L16 11" stroke="#1A3A6B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </div>
-        @endif
-    </div>
+        </div>
+    @endif
 
     {{-- ── ÉTAT GÉNÉRAL DES FRAIS ──────────────────────────────────────── --}}
     <div class="section-title" style="margin-top:0; border-top:2px solid #DDECF6;">

@@ -283,24 +283,32 @@
     </div>
 </div>
 
-{{-- ── MODULES À VENIR ──────────────────────────────────────────────────── --}}
+{{-- ── DONNÉES ASSOCIÉES ─────────────────────────────────────────────────── --}}
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
     <h3 class="font-semibold text-gray-400 text-sm uppercase tracking-wider mb-4">
-        Données associées (disponibles au fur et à mesure)
+        Données associées
     </h3>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        @foreach([
-            ['label' => 'Classes & Sections', 'icon' => 'classes'],
-            ['label' => 'Élèves & Inscriptions', 'icon' => 'students'],
-            ['label' => 'Notes & Bulletins', 'icon' => 'grades'],
-            ['label' => 'Finances', 'icon' => 'finances'],
-        ] as $item)
-        <div class="flex items-center gap-2 p-3 rounded-xl bg-gray-50
-                    border border-dashed border-gray-200">
-            <span class="text-lg">{{ $item['icon'] }}</span>
-            <span class="text-xs text-gray-400">{{ $item['label'] }}</span>
+        <div class="p-4 rounded-xl bg-gray-50 border border-gray-200">
+            <div class="text-xs uppercase tracking-wide text-gray-400">Classes</div>
+            <div class="text-2xl font-bold text-gray-900">{{ $stats['classes'] }}</div>
+            <div class="text-xs text-gray-500">Sections : {{ $associated['sections'] }}</div>
         </div>
-        @endforeach
+        <div class="p-4 rounded-xl bg-gray-50 border border-gray-200">
+            <div class="text-xs uppercase tracking-wide text-gray-400">Élèves actifs</div>
+            <div class="text-2xl font-bold text-gray-900">{{ $stats['students'] }}</div>
+            <div class="text-xs text-gray-500">Inscriptions totales : {{ $associated['enrollments'] }}</div>
+        </div>
+        <div class="p-4 rounded-xl bg-gray-50 border border-gray-200">
+            <div class="text-xs uppercase tracking-wide text-gray-400">Notes saisies</div>
+            <div class="text-2xl font-bold text-gray-900">{{ number_format($stats['grades']) }}</div>
+            <div class="text-xs text-gray-500">Bulletins : {{ $associated['bulletins'] }}</div>
+        </div>
+        <div class="p-4 rounded-xl bg-gray-50 border border-gray-200">
+            <div class="text-xs uppercase tracking-wide text-gray-400">Finances</div>
+            <div class="text-2xl font-bold text-gray-900">{{ $associated['payments_count'] }}</div>
+            <div class="text-xs text-gray-500">Montant : {{ number_format($associated['payments_amount'], 0, ',', ' ') }} FCFA</div>
+        </div>
     </div>
 </div>
 

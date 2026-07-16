@@ -392,12 +392,19 @@
 
     <div style="margin-top: 50px; padding-top: 10px; display: flex; justify-content: flex-end;">
         <div style="width: 50%; text-align: center;">
-            <div style="font-size: 7px; color: #6B7280; margin-bottom: 8px;">
-                Fait à {{ $school->city ?? 'Douala' }} le : __ / __ /____
+            <div style="font-size: 10px; color: #6B7280; margin-bottom: 8px;">
+                Fait à {{ $school->city ?? 'Douala' }} le : _________________
             </div>
-            <div style="font-size: 8px; font-weight: 900; color: #1A3A6B; text-transform: uppercase;">
+            <div style="font-size: 10px; font-weight: 900; color: #1A3A6B; text-transform: uppercase; margin-top: 20px">
                 Le Principal
             </div>
+            @if($school->signature_seal)
+                <img
+                    src="{{ $forPdf ? public_path('storage/' . $school->signature_seal) : asset('storage/' . $school->signature_seal) }}"
+                    alt="Cachet du Principal"
+                    class="livret-signature-seal"
+                >
+            @endif
         </div>
     </div>
 

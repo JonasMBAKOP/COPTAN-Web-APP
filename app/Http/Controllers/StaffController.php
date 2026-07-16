@@ -360,13 +360,14 @@ class StaffController extends Controller
         ]);
         $data['is_active'] = $request->boolean('is_active');
 
-        // Nouvelle photo
+        $newPhotoPath = null;
         if ($request->hasFile('photo')) {
             if ($staff->photo) {
                 Storage::disk('public')->delete($staff->photo);
             }
-            $data['photo'] = $request->file('photo')
+            $newPhotoPath = $request->file('photo')
                 ->store('staff/photos', 'public');
+            $data['photo'] = $newPhotoPath;
         }
 
         // Gérer le compte utilisateur
@@ -394,15 +395,26 @@ class StaffController extends Controller
         }
 
         $old = $staff->toArray();
-        $staff->update($data);
 
-        // Resynchroniser les postes
-        $this->syncPositions(
-            $staff,
-            $request->input('positions', []),
-            $request->input('primary_position')
-        );
+        try {
+            DB::transaction(function () use ($staff, $data, $request) {
+                $staff->update($data);
 
+                $this->syncPositions(
+                    $staff,
+                    $request->input('positions', []),
+                    $request->input('primary_position')
+                );
+            });
+        } catch (\Throwable $e) {
+            if ($newPhotoPath && Storage::disk('public')->exists($newPhotoPath)) {
+                Storage::disk('public')->delete($newPhotoPath);
+            }
+            return back()->withInput()
+                ->with('error', 'Erreur lors de la mise à jour : ' . $e->getMessage());
+        }
+
+        $staff->refresh();
         AuditLog::log('updated', $staff, $old, $staff->toArray());
 
         return redirect()

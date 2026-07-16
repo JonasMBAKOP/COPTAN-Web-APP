@@ -1,22 +1,32 @@
 <style>
-@page { size: A4 portrait; margin: 3mm 4mm; }
+@page { size: A4 portrait; margin: 5mm; }
 @media print {
     .no-print { display: none !important; }
-    body { background: #fff !important; padding: 0 !important; }
+    body { background: #fff !important; padding: 0 !important; margin: 0 !important; }
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 16px;
     color: #111827;
-    background: #eef1f5;
-    padding: 4px;
+    background: #ffffff;
+    padding: 0;
+    margin: 0;
+}
+.meta-line {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+.data-table {
+    margin: 0 !important;
+    padding: 0 !important;
 }
 .page {
-    max-width: 186mm;
-    margin: 0 auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
     background: #fff;
-    padding: 5mm 8mm;
+    padding: 0;
 }
 .page.cert-page {
     max-width: 196mm;
@@ -262,20 +272,20 @@ body {
         text-align: right;
     }
     .bordereau-header__doc-title {
-        font-size: 11px;
+        font-size: 13px;
         font-weight: 900;
         text-transform: uppercase;
         color: #1A3A6B;
         letter-spacing: .05em;
     }
     .bordereau-header__doc-copy {
-        font-size: 10px;
+        font-size: 12px;
         font-weight: 700;
         color: #CC6000;
     }
     .bordereau-header__doc-year,
     .bordereau-header__doc-date {
-        font-size: 10px;
+        font-size: 12px;
         color: #1A3A6B;
         font-weight: 700;
     }
@@ -293,8 +303,9 @@ body {
         text-decoration: underline;
     }
     .bordereau-header__subtitle {
-        font-size: 12px;
-        color: #475569;
+        font-size: 15px;
+        color: black;
+        font-weight: 700;
         margin-top: 4px;
     }
 
@@ -490,18 +501,21 @@ body {
     grid-template-columns: 1fr 58mm;
     align-items: start;
     gap: 12mm;
-    margin-top: 28px;
+    margin-top: 30px;
     margin-left: 55mm;
 }
 .cert-signature__date {
     font-size: 14px;
+    margin-top: 30px;
+    width: 300px;
+    margin-left: -100px;
 }
 .cert-signature__date strong {
     margin-left: 8px;
     font-size: 15px;
 }
 .cert-signature__principal {
-    margin-top: 22px;
+    margin-top: 80px;
     text-align: center;
     font-size: 16px;
     font-weight: 900;
@@ -509,8 +523,17 @@ body {
 .cert-signature__principal .cert-translation {
     font-size: 10.5px;
 }
+.cert-signature__seal {
+    margin-top: 8px;
+}
+.cert-signature__seal img {
+    max-width: 50px;
+    max-height: 50px;
+    display: block;
+    margin: 6px auto 0;
+}
 .cert-note {
-    margin-top: 180px;
+    margin-top: 100px;
     text-align: center;
     font-size: 12px;
     font-weight: 700;

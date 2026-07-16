@@ -50,6 +50,24 @@ body { margin: 0; padding: 0; }
 .list-table td.num { width: 32px; text-align: center; color: #6B7280; font-size: 10px; }
 .list-table td.mat { font-family: 'Courier New', monospace; font-size: 10px; }
 .list-summary { font-size: 10px; color: #6B7280; margin-bottom: 8px; }
+.footer-signature-right {
+    margin-top: 60px;
+    margin-right: 18px;
+    padding-right: 10px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 900;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    float: right;
+}
+.footer-principal-seal {
+    max-width: 100px;
+    max-height: 100px;
+    margin-top: 6px;
+    display: block;
+}
 @media print {
     body { background: #fff !important; }
     .section-banner { page-break-before: auto; }
@@ -131,9 +149,15 @@ body { margin: 0; padding: 0; }
     @endforeach
     @endforeach
 
-    <div class="footer-note">
-        Total général : {{ $totalStudents }} élève(s) — Document généré le {{ now()->format('d/m/Y à H:i') }}
+    <div class="footer-signature-right">
+        <div>Le Principal</div>
+        @if($school->signature_seal)
+            <img src="{{ asset('storage/' . $school->signature_seal) }}" alt="Cachet du Principal" class="footer-principal-seal">
+        @endif
     </div>
+    {{-- <div class="footer-note">
+        Total général : {{ $totalStudents }} élève(s) — Document généré le {{ now()->format('d/m/Y à H:i') }}
+    </div> --}}
 </div>
 </body>
 </html>

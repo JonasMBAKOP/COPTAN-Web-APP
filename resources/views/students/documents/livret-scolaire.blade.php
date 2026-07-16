@@ -18,6 +18,12 @@
     background: #FEF3C7; border: 1px solid #FCD34D; padding: 10px;
     font-size: 10px; color: #92400E; margin-bottom: 12px; border-radius: 4px;
 }
+.livret-seal {
+    display: block;
+    max-width: 60px;
+    max-height: 60px;
+    margin: 6px auto 0;
+}
 </style>
 </head>
 <body>
@@ -83,7 +89,7 @@
         </tbody>
     </table>
 
-    <div class="signature-block">
+    <div class="signature-block signature-block--tight">
         <div class="signature-box">
             <div>Le/La Professeur principal(e)</div>
             <div class="signature-line">Signature</div>
@@ -91,6 +97,9 @@
         <div class="signature-box">
             <div>Le/La Chef(fe) d'établissement</div>
             <div class="signature-line">Signature et cachet</div>
+            @if($school->signature_seal)
+                <img src="{{ asset('storage/' . $school->signature_seal) }}" alt="Cachet du Principal" class="livret-seal">
+            @endif
         </div>
     </div>
 </div>

@@ -1107,7 +1107,7 @@
                 </div>
 
                 {{-- Actions sur l'inscription --}}
-                @can('manage-students')
+                {{-- @can('manage-students')
                 @if($enr->status === 'active')
                 <div class="flex flex-col items-end gap-2">
                     <div x-data="{ open: false }" class="relative">
@@ -1170,7 +1170,7 @@
                     </div>
                 </div>
                 @endif
-                @endcan
+                @endcan --}}
             </div>
             @endforeach
         </div>
