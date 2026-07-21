@@ -89,6 +89,42 @@ class StaffAndStudentFlowTest extends TestCase
     /**
      * Test: Create student with enrollment
      */
+    public function test_students_index_can_show_students_for_inactive_year()
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('super-admin');
+
+        $year = AcademicYear::factory()->create(['is_active' => false]);
+        $section = Section::factory()->create();
+        $level = Level::factory()->create(['section_id' => $section->id]);
+        $class = ClassGroup::factory()->create([
+            'academic_year_id' => $year->id,
+            'level_id' => $level->id,
+            'max_students' => 50,
+        ]);
+
+        $student = Student::factory()->create([
+            'first_name' => 'Alice',
+            'last_name' => 'Tchoua',
+            'matricule' => 'STU-1001',
+        ]);
+
+        StudentEnrollment::factory()->create([
+            'student_id' => $student->id,
+            'class_group_id' => $class->id,
+            'academic_year_id' => $year->id,
+            'status' => 'inactive',
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->withoutMiddleware()
+            ->get(route('students.index', ['year_id' => $year->id]));
+
+        $response->assertOk();
+        $response->assertSee('Alice');
+        $response->assertSee('Tchoua');
+    }
+
     public function test_create_student_with_enrollment()
     {
         // Setup

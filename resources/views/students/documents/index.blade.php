@@ -91,7 +91,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         @foreach([
-            ['route' => 'students.documents.cards', 'icon' => 'card', 'title' => 'Cartes scolaires', 'desc' => '8 cartes par page A4 (portrait), format identité.', 'scope' => 'Classe, section ou établissement'],
+            ['route' => 'students.documents.cards', 'icon' => 'card', 'title' => 'Cartes scolaires', 'desc' => '10 cartes par page A4 (portrait), format identité.', 'scope' => 'Classe, section ou établissement'],
             ['route' => 'students.documents.certificates', 'icon' => 'certificate', 'title' => 'Certificats de scolarité', 'desc' => 'Un certificat par élève, une page chacun.', 'scope' => 'Classe, section ou établissement'],
             ['route' => 'students.documents.information-sheets', 'icon' => 'form', 'title' => 'Fiches de renseignement', 'desc' => 'Une fiche complète par élève, avec champs bilingues.', 'scope' => 'Classe, section ou établissement'],
             ['route' => 'students.documents.booklets', 'icon' => 'book', 'title' => 'Livrets scolaires', 'desc' => 'Structure matières/séquences (notes à venir).', 'scope' => 'Classe uniquement', 'class_only' => true],

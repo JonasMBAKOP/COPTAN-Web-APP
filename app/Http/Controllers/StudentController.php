@@ -51,23 +51,32 @@ class StudentController extends Controller
             } else {
                 $query->whereHas('enrollments', fn ($q) =>
                     $q->where('academic_year_id', $selectedYear->id)
-                      ->where('status', StudentEnrollment::STATUS_ACTIVE)
                 );
             }
         }
 
         // Filtrer par classe spécifique
         if ($request->filled('class_id')) {
-            $query->whereHas('enrollments', fn($q) =>
-                $q->where('class_group_id', $request->class_id)
-            );
+            $query->whereHas('enrollments', function ($q) use ($request, $selectedYear) {
+                $q->where('class_group_id', $request->class_id);
+
+                if ($selectedYear) {
+                    $q->where('academic_year_id', $selectedYear->id);
+                }
+            });
         }
 
         // Filtrer par section
         if ($request->filled('section_id')) {
-            $query->whereHas('enrollments.classGroup.level', fn($q) =>
-                $q->where('section_id', $request->section_id)
-            );
+            $query->whereHas('enrollments', function ($q) use ($request, $selectedYear) {
+                $q->whereHas('classGroup.level', fn($levelQuery) =>
+                    $levelQuery->where('section_id', $request->section_id)
+                );
+
+                if ($selectedYear) {
+                    $q->where('academic_year_id', $selectedYear->id);
+                }
+            });
         }
 
         // Recherche
@@ -90,8 +99,7 @@ class StudentController extends Controller
                             $y->where('start_date', '<', $selectedYear->start_date)
                         );
                     } elseif ($selectedYear) {
-                        $q->where('academic_year_id', $selectedYear->id)
-                          ->where('status', StudentEnrollment::STATUS_ACTIVE);
+                        $q->where('academic_year_id', $selectedYear->id);
                     }
                 },
             ])
@@ -105,27 +113,28 @@ class StudentController extends Controller
                 ->with('level.section')->orderBy('name')->get()
             : collect();
 
-        // Stats
+        // Stats (uniquement inscriptions actives)
         $stats = [
             'total'     => $selectedYear
                 ? StudentEnrollment::where('academic_year_id', $selectedYear->id)
-                    ->where('status', 'active')->count()
-                : Student::count(),
+                    ->where('status', StudentEnrollment::STATUS_ACTIVE)
+                    ->count()
+                : StudentEnrollment::where('status', StudentEnrollment::STATUS_ACTIVE)->count(),
             'boys'      => $selectedYear
                 ? StudentEnrollment::where('academic_year_id', $selectedYear->id)
-                    ->where('status', 'active')
+                    ->where('status', StudentEnrollment::STATUS_ACTIVE)
                     ->whereHas('student', fn($q) => $q->where('gender', 'M'))
                     ->count()
                 : 0,
             'girls'     => $selectedYear
                 ? StudentEnrollment::where('academic_year_id', $selectedYear->id)
-                    ->where('status', 'active')
+                    ->where('status', StudentEnrollment::STATUS_ACTIVE)
                     ->whereHas('student', fn($q) => $q->where('gender', 'F'))
                     ->count()
                 : 0,
             'repeating' => $selectedYear
                 ? StudentEnrollment::where('academic_year_id', $selectedYear->id)
-                    ->where('status', 'active')
+                    ->where('status', StudentEnrollment::STATUS_ACTIVE)
                     ->where('is_repeating', true)->count()
                 : 0,
         ];

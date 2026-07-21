@@ -8,6 +8,7 @@ use App\Models\AcademicYear;
 use App\Models\Trimester;
 use App\Models\Sequence;
 use App\Models\AuditLog;
+use App\Models\StudentEnrollment;
 use Illuminate\Http\Request;
 use App\Models\ClassGroup;
 use App\Models\ClassSubject;
@@ -28,8 +29,7 @@ class AcademicYearController extends Controller
         $years = AcademicYear::withCount([
             /* 'sequences', */
             'classGroups',
-            'studentEnrollments' => fn($q) =>
-            $q->where('status', 'active'),
+            'studentEnrollments',
         ])
         ->with(['trimesters.sequences'])
         ->orderByDesc('start_date')
@@ -52,25 +52,26 @@ class AcademicYearController extends Controller
         // Nombre de sections par année (via les classes)
         $sectionsCount = \App\Models\Section::count();
 
-        // Données de croissance (5 dernières années)
-        $growthData = AcademicYear::withCount([
-            'studentEnrollments' => fn($q) =>
-                $q->where('status', 'active'),
-        ])
-        ->orderBy('start_date')
-        ->get()
-        ->map(fn($y) => [
-            'label' => $y->label,
-            'count' => $y->student_enrollments_count,
-        ]);
+        // Données de croissance (5 dernières années) — effectifs annuels par année scolaire
+        $growthData = AcademicYear::withCount('studentEnrollments')
+            ->orderBy('start_date')
+            ->get()
+            ->map(fn($y) => [
+                'label' => $y->label,
+                'count' => $y->student_enrollments_count,
+                'is_active' => $y->is_active,
+                'status' => $y->is_active
+                    ? 'Active'
+                    : ($y->end_date < now() ? 'Clôturée' : 'En préparation'),
+            ]);
 
         // Taux de croissance
         $growthRate = null;
         if ($growthData->count() >= 2) {
-            $last     = $growthData->last()['count'];
-            $previous = $growthData->slice(-2, 1)->first()['count'];
-            if ($previous > 0) {
-                $growthRate = round((($last - $previous) / $previous) * 100, 1);
+            $first = $growthData->first()['count'];
+            $last  = $growthData->last()['count'];
+            if ($first > 0) {
+                $growthRate = round((($last - $first) / $first) * 100, 1);
             }
         }
 
@@ -163,8 +164,7 @@ class AcademicYearController extends Controller
 
         $stats = [
             'classes'  => $academicYear->classGroups()->count(),
-            'students' => $academicYear->studentEnrollments()
-                                       ->where('status', 'active')->count(),
+            'students' => $academicYear->studentEnrollments()->count(),
             'grades'   => \App\Models\Grade::whereHas('sequence', fn($q) =>
                               $q->where('academic_year_id', $academicYear->id)
                           )->where(fn($q) => $q->whereNotNull('grade')->orWhere('is_absent', true))->count(),

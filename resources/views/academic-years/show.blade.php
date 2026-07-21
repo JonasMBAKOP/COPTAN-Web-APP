@@ -126,7 +126,7 @@
     @foreach([
         ['label' => 'Classes',  'value' => $stats['classes'],
          'icon' => '#1A3A6B', 'bg' => '#EBF3FB'],
-        ['label' => 'Élèves actifs', 'value' => $stats['students'],
+        ['label' => 'Élèves', 'value' => $stats['students'],
          'icon' => '#1A5C2A', 'bg' => '#EAF5EA'],
         ['label' => 'Notes saisies', 'value' => number_format($stats['grades']),
          'icon' => '#C8A415', 'bg' => '#FBF5E6'],

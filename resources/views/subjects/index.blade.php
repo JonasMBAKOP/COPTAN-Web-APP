@@ -169,10 +169,10 @@
                 <thead>
                     <tr style="background-color: #F8FAFC;"
                         class="border-b border-gray-100">
-                        <th class="text-left px-5 py-3.5 text-xs font-semibold
+                        {{-- <th class="text-left px-5 py-3.5 text-xs font-semibold
                                    text-gray-400 uppercase tracking-wider">
                             Code
-                        </th>
+                        </th> --}}
                         <th class="text-left px-5 py-3.5 text-xs font-semibold
                                    text-gray-400 uppercase tracking-wider">
                             Nom de la matière
@@ -238,12 +238,12 @@
                     <tr class="hover:bg-gray-50/50 transition-colors">
 
                         {{-- Code --}}
-                        <td class="px-5 py-4">
+                        {{-- <td class="px-5 py-4">
                             <span class="font-mono font-bold text-sm"
                                   style="color: #1A3A6B;">
                                 {{ $subject->code }}
                             </span>
-                        </td>
+                        </td> --}}
 
                         {{-- Nom --}}
                         <td class="px-5 py-4">
@@ -415,10 +415,10 @@
             @endphp
             <div class="p-4 flex items-center justify-between gap-3">
                 <div class="flex items-center gap-3 min-w-0">
-                    <span class="font-mono font-bold text-sm flex-shrink-0"
+                    {{-- <span class="font-mono font-bold text-sm flex-shrink-0"
                           style="color: #1A3A6B;">
                         {{ $subject->code }}
-                    </span>
+                    </span> --}}
                     <div class="min-w-0">
                         <p class="text-sm font-medium text-gray-800 truncate">
                             {{ $subject->name_fr }}
@@ -516,9 +516,9 @@
             $section      = $data['section'];
             $sectionSubs  = $data['subjects'];
             $secColors    = [
-                'FG'  => ['color' => '#1D4ED8', 'bg' => '#DBEAFE',
+                'ESG'  => ['color' => '#1D4ED8', 'bg' => '#DBEAFE',
                            'border' => '#93C5FD'],
-                'FT'  => ['color' => '#6D28D9', 'bg' => '#EDE9FE',
+                'EST'  => ['color' => '#6D28D9', 'bg' => '#EDE9FE',
                            'border' => '#C4B5FD'],
                 'ANG' => ['color' => '#991B1B', 'bg' => '#FEE2E2',
                            'border' => '#FCA5A5'],
@@ -584,10 +584,10 @@
                 <div class="px-4 py-3 flex items-center justify-between gap-3
                             hover:bg-gray-50 transition-colors">
                     <div class="flex items-center gap-2 min-w-0">
-                        <span class="font-mono text-xs font-bold flex-shrink-0"
+                        {{-- <span class="font-mono text-xs font-bold flex-shrink-0"
                               style="color: #1A3A6B;">
                             {{ $sub->code }}
-                        </span>
+                        </span> --}}
                         <div class="min-w-0">
                             <p class="text-sm font-medium text-gray-800 truncate">
                                 {{ $sub->name_fr }}

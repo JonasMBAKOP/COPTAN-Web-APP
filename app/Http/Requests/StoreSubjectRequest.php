@@ -27,12 +27,8 @@ class StoreSubjectRequest extends FormRequest
     {
         return [
             'subject_category_id' => ['required', 'exists:subject_categories,id'],
-            'code'                => ['required', 'string', 'max:20',
-                                      'unique:subjects,code'],
             'name_fr'             => ['required', 'string', 'max:100'],
-            'name_en'             => ['nullable', 'string', 'max:100'],
-            'type'                => ['required', 'in:general,technical,
-                                       language,sport,other'],
+            'type'                => ['required', 'in:general,technical,language,sport,other'],
         ];
     }
 

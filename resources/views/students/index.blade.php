@@ -12,7 +12,7 @@
         <div class="flex items-center gap-3">
             <h1 class="text-2xl font-bold text-gray-900">Gestion des Élèves</h1>
             <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                {{ $students->total() }} élèves
+                {{ $stats['total'] }} élèves
             </span>
         </div>
         

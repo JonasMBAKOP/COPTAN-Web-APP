@@ -6,17 +6,18 @@
     <title>Cartes professionnelles</title>
     @include('students.documents.partials.card-styles')
     <style>
-        @page { size: A4 portrait; margin: 8mm; }
+        @page { size: A4 portrait; margin: 2mm; }
         body { margin: 0; padding: 0; background: #fff; font-family: 'Inter', 'Segoe UI', Arial, sans-serif; }
-        .print-toolbar-wrapper { padding: 8mm 8mm 0; }
-        .cards-container { padding: 4mm 8mm 8mm; }
+        .print-toolbar-wrapper { padding: 2mm 2mm 0; }
+        .cards-container { padding: 1mm 2mm 2mm; }
         .cards-page {
             width: 100%;
             max-width: 194mm;
-            margin: 0 auto 12mm;
+            margin: 0 auto 2mm;
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 8mm 10mm;
+            grid-template-rows: repeat(5, minmax(0, 1fr));
+            gap: 1.5mm 2.5mm;
             page-break-after: always;
             page-break-inside: avoid;
         }
@@ -28,7 +29,7 @@
         }
         .card-slot .id-card {
             width: 90mm;
-            height: 58mm;
+            height: 54mm;
             transform: none;
         }
         @media print {
@@ -43,11 +44,11 @@
     </div>
 
     <div class="cards-container">
-        <div class="cards-intro">
+        {{-- <div class="cards-intro">
             <div class="cards-intro__title">Cartes professionnelles — Personnel</div>
             <div class="cards-intro__meta">{{ $staff->count() }} carte(s) prête(s) à l’impression</div>
-        </div>
-        @foreach($staff->chunk(8) as $chunk)
+        </div> --}}
+        @foreach($staff->chunk(10) as $chunk)
             <div class="cards-page">
                 @foreach($chunk as $s)
                     <div class="card-slot">

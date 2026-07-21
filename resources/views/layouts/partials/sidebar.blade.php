@@ -21,10 +21,10 @@
              class="w-10 h-10 object-contain rounded-full
                     ring-2 ring-white/30 flex-shrink-0"> --}}
         <div class="overflow-hidden">
-            <p class="text-white font-bold text-sm leading-tight truncate">
+            <p class="text-white font-bold text-base leading-tight truncate">
                 COPTAN
             </p>
-            <p class="text-white/60 text-xs truncate">
+            <p class="text-white/60 text-sm truncate">
                 Gestion Scolaire
             </p>
         </div>
@@ -51,10 +51,10 @@
 
         {{-- ── ACADÉMIQUE ────────────────────────────────────────── --}}
         @canany(['view-classes', 'manage-classes'])
-        <p class="px-3 pt-4 pb-1 text-white/40 text-xs font-semibold
-                  uppercase tracking-wider">
+        <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
+             style="background-color: #D946EF; color: #ffffff;">
             Académique
-        </p>
+        </div>
 
         @can('manage-academic-years')
         <x-sidebar-item
@@ -94,10 +94,10 @@
 
         {{-- ── ÉLÈVES ────────────────────────────────────────────── --}}
         @can('view-students')
-        <p class="px-3 pt-4 pb-1 text-white/40 text-xs font-semibold
-                  uppercase tracking-wider">
+        <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
+             style="background-color: #1D4ED8; color: #ffffff;">
             Élèves
-        </p>
+        </div>
 
         <x-sidebar-item
             icon="users"
@@ -119,10 +119,10 @@
 
         {{-- ── DOCUMENTS (hors finances) ─────────────────────────── --}}
         @can('view-students')
-        <p class="px-3 pt-4 pb-1 text-white/40 text-xs font-semibold
-                  uppercase tracking-wider">
+        <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
+             style="background-color: #B45309; color: #ffffff;">
             Documents
-        </p>
+        </div>
 
         <x-sidebar-item
             icon="document"
@@ -133,10 +133,10 @@
 
         {{-- ── PERSONNEL ─────────────────────────────────────────── --}}
         @can('view-staff')
-        <p class="px-3 pt-4 pb-1 text-white/40 text-xs font-semibold
-                  uppercase tracking-wider">
+        <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
+             style="background-color: #6D28D9; color: #ffffff;">
             Personnel
-        </p>
+        </div>
 
         <x-sidebar-item
             icon="briefcase"
@@ -155,10 +155,10 @@
         
 
         @can('manage-academic-years')
-        <p class="px-3 pt-4 pb-1 text-white/40 text-xs font-semibold
-                  uppercase tracking-wider">
+        <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
+             style="background-color: #BE185D; color: #ffffff;">
             évaluations
-        </p>
+        </div>
 
         <x-sidebar-item
             icon="eye"
@@ -202,10 +202,10 @@
 
         {{-- ── PRÉSENCES ─────────────────────────────────────────── --}}
         @can('view-absences')
-        <p class="px-3 pt-4 pb-1 text-white/40 text-xs font-semibold
-                  uppercase tracking-wider">
+        <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
+             style="background-color: #D97706; color: #ffffff;">
             Présences
-        </p>
+        </div>
 
         @can('manage-absences')
         <x-sidebar-item
@@ -224,10 +224,10 @@
 
         {{-- ── FINANCES ──────────────────────────────────────────── --}}
         @can('view-finances')
-            <p class="px-3 pt-4 pb-1 text-white/40 text-xs font-semibold
-                    uppercase tracking-wider">
+            <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] text-white shadow-sm"
+                 style="background-color: #059669;">
                 Finances
-            </p>
+            </div>
 
             @if(auth()->user()->hasAnyRole(['directeur', 'super-admin']))
             <x-sidebar-item
@@ -266,10 +266,10 @@
 
         {{-- ── DISCIPLINE ────────────────────────────────────────── --}}
         @can('view-discipline')
-        <p class="px-3 pt-4 pb-1 text-white/40 text-xs font-semibold
-                  uppercase tracking-wider">
+        <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
+             style="background-color: #DC2626; color: #ffffff;">
             Discipline
-        </p>
+        </div>
 
         <x-sidebar-item
             icon="shield"
@@ -279,10 +279,10 @@
         @endcan
 
         {{-- ── COMMUNICATION ─────────────────────────────────────── --}}
-        <p class="px-3 pt-4 pb-1 text-white/40 text-xs font-semibold
-                  uppercase tracking-wider">
+        <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
+             style="background-color: #F59E0B; color: #ffffff;">
             Communication
-        </p>
+        </div>
 
         <x-sidebar-item
             {{-- icon="bell" --}}
@@ -310,10 +310,10 @@
 
         {{-- ── ADMINISTRATION ────────────────────────────────────── --}}
         @canany(['manage-settings', 'manage-users'])
-        <p class="px-3 pt-4 pb-1 text-white/40 text-xs font-semibold
-                  uppercase tracking-wider">
+        <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
+             style="background-color: #06B6D4; color: #ffffff;">
             Administration
-        </p>
+        </div>
 
         @can('manage-users')
         <x-sidebar-item

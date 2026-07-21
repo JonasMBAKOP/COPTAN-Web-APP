@@ -389,9 +389,9 @@
                                 @foreach($subs as $sub)
                                 <option value="{{ $sub->id }}"
                                         data-name="{{ $sub->name_fr }}"
-                                        data-code="{{ $sub->code }}"
+                                        {{-- data-code="{{ $sub->code }}" --}}
                                         data-type="{{ $sub->type }}">
-                                    {{ $sub->code }} — {{ $sub->name_fr }}
+                                    {{ $sub->name_fr }}
                                 </option>
                                 @endforeach
                             </optgroup>

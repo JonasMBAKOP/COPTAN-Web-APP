@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateStaffRequest;
 use App\Models\AcademicYear;
 use App\Models\AuditLog;
 use App\Models\Staff;
+use App\Models\StaffPaySlip;
 use App\Models\TeacherAssignment;
 use App\Models\TimetableSetting;
 use App\Models\TimetableSlot;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 use App\Models\StaffPosition;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class StaffController extends Controller
 {
@@ -312,6 +314,174 @@ class StaffController extends Controller
         $staff->load('positions', 'user');
 
         return view('staff.salary-edit', compact('staff'));
+    }
+
+    private function staffDocumentContext(Staff $staff): array
+    {
+        $staff->load(['positions', 'user']);
+        $school = \App\Models\SchoolSetting::instance();
+        $phones = \App\Models\SchoolPhone::orderByDesc('is_primary')->orderBy('id')->get();
+        $activeYear = AcademicYear::active();
+        $logoSrc = $this->resolveSchoolLogo($school);
+
+        return compact('staff', 'school', 'phones', 'activeYear', 'logoSrc');
+    }
+
+    private function resolveSchoolLogo($school): ?string
+    {
+        $logoSrc = null;
+
+        if ($school->logo) {
+            $logoPath = ltrim($school->logo, '/');
+            $candidates = [public_path('storage/' . $logoPath), public_path($logoPath)];
+            foreach ($candidates as $candidate) {
+                if (file_exists($candidate)) {
+                    $logoSrc = asset(str_replace('\\', '/', str_replace(public_path(), '', $candidate)));
+                    break;
+                }
+            }
+        }
+
+        if (! $logoSrc && file_exists(public_path('images/logo.jpg'))) {
+            $logoSrc = asset('images/logo.jpg');
+        }
+
+        return $logoSrc;
+    }
+
+    private function formatPaySlipPeriod(?string $value): string
+    {
+        if (blank($value)) {
+            return now()->locale('fr')->translatedFormat('F Y');
+        }
+
+        $date = \Carbon\Carbon::createFromFormat('Y-m', $value);
+
+        return $date->locale('fr')->translatedFormat('F Y');
+    }
+
+    public function printSalaryList(Request $request)
+    {
+        $query = Staff::with(['positions', 'user'])
+            ->orderBy('last_name')
+            ->orderBy('first_name');
+
+        if ($request->filled('contract')) {
+            $query->where('contract_type', $request->contract);
+        }
+
+        if ($request->filled('search')) {
+            $query->where(fn($q) =>
+                $q->where('first_name', 'like', "%{$request->search}%")
+                    ->orWhere('last_name', 'like', "%{$request->search}%")
+            );
+        }
+
+        $staff = $query->get();
+        $data = $this->staffDocumentContext(new Staff());
+        $data['staff'] = $staff;
+
+        return view('staff.documents.salary-list', $data);
+    }
+
+    public function paySlip(Staff $staff, ?Request $request = null)
+    {
+        $data = $this->staffDocumentContext($staff);
+        // Prefill with any saved slip for the current month
+        $currentPeriod = now()->format('Y-m');
+        $saved = StaffPaySlip::where('staff_id', $staff->id)
+            ->where('period', $currentPeriod)
+            ->first();
+
+        $data['amountReceived'] = $saved?->amount_received ?? null;
+        $data['periodLabel'] = now()->locale('fr')->translatedFormat('F Y');
+        $data['previewMode'] = false;
+
+        return view('staff.documents.pay-slip-form', $data);
+    }
+
+    public function previewPaySlip(Request $request, Staff $staff)
+    {
+        $request->validate([
+            'amount_received' => ['nullable', 'numeric', 'min:0'],
+            'period' => ['nullable', 'string'],
+        ]);
+
+        $amountReceived = $request->input('amount_received');
+        $period = $request->input('period');
+
+        // Preview should not persist; saving is done explicitly via storePaySlip()
+
+        $data = $this->staffDocumentContext($staff);
+        $data['amountReceived'] = $amountReceived;
+        $data['periodLabel'] = $this->formatPaySlipPeriod($period);
+        $data['previewMode'] = true;
+
+        return view('staff.documents.pay-slip', $data);
+    }
+
+    public function storePaySlip(Request $request, Staff $staff)
+    {
+        $request->validate([
+            'amount_received' => ['nullable', 'numeric', 'min:0'],
+            'period' => ['nullable', 'string'],
+        ]);
+
+        $amountReceived = $request->input('amount_received');
+        $period = $request->input('period');
+
+        StaffPaySlip::updateOrCreate(
+            ['staff_id' => $staff->id, 'period' => $period],
+            ['amount_received' => $amountReceived]
+        );
+
+        return redirect()->back()->with('success', 'Montant enregistré.');
+    }
+
+    public function annualPaySlip(Staff $staff)
+    {
+        $data = $this->staffDocumentContext($staff);
+        $activeYear = $data['activeYear'];
+        $start = $activeYear?->start_date ? $activeYear->start_date->copy()->startOfMonth() : now()->copy()->startOfYear();
+        $end = $activeYear?->end_date ? $activeYear->end_date->copy()->startOfMonth() : now()->copy()->endOfYear();
+
+        $periods = $this->buildPaySlipPeriods($start, $end);
+        $savedSlips = StaffPaySlip::where('staff_id', $staff->id)
+            ->whereIn('period', $periods->keys()->all())
+            ->get()
+            ->keyBy('period');
+
+        $rows = $periods->map(function ($label, $period) use ($savedSlips) {
+            return [
+                'period' => $period,
+                'label' => $label,
+                'amount_received' => optional($savedSlips->get($period))->amount_received,
+            ];
+        });
+
+        $data['rows'] = $rows;
+        $data['totalReceived'] = $rows->sum('amount_received');
+        $data['yearLabel'] = $activeYear?->label ?? now()->year;
+
+        return view('staff.documents.annual-pay-slip', $data);
+    }
+
+    private function buildPaySlipPeriods(
+        \Carbon\Carbon $start,
+        \Carbon\Carbon $end
+    ) : \Illuminate\Support\Collection {
+        $periods = collect();
+        $current = $start->copy();
+
+        while ($current->lessThanOrEqualTo($end)) {
+            $periods->put(
+                $current->format('Y-m'),
+                $current->locale('fr')->translatedFormat('F Y')
+            );
+            $current->addMonth();
+        }
+
+        return $periods;
     }
 
     public function updateSalary(Request $request, Staff $staff)

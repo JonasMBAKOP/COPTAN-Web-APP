@@ -443,45 +443,73 @@
             @if($years->count() >= 2)
                 {{-- ── Historique des croissances ──────────────────────────────────── --}}
                 <div class="lg:col-span-2 rounded-2xl p-6 text-white"
-                    style="background-color: #1A3A6B;">
-                    <h3 class="text-base font-bold mb-1">
-                        Historique des Croissances
-                    </h3>
-                    <p class="text-sm text-white/70 mb-5">
-                        @if($growthRate !== null)
-                            L'institution a connu une 
-                            {{ $growthRate >= 0 ? 'hausse' : 'baisse' }}
-                            {{-- croissance  --}}
-                            de
-                            <span class="font-semibold text-white">
-                                {{ abs($growthRate) }}%
-                            </span>
-                            {{ $growthRate >= 0 ? '(hausse)' : '(baisse)' }}
-                            du nombre d'inscriptions sur les dernières années.
-                        @else
-                            Évolution du nombre d'élèves inscrits par année scolaire.
-                        @endif
-                    </p>
+                    style="background: linear-gradient(135deg, #1A3A6B 0%, #234B88 100%);">
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between mb-5">
+                        <div>
+                            <h3 class="text-base font-bold">
+                                Historique des Croissances
+                            </h3>
+                            <p class="text-sm text-white/70 mt-1">
+                                @if($growthRate !== null)
+                                    Évolution globale de l'effectif sur la période observée :
+                                    <span class="font-semibold text-white">{{ abs($growthRate) }}%</span>
+                                    {{ $growthRate >= 0 ? 'de hausse' : 'de baisse' }}.
+                                @else
+                                    Évolution du nombre d'élèves inscrits par année scolaire.
+                                @endif
+                            </p>
+                        </div>
+                        <div class="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-sm font-semibold text-white/90">
+                            {{ $growthData->count() }} année(s) suivies
+                        </div>
+                    </div>
 
-                    {{-- Graphique barres CSS --}}
                     @php
-                        $maxCount = $growthData->max('count') ?: 1;
+                        $maxCount = $growthData->max('count') ?: 0;
+                        if ($maxCount <= 10) {
+                            $chartMax = 10;
+                        } elseif ($maxCount <= 100) {
+                            $chartMax = (int) ceil($maxCount / 10) * 10;
+                        } elseif ($maxCount <= 1000) {
+                            $chartMax = (int) ceil($maxCount / 100) * 100;
+                        } else {
+                            $chartMax = (int) ceil($maxCount / 1000) * 1000;
+                        }
                     @endphp
-                    <div class="flex items-end gap-3 h-28">
+                    <div class="flex items-center justify-between gap-4 mb-3">
+                        <p class="text-sm text-white/70">
+                            Échelle du graphique : <span class="font-semibold text-white">{{ number_format($chartMax, 0, ',', ' ') }} élèves</span>
+                        </p>
+                    </div>
+                    <div class="flex items-end gap-3 h-36">
                         @foreach($growthData as $data)
                         @php
-                            $height = ($data['count'] / $maxCount) * 100;
-                            $isLast = $loop->last;
+                            $count = (int) ($data['count'] ?? 0);
+                            $height = $chartMax > 0 ? round(($count / $chartMax) * 100, 1) : 0;
+                            $statusClass = $data['status'] === 'Active' ? 'text-white/60' : 'text-yellow-200';
+                            $barColor = match($data['status']) {
+                                'Active' => '#6DD3FF',
+                                'En préparation' => '#3B82F6',
+                                'Clôturée' => '#FBBF24',
+                                default => '#9CA3AF',
+                            };
+                            $barShadow = match($data['status']) {
+                                'Active' => '#38BDF8',
+                                'En préparation' => '#2563EB',
+                                'Clôturée' => '#F59E0B',
+                                default => '#6B7280',
+                            };
                         @endphp
-                        <div class="flex-1 flex flex-col items-center gap-1">
-                            <span class="text-xs text-white/60 font-medium">
-                                {{ $data['count'] > 0 ? $data['count'] : '—' }}
+                        <div class="flex-1 flex flex-col items-center gap-2 h-full">
+                            <span class="text-xs font-semibold {{ $statusClass }}">
+                                {{ $count > 0 ? $count : '—' }}
                             </span>
-                            <div class="w-full rounded-t-lg transition-all"
-                                style="height: {{ max($height, 5) }}%;
-                                        background-color: {{ $isLast ? '#E87722' : 'rgba(255,255,255,0.25)' }};">
+                            <div class="w-full rounded-t-xl bg-white/10 relative overflow-hidden h-full">
+                                <div class="absolute inset-x-0 bottom-0 rounded-t-xl transition-all"
+                                    style="height: {{ $height }}%; background: linear-gradient(180deg, rgba(255,255,255,0.8) 0%, {{ $barColor }} 100%); box-shadow: 0 -6px 18px 0 {{ $barShadow }}55;">
+                                </div>
                             </div>
-                            <span class="text-xs text-white/50 text-center leading-tight">
+                            <span class="text-[11px] {{ $statusClass }} text-center leading-tight">
                                 {{ substr($data['label'], 0, 9) }}
                             </span>
                         </div>

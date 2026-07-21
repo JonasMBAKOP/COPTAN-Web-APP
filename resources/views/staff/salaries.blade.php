@@ -56,6 +56,14 @@
         @endforeach
     </div>
 
+    <div class="flex flex-wrap gap-3 mb-6">
+        <a href="{{ route('staff.salaries.print') }}"
+           target="_blank"
+           class="inline-flex items-center px-4 py-2 rounded-lg bg-[#1A3A6B] text-white text-sm font-semibold hover:bg-[#14304f]">
+            Imprimer la fiche de salaires
+        </a>
+    </div>
+
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left">
@@ -84,14 +92,21 @@
                             <td class="px-4 py-4 text-sm text-gray-700">{{ $member->salary_display }}</td>
                             <td class="px-4 py-4 text-sm text-gray-700">{{ $member->primaryPosition?->position_label ?? 'Personnel' }}</td>
                             <td class="px-4 py-4 text-sm text-right">
-                                @can('manage-staff')
-                                    <a href="{{ route('staff.salary.edit', $member) }}"
-                                       class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100">
-                                        Modifier
+                                <div class="flex flex-wrap justify-end gap-2">
+                                    <a href="{{ route('staff.pay-slip', $member) }}"
+                                       target="_blank"
+                                       class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100">
+                                        Bulletin
                                     </a>
-                                @else
-                                    —
-                                @endcan
+                                    @can('manage-staff')
+                                        <a href="{{ route('staff.salary.edit', $member) }}"
+                                           class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100">
+                                            Modifier
+                                        </a>
+                                    @else
+                                        —
+                                    @endcan
+                                </div>
                             </td>
                         </tr>
                     @empty
