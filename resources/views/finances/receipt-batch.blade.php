@@ -457,6 +457,14 @@ body {
                     {{ number_format($p->amount_paid, 0, ',', ' ') }} FCFA
                 </span>
             </div>
+            @if($p->scholarship_amount > 0)
+            <div class="amt-row">
+                <span class="amt-lbl" style="color:#000;">{{ $isEnglishReceipt ? 'SCHOLARSHIP APPLIED' : 'BOURSE APPLIQUÉE' }}</span>
+                <span class="amt-val" style="color:#000;">
+                    {{ number_format($p->scholarship_amount, 0, ',', ' ') }} FCFA
+                </span>
+            </div>
+            @endif
             <div class="amt-row">
                 <span class="amt-lbl"
                       style="color:black;">

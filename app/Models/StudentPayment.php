@@ -11,6 +11,7 @@ class StudentPayment extends Model
         'parent_payment_id',
         'fee_installment_id',
         'amount_paid',
+        'scholarship_amount',
         'payment_date',
         'payment_method',
         'reference',
@@ -24,6 +25,7 @@ class StudentPayment extends Model
     {
         return [
             'amount_paid'               => 'decimal:0',
+            'scholarship_amount'        => 'integer',
             'payment_date'              => 'date',
             'is_bulk'                   => 'boolean',
             'snapshot_total_due'        => 'integer',
@@ -51,7 +53,8 @@ class StudentPayment extends Model
             $feeStructure = $enrollment->classGroup()->with('feeStructures.installments')->first()?->feeStructures->first();
             $totalDue = (int) ($feeStructure?->installments->sum('amount') ?? 0);
             $totalPaid = (int) static::visible()->where('student_enrollment_id', $enrollment->id)->sum('amount_paid');
-            $totalRemaining = max(0, $totalDue - $totalPaid);
+            $totalScholarship = (int) static::visible()->where('student_enrollment_id', $enrollment->id)->sum('scholarship_amount');
+            $totalRemaining = max(0, $totalDue - ($totalPaid + $totalScholarship));
 
             $payment->forceFill([
                 'snapshot_total_due'       => $totalDue,
@@ -122,18 +125,98 @@ class StudentPayment extends Model
             return $this->feeInstallment?->label ?? '—';
         }
 
-        return $this->allocations
-            ->loadMissing('feeInstallment')
+        return $this->effectiveAllocations()
             ->map(function ($allocation) {
                 $label = $allocation->feeInstallment?->label;
                 if (! $label) {
                     return null;
                 }
 
-                return $label . ' (' . number_format((int) $allocation->amount_paid, 0, ',', ' ') . ' FCFA)';
+                return $label . ' (' . number_format((int) $allocation->effective_amount_paid, 0, ',', ' ') . ' FCFA)';
             })
             ->filter()
             ->implode(', ');
+    }
+
+    public function effectiveAllocations()
+    {
+        if (! $this->is_bulk) {
+            return collect();
+        }
+
+        $allocations = $this->allocations()
+            ->with('feeInstallment')
+            ->get()
+            ->sortBy(function ($allocation) {
+                return $allocation->feeInstallment?->installment_number ?? 0;
+            })
+            ->values();
+
+        if ($allocations->isEmpty()) {
+            return collect();
+        }
+
+        $leftoverScholarship = max(0, (int) $this->scholarship_amount - $allocations->sum('scholarship_amount'));
+
+        return $allocations->map(function ($allocation) use (&$leftoverScholarship) {
+            $effectiveScholarship = (int) $allocation->scholarship_amount;
+            if ($leftoverScholarship > 0) {
+                $installmentAmount = (int) ($allocation->feeInstallment?->amount ?? 0);
+                $remainingCapacity = max(0, $installmentAmount - (int) $allocation->amount_paid - $effectiveScholarship);
+                $extra = min($leftoverScholarship, $remainingCapacity);
+                $effectiveScholarship += $extra;
+                $leftoverScholarship -= $extra;
+            }
+
+            $allocation->setAttribute('effective_scholarship_amount', $effectiveScholarship);
+            $allocation->setAttribute('effective_amount_paid', (int) $allocation->amount_paid + $effectiveScholarship);
+
+            return $allocation;
+        });
+    }
+
+    public function getEffectiveScholarshipAmountAttribute(): int
+    {
+        if (! $this->parent_payment_id) {
+            return (int) $this->scholarship_amount;
+        }
+
+        $parent = $this->parentPayment;
+        if (! $parent || $parent->scholarship_amount <= 0) {
+            return (int) $this->scholarship_amount;
+        }
+
+        $allocations = $parent->allocations()->with('feeInstallment')->get()
+            ->sortBy(fn ($allocation) => $allocation->feeInstallment?->installment_number ?? 0)
+            ->values();
+
+        $leftoverScholarship = max(0, (int) $parent->scholarship_amount - $allocations->sum('scholarship_amount'));
+        $extraForThis = 0;
+
+        foreach ($allocations as $allocation) {
+            $currentScholarship = (int) $allocation->scholarship_amount;
+            $installmentAmount = (int) ($allocation->feeInstallment?->amount ?? 0);
+            $remainingCapacity = max(0, $installmentAmount - (int) $allocation->amount_paid - $currentScholarship);
+            $extra = 0;
+            if ($leftoverScholarship > 0) {
+                $extra = min($leftoverScholarship, $remainingCapacity);
+                $leftoverScholarship -= $extra;
+            }
+
+            if ($allocation->id === $this->id) {
+                $extraForThis = $extra;
+                break;
+            }
+        }
+
+        return (int) $this->scholarship_amount + $extraForThis;
+    }
+
+    public function getEffectiveAmountPaidAttribute(): int
+    {
+        $scholarship = $this->effective_scholarship_amount ?? (int) $this->scholarship_amount;
+
+        return (int) $this->amount_paid + (int) $scholarship;
     }
 
     // Génère un numéro de reçu unique

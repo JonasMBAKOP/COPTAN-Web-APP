@@ -492,7 +492,10 @@ Route::middleware(['auth', 'permission:view-finances'])
             ->name('class-students');
         Route::get('/fees-list', [FinanceController::class, 'feesList'])
             ->name('fees-list');
-        Route::get('/reports', [FinanceController::class, 'reports'])
+        Route::get('/scholarships', [FinanceController::class, 'scholarships'])
+            ->name('scholarships');
+        Route::get('/scholarships/print', [FinanceController::class, 'printScholarships'])
+            ->name('scholarships.print');        Route::get('/reports', [FinanceController::class, 'reports'])
             ->name('reports');
         Route::get('/reports/export', [FinanceController::class, 'exportReport'])
             ->name('reports.export');

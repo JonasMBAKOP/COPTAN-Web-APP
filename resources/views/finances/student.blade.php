@@ -61,6 +61,12 @@
             </p>
         </div>
         <div class="text-center px-4 border-l border-gray-200">
+            <p class="text-xs text-gray-400">Bourse</p>
+            <p class="font-bold text-indigo-600">
+                {{ number_format($totalScholarship ?? 0) }} FCFA
+            </p>
+        </div>
+        <div class="text-center px-4 border-l border-gray-200">
             <p class="text-xs text-gray-400">Restant</p>
             <p class="font-bold {{ $totalRemaining > 0
                 ? 'text-red-500' : 'text-green-600' }}">
@@ -71,7 +77,8 @@
         @if($feeStructure)
         <button type="button"
                 onclick="openBulkPaymentModal()"
-                class="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-bold transition-all hover:shadow-md"
+                @if($totalRemaining <= 0) disabled @endif
+                class="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-bold transition-all hover:shadow-md {{ $totalRemaining <= 0 ? 'opacity-40 cursor-not-allowed' : '' }}"
                 style="background-color:#E87722;">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 10c-4.418 0-8-2.239-8-5s3.582-5 8-5 8 2.239 8 5-3.582 5-8 5zm0-12V3m0 18v-3"/>
@@ -249,8 +256,9 @@
                 Résumé
             </h3>
             @php
+                $effectivePaid = $totalPaid + ($totalScholarship ?? 0);
                 $globalPct = $totalDue > 0
-                    ? min(round(($totalPaid / $totalDue) * 100), 100)
+                    ? min(round(($effectivePaid / $totalDue) * 100), 100)
                     : 0;
             @endphp
             <div class="space-y-3">
@@ -261,9 +269,9 @@
                     </span>
                 </div>
                 <div class="flex justify-between text-sm">
-                    <span class="text-gray-500">Total payé</span>
+                    <span class="text-gray-500">Total payé + bourse</span>
                     <span class="font-semibold text-green-600">
-                        {{ number_format($totalPaid) }} FCFA
+                        {{ number_format($totalPaid + ($totalScholarship ?? 0)) }} FCFA
                     </span>
                 </div>
                 <div class="flex justify-between text-sm">
@@ -311,7 +319,7 @@
                     <div class="flex items-start justify-between gap-2">
                         <div class="min-w-0">
                             <p class="text-sm font-semibold text-green-600">
-                                +{{ number_format($p->amount_paid) }} FCFA
+                                +{{ number_format($p->effective_amount_paid) }} FCFA
                             </p>
                             <p class="text-xs text-gray-500">
                                 {{ $p->is_bulk ? 'Paiement en bloc' : ($p->feeInstallment?->label ?? '—') }}
@@ -367,12 +375,28 @@
             </button>
         </div>
 
-        <form method="POST" action="{{ route('finances.bulk-pay', $enrollment) }}" class="space-y-4" onsubmit="submitBulkPaymentInNewTab(event)">
+        <form id="bulk-payment-form" method="POST" action="{{ route('finances.bulk-pay', $enrollment) }}" class="space-y-4">
             @csrf
+            <div id="bulk-payment-error" class="hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            </div>
             <div>
                 <label class="block text-xs text-gray-500 mb-1">Montant à payer (FCFA)</label>
-                <input type="number" name="amount_paid" min="1" required
+                <input type="number" name="amount_paid" min="0" value="0"
                        class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100">
+            </div>
+
+            <div class="flex items-center gap-3">
+                <label class="inline-flex items-center gap-2 text-sm text-gray-600">
+                    <input type="checkbox" id="scholarship-toggle" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                    <span>Bourse appliquée</span>
+                </label>
+            </div>
+
+            <div id="scholarship-block" class="hidden">
+                <label class="block text-xs text-gray-500 mb-1">Montant de la bourse (FCFA)</label>
+                <input type="number" name="scholarship_amount" min="0" value="0"
+                       class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100">
+                <p class="text-xs text-gray-400 mt-1">La bourse réduit le reste dû sans entrer d'argent comptant.</p>
             </div>
 
             <div class="flex justify-end gap-2 pt-2">
@@ -392,7 +416,18 @@ function openBulkPaymentModal() {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         const input = modal.querySelector('input[name="amount_paid"]');
-        if (input) input.focus();
+        const scholarshipToggle = modal.querySelector('#scholarship-toggle');
+        const scholarshipBlock = modal.querySelector('#scholarship-block');
+        if (input) {
+            input.value = '0';
+            input.focus();
+        }
+        if (scholarshipToggle) {
+            scholarshipToggle.checked = false;
+        }
+        if (scholarshipBlock) {
+            scholarshipBlock.classList.add('hidden');
+        }
     }
 }
 
@@ -404,24 +439,42 @@ function closeBulkPaymentModal() {
     }
 }
 
-document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape') {
-        closeBulkPaymentModal();
+function toggleScholarshipBlock() {
+    const checkbox = document.getElementById('scholarship-toggle');
+    const block = document.getElementById('scholarship-block');
+    if (!checkbox || !block) {
+        return;
     }
-});
 
-function submitBulkPaymentInNewTab(event) {
+    if (checkbox.checked) {
+        block.classList.remove('hidden');
+    } else {
+        block.classList.add('hidden');
+        const scholarshipInput = block.querySelector('input[name="scholarship_amount"]');
+        if (scholarshipInput) {
+            scholarshipInput.value = '0';
+        }
+    }
+}
+
+document.getElementById('scholarship-toggle')?.addEventListener('change', toggleScholarshipBlock);
+
+document.getElementById('bulk-payment-form')?.addEventListener('submit', function (event) {
     event.preventDefault();
 
     const form = event.target;
     const action = form.action;
     const formData = new FormData(form);
+    const errorBox = document.getElementById('bulk-payment-error');
 
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    if (errorBox) {
+        errorBox.classList.add('hidden');
+        errorBox.textContent = '';
+    }
 
     const newTab = window.open('', '_blank');
     if (!newTab) {
-        alert('Impossible d’ouvrir un nouvel onglet. Vérifiez votre bloqueur de fenêtres contextuelles.');
+        alert('Impossible d’ouvrir un nouvel onglet; vérifiez votre bloqueur de fenêtres contextuelles.');
         return;
     }
 
@@ -429,27 +482,53 @@ function submitBulkPaymentInNewTab(event) {
         method: 'POST',
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': csrfToken,
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
         },
         body: formData,
     })
     .then(async response => {
+        const contentType = response.headers.get('content-type') || '';
         if (!response.ok) {
-            const responseText = await response.text();
-            throw new Error(responseText || 'Erreur lors du paiement.');
+            let message = 'Erreur lors du paiement.';
+            if (contentType.includes('application/json')) {
+                const data = await response.json();
+                message = data.error || message;
+            } else {
+                message = await response.text();
+            }
+            throw new Error(message);
         }
 
-        const redirectUrl = response.headers.get('x-redirect-url') || response.url;
-        const receiptUrl = redirectUrl || action;
-
-        newTab.location.href = receiptUrl;
+        const data = contentType.includes('application/json') ? await response.json() : null;
+        const receiptUrl = data?.receipt_url || response.url;
+        if (receiptUrl) {
+            newTab.location.href = receiptUrl;
+        } else {
+            newTab.location.href = response.url;
+        }
         window.location.reload();
     })
     .catch(error => {
-        newTab.close();
-        alert('Erreur : ' + error.message);
+        if (newTab && !newTab.closed) {
+            newTab.close();
+        }
+
+        if (errorBox) {
+            errorBox.textContent = error.message;
+            errorBox.classList.remove('hidden');
+            return;
+        }
+
+        alert(error.message);
     });
-}
+});
+
+document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+        closeBulkPaymentModal();
+    }
+});
+
 </script>
 
 @endsection

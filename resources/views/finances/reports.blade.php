@@ -219,13 +219,24 @@
 {{-- ════════════════════════════════════════════════════════════════════ --}}
 {{-- KPI PRINCIPAUX                                                        --}}
 {{-- ════════════════════════════════════════════════════════════════════ --}}
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
 
     {{-- Total --}}
     <div class="r-card bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Total collectÃ©</p>
-        <p class="text-2xl font-black" style="color:#1A3A6B;" data-count-up="{{ (int) $totalCollected }}" data-count-suffix=" FCFA">
-            {{ number_format($totalCollected) }}
+        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Total collecté</p>
+        @php $totalWithScholarships = $totalCollected + (int)$allPayments->sum('scholarship_amount'); @endphp
+        <p class="text-2xl font-black" style="color:#1A3A6B;" data-count-up="{{ (int) $totalWithScholarships }}" data-count-suffix=" FCFA">
+            {{ number_format($totalWithScholarships) }}
+            <span class="text-sm font-normal text-gray-400">FCFA</span>
+        </p>
+    </div>
+    
+    {{-- Bourses Accordées --}}
+    <div class="r-card bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Bourses Accordées</p>
+        @php $scholarships = $allPayments->sum('scholarship_amount'); @endphp
+        <p class="text-2xl font-black" style="color:#7C3AED;" data-count-up="{{ (int) $scholarships }}" data-count-suffix=" FCFA">
+            {{ number_format($scholarships) }}
             <span class="text-sm font-normal text-gray-400">FCFA</span>
         </p>
     </div>
@@ -234,12 +245,12 @@
     <div class="r-card bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Paiements</p>
         <p class="text-2xl font-black text-green-600" data-count-up="{{ $allPayments->count() }}">{{ $allPayments->count() }}</p>
-        <p class="text-xs text-gray-400 mt-0.5">opÃ©rations</p>
+        <p class="text-xs text-gray-400 mt-0.5">opérations</p>
     </div>
 
     {{-- Especes --}}
     <div class="r-card bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">EspÃ¨ces</p>
+        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Espèces</p>
         @php $cash = $allPayments->where('payment_method','cash')->sum('amount_paid'); @endphp
         <p class="text-2xl font-black" style="color:#C8A415;" data-count-up="{{ (int) $cash }}" data-count-suffix=" FCFA">
             {{ number_format($cash) }}
@@ -256,7 +267,6 @@
             <span class="text-sm font-normal text-gray-400">FCFA</span>
         </p>
     </div>
-
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
@@ -289,8 +299,15 @@
 
     <div class="r-card bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <h3 class="font-black text-sm mb-4 pb-2 border-b border-gray-100" style="color:#1A3A6B;">Par mode de paiement</h3>
-        @php $methodTotal = $byMethod->sum('total') ?: 1; @endphp
-        @forelse($byMethod as $i => $m)
+        @php
+            $byMethodWithScholarships = $byMethod->map(function($m) use ($allPayments) {
+                $methodScholarships = $allPayments->where('payment_method', $m['method'])->sum('scholarship_amount');
+                $m['total'] = $m['total'] + $methodScholarships;
+                return $m;
+            });
+            $methodTotal = $byMethodWithScholarships->sum('total') ?: 1;
+        @endphp
+        @forelse($byMethodWithScholarships as $i => $m)
         @php
             $method = strtolower((string) ($m['method'] ?? ''));
             $label = strtolower((string) ($m['label'] ?? ''));
@@ -463,7 +480,7 @@
                     </td>
                     <td class="px-4 py-3 text-right">
                         <span class="text-sm font-black text-green-600">
-                            {{ number_format($p->amount_paid) }}
+                            {{ number_format($p->amount_paid + $p->scholarship_amount) }}
                         </span>
                         <span class="text-xs text-gray-400">F</span>
                     </td>
@@ -497,7 +514,7 @@
                     </td>
                     <td class="px-4 py-3 text-right">
                         <span class="text-base font-black" style="color:#1A3A6B;">
-                            {{ number_format($totalCollected) }}
+                            {{ number_format($totalCollected + (int)$allPayments->sum('scholarship_amount')) }}
                             <span class="text-xs font-normal text-gray-400">FCFA</span>
                         </span>
                     </td>

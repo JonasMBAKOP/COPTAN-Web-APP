@@ -62,7 +62,7 @@
 
 @if(auth()->user()->hasAnyRole(['super-admin', 'directeur', 'fondateur']))
 {{-- ── STATISTIQUES ─────────────────────────────────────────────────────── --}}
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
         <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">
@@ -94,6 +94,19 @@
                 {{ $stats['rate'] }}%
             </span>
         </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">
+            Bourses accordées
+        </p>
+        <p class="text-xl font-black text-indigo-600">
+            {{ number_format($stats['scholarships'] ?? 0) }}
+            <span class="text-sm font-normal text-gray-400">FCFA</span>
+        </p>
+        <p class="text-xs text-gray-400 mt-0.5">
+            Réductions sur frais scolaires
+        </p>
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
@@ -180,9 +193,15 @@
                         'studentEnrollment', fn($q) =>
                             $q->where('class_group_id', $class->id)
                               ->where('status', 'active')
-                    )->sum('amount_paid');
+                    )->sum(\Illuminate\Support\Facades\DB::raw('amount_paid + COALESCE(scholarship_amount, 0)'));
+                    $scholarships = \App\Models\StudentPayment::visible()->whereHas(
+                        'studentEnrollment', fn($q) =>
+                            $q->where('class_group_id', $class->id)
+                              ->where('status', 'active')
+                    )->sum('scholarship_amount');
+                    $effectiveCollected = $collected;
                     $rate = $expected > 0
-                        ? round(($collected / $expected) * 100) : 0;
+                        ? round(($effectiveCollected / $expected) * 100) : 0;
                 @endphp
                 <tr class="hover:bg-gray-50/50 transition-colors">
                     <td class="px-5 py-4">
@@ -211,14 +230,14 @@
                     </td>
                     <td class="px-4 py-4 text-right">
                         <p class="text-sm font-semibold text-green-600">
-                            {{ number_format($collected) }}
+                            {{ number_format($effectiveCollected) }}
                             <span class="text-xs font-normal text-gray-400">
                                 FCFA
                             </span>
                         </p>
-                        @if($expected > 0 && $collected < $expected)
+                        @if($expected > 0 && $effectiveCollected < $expected)
                         <p class="text-xs text-red-500">
-                            -{{ number_format($expected - $collected) }}
+                            -{{ number_format($expected - $effectiveCollected) }}
                         </p>
                         @endif
                     </td>
@@ -346,7 +365,7 @@
             </div>
             <div class="text-right flex-shrink-0">
                 <p class="text-sm font-bold text-green-600">
-                    +{{ number_format($p->amount_paid) }}
+                    +{{ number_format($p->effective_amount_paid) }}
                     <span class="text-xs font-normal text-gray-400">FCFA</span>
                 </p>
                 <p class="text-xs text-gray-400">

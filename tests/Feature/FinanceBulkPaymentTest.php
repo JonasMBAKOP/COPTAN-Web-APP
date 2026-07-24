@@ -124,6 +124,93 @@ class FinanceBulkPaymentTest extends TestCase
         $this->assertSame(1, StudentPayment::where('receipt_number', $bulkPayment->receipt_number)->count());
     }
 
+    public function test_bulk_payment_with_scholarship_records_scholarship_and_reduces_outstanding(): void
+    {
+        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+
+        $academicYear = AcademicYear::create([
+            'label' => '2025-2026',
+            'start_date' => '2025-09-01',
+            'end_date' => '2026-06-30',
+            'is_active' => true,
+        ]);
+
+        $section = Section::create(['name' => 'Science', 'code' => 'SCI']);
+        $level = Level::create([
+            'section_id' => $section->id,
+            'name' => '6ème',
+            'cycle' => '1er',
+            'order_index' => 1,
+        ]);
+        $classGroup = ClassGroup::create([
+            'academic_year_id' => $academicYear->id,
+            'level_id' => $level->id,
+            'name' => '6ème A',
+            'max_students' => 100,
+        ]);
+
+        $feeStructure = FeeStructure::create([
+            'academic_year_id' => $academicYear->id,
+            'class_group_id' => $classGroup->id,
+            'total_amount' => 60000,
+        ]);
+
+        $installmentOne = FeeInstallment::create([
+            'fee_structure_id' => $feeStructure->id,
+            'installment_number' => 1,
+            'label' => 'Tranche 1',
+            'amount' => 30000,
+        ]);
+        $installmentTwo = FeeInstallment::create([
+            'fee_structure_id' => $feeStructure->id,
+            'installment_number' => 2,
+            'label' => 'Tranche 2',
+            'amount' => 30000,
+        ]);
+
+        $student = Student::create([
+            'first_name' => 'Diane',
+            'last_name' => 'Leroy',
+            'gender' => 'F',
+            'date_of_birth' => '2015-07-10',
+            'matricule' => 'MAT-004',
+        ]);
+        $enrollment = StudentEnrollment::create([
+            'student_id' => $student->id,
+            'class_group_id' => $classGroup->id,
+            'academic_year_id' => $academicYear->id,
+            'status' => 'active',
+            'enrollment_date' => '2025-09-01',
+        ]);
+
+        $user = User::factory()->create();
+        $user->givePermissionTo('manage-finances');
+
+        $response = $this->actingAs($user)->withoutMiddleware()->post(route('finances.bulk-pay', $enrollment), [
+            'amount_paid' => 20000,
+            'scholarship_amount' => 10000,
+            'payment_date' => '2025-09-15',
+            'payment_method' => 'cash',
+        ]);
+
+        $response->assertRedirect();
+
+        $payments = StudentPayment::where('student_enrollment_id', $enrollment->id)
+            ->orderBy('id')
+            ->get();
+
+        $bulkPayment = $payments->firstWhere('is_bulk', true);
+
+        $this->assertNotNull($bulkPayment);
+        $this->assertSame(20000, (int) $bulkPayment->amount_paid);
+        $this->assertSame(10000, (int) $bulkPayment->scholarship_amount);
+        $this->assertSame('Paiement en bloc — bourse de 10 000 FCFA', $bulkPayment->notes);
+
+        $this->assertSame(20000, (int) $payments->sum('amount_paid'));
+        $this->assertSame(10000, (int) StudentPayment::where('student_enrollment_id', $enrollment->id)->sum('scholarship_amount'));
+        $this->assertSame(30000, 60000 - ((int) $payments->sum('amount_paid') + (int) $payments->sum('scholarship_amount')));
+    }
+
     public function test_individual_receipt_keeps_initial_totals_after_later_payments(): void
     {
         $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);

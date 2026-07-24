@@ -39,6 +39,7 @@ class FeeInstallment extends Model
     // ── Méthodes utilitaires ───────────────────────────────────────────────
     public function getTotalPaidAttribute(): float
     {
-        return $this->payments()->sum('amount_paid');
+        return $this->payments()->sum(fn($payment) =>
+            (float) $payment->amount_paid + (float) $payment->scholarship_amount);
     }
 }

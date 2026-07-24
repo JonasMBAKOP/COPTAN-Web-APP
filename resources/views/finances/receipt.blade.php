@@ -318,7 +318,7 @@ body {
             <span class="object-value" style="font-size:11px;">
                 {{ $item->is_bulk ? 'Paiement en bloc' : ($item->feeInstallment?->label ?? '—') }}
                 @if($payment->is_bulk && $item->feeInstallment)
-                    ({{ number_format((int) $item->amount_paid, 0, ',', ' ') }} FCFA)
+                    ({{ number_format((int) $item->effective_amount_paid, 0, ',', ' ') }} FCFA)
                 @endif
             </span>
             @if(!$loop->last)
@@ -359,6 +359,12 @@ body {
             <td>{{ $isEnglishReceipt ? 'AMOUNT OF THIS PAYMENT' : 'MONTANT DU PRÉSENT PAIEMENT' }}</td>
             <td>{{ number_format($payment->amount_paid, 0, ',', ' ') }} FCFA</td>
         </tr>
+        @if($payment->scholarship_amount > 0)
+        <tr>
+            <td>{{ $isEnglishReceipt ? 'SCHOLARSHIP APPLIED' : 'BOURSE APPLIQUÉE' }}</td>
+            <td>{{ number_format($payment->scholarship_amount, 0, ',', ' ') }} FCFA</td>
+        </tr>
+        @endif
         <tr class="row-remaining">
             <td>{{ $isEnglishReceipt ? 'Balance after this payment' : 'Reste à payer après ce paiement' }}</td>
             <td>{{ number_format($totalRemaining, 0, ',', ' ') }} FCFA</td>

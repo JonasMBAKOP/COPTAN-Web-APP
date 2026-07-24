@@ -16,6 +16,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class FinanceController extends Controller
 {
@@ -53,47 +54,58 @@ class FinanceController extends Controller
             }
 
             $classes = $query->orderBy('name')->get();
+
+            foreach ($classes as $class) {
+                foreach ($class->studentEnrollments as $enrollment) {
+                    $this->cleanupOverpaidPayments($enrollment);
+                }
+            }
         }
 
-        // Stats globales
-        $totalExpected  = 0;
-        $totalCollected = 0;
-        $totalStudents  = 0;
+        // Stats globales et paiements récents
+        $studentCount = $classes->sum(fn($class) => $class->studentEnrollments->count());
+        $totalExpected = $classes->sum(function ($class) {
+            $feeTotal = $class->feeStructures->first()?->installments->sum('amount') ?? 0;
+            return $feeTotal * $class->studentEnrollments->count();
+        });
 
-        foreach ($classes as $class) {
-            $feeStructure = $class->feeStructures->first();
-            if (!$feeStructure) continue;
+        $paymentQuery = StudentPayment::visible()
+            ->whereHas('studentEnrollment', function ($query) use ($selectedYearId, $selectedSectionId) {
+                $query->where('academic_year_id', $selectedYearId)
+                      ->where('status', 'active');
 
-            $enrolledCount  = $class->studentEnrollments->count();
-            $installTotal   = $feeStructure->installments->sum('amount');
-            $totalExpected  += $installTotal * $enrolledCount;
-            $totalStudents  += $enrolledCount;
+                if ($selectedSectionId) {
+                    $query->whereHas('classGroup.level.section', fn($q) =>
+                        $q->where('id', $selectedSectionId)
+                    );
+                }
+            });
 
-            // Montant collecté pour cette classe
-            $collected = StudentPayment::visible()->whereHas('studentEnrollment', fn($q) =>
-                $q->where('class_group_id', $class->id)
-                  ->where('status', 'active')
-            )->sum('amount_paid');
-            $totalCollected += $collected;
-        }
-
-        // Paiements récents
-        $recentPayments = StudentPayment::visible()->with([
-            'studentEnrollment.student',
-            'studentEnrollment.classGroup.level.section',
-            'feeInstallment.feeStructure',
-            'recordedBy',
-        ])->orderByDesc('created_at')->take(10)->get();
+        $totalCollected = (int) $paymentQuery->sum(DB::raw('COALESCE(amount_paid, 0) + COALESCE(scholarship_amount, 0)'));
+        $totalScholarships = (int) $paymentQuery->sum('scholarship_amount');
+        $totalOutstanding = max(0, $totalExpected - $totalCollected);
+        $rate = $totalExpected > 0
+            ? round(($totalCollected / $totalExpected) * 100)
+            : 0;
 
         $stats = [
-            'expected'    => $totalExpected,
-            'collected'   => $totalCollected,
-            'outstanding' => max(0, $totalExpected - $totalCollected),
-            'students'    => $totalStudents,
-            'rate'        => $totalExpected > 0
-                ? round(($totalCollected / $totalExpected) * 100)
-                : 0,
+            'expected'     => $totalExpected,
+            'collected'    => $totalCollected,
+            'scholarships' => $totalScholarships,
+            'outstanding'  => $totalOutstanding,
+            'rate'         => $rate,
+            'students'     => $studentCount,
         ];
+
+        $recentPayments = $paymentQuery->with([
+                'studentEnrollment.student',
+                'studentEnrollment.classGroup.level.section',
+                'feeInstallment',
+            ])
+            ->orderByDesc('payment_date')
+            ->orderByDesc('created_at')
+            ->limit(8)
+            ->get();
 
         return view('finances.index', compact(
             'selectedYear', 'selectedSection', 'selectedSectionId',
@@ -170,10 +182,11 @@ class FinanceController extends Controller
         $enrollment->load([
             'student',
             'classGroup.level.section',
-            'classGroup.feeStructures.installments.payments' => fn($q) =>
-                $q->where('student_enrollment_id', $enrollment->id),
+            'classGroup.feeStructures.installments',
             'academicYear',
         ]);
+
+        $this->cleanupOverpaidPayments($enrollment);
 
         $feeStructure = $enrollment->classGroup()->with('feeStructures.installments')->first()?->feeStructures->first();
 
@@ -182,7 +195,12 @@ class FinanceController extends Controller
         if ($feeStructure) {
             foreach ($feeStructure->installments->sortBy('installment_number')
                 as $inst) {
-                $paid       = $inst->payments->sum('amount_paid');
+                $paid = StudentPayment::where('student_enrollment_id', $enrollment->id)
+                    ->where('fee_installment_id', $inst->id)
+                    ->sum('amount_paid')
+                    + StudentPayment::where('student_enrollment_id', $enrollment->id)
+                    ->where('fee_installment_id', $inst->id)
+                    ->sum('scholarship_amount');
                 $remaining  = max(0, $inst->amount - $paid);
                 $status     = $paid <= 0 ? 'unpaid'
                     : ($paid >= $inst->amount ? 'paid' : 'partial');
@@ -196,11 +214,12 @@ class FinanceController extends Controller
             }
         }
 
-        $totalDue       = $feeStructure?->total_amount ?? 0;
-        $totalPaid      = StudentPayment::visible()->where(
-            'student_enrollment_id', $enrollment->id
-        )->sum('amount_paid');
-        $totalRemaining = max(0, $totalDue - $totalPaid);
+        $totalDue = $feeStructure?->total_amount ?? 0;
+        $totalPaid = StudentPayment::visible()->where('student_enrollment_id', $enrollment->id)
+            ->sum('amount_paid');
+        $totalScholarship = StudentPayment::visible()->where('student_enrollment_id', $enrollment->id)
+            ->sum('scholarship_amount');
+        $totalRemaining = max(0, $totalDue - ($totalPaid + $totalScholarship));
 
         // Historique des paiements
         $payments = StudentPayment::visible()->where(
@@ -213,11 +232,55 @@ class FinanceController extends Controller
         return view('finances.student', compact(
             'enrollment', 'feeStructure',
             'installments', 'totalDue', 'totalPaid',
-            'totalRemaining', 'payments'
+            'totalScholarship', 'totalRemaining', 'payments'
         ));
     }
 
-    // ── ÉLÈVES D'UNE CLASSE — ÉTAT DES PAIEMENTS ─────────────────────────
+    private function cleanupOverpaidPayments(StudentEnrollment $enrollment): void
+    {
+        $feeStructure = $enrollment->classGroup()->with('feeStructures.installments')->first()?->feeStructures->first();
+        if (! $feeStructure) {
+            return;
+        }
+
+        $expected = (int) $feeStructure->installments->sum('amount');
+
+        $payments = StudentPayment::where('student_enrollment_id', $enrollment->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        $actualPayments = $payments->filter(fn($payment) => ! is_null($payment->fee_installment_id));
+        $totalPaid = $actualPayments->sum(fn($p) =>
+            (int) $p->amount_paid + (int) $p->scholarship_amount);
+
+        if ($totalPaid <= $expected) {
+            return;
+        }
+
+        $remaining = $totalPaid;
+        $deleteIds = [];
+
+        foreach ($actualPayments as $payment) {
+            if ($remaining <= $expected) {
+                break;
+            }
+
+            $deleteIds[] = $payment->id;
+            $remaining -= (int) $payment->amount_paid + (int) $payment->scholarship_amount;
+
+            if ($payment->parent_payment_id) {
+                $deleteIds[] = $payment->parent_payment_id;
+            }
+        }
+
+        $deleteIds = array_unique($deleteIds);
+        if (! empty($deleteIds)) {
+            StudentPayment::whereIn('id', $deleteIds)->delete();
+            AuditLog::log('overpayment_cleanup', $enrollment, [], [
+                'deleted_payment_ids' => $deleteIds,
+            ]);
+        }
+    }
     public function classStudents(ClassGroup $classGroup)
     {
         $classGroup->load([
@@ -236,31 +299,42 @@ class FinanceController extends Controller
                     ->whereColumn('students.id', 'student_enrollments.student_id'),
                 'asc'
             )
-            ->get()
-            ->map(function($enrollment) use ($feeStructure) {
+            ->get();
+
+        $enrollments->each(fn($enrollment) => $this->cleanupOverpaidPayments($enrollment));
+
+        $enrollments = $enrollments->map(function($enrollment) use ($feeStructure) {
                 $due  = $feeStructure?->installments->sum('amount') ?? 0;
-                $paid = StudentPayment::visible()->where(
+                $paidAmount = StudentPayment::visible()->where(
                     'student_enrollment_id', $enrollment->id
                 )->sum('amount_paid');
+                $scholarship = StudentPayment::visible()->where(
+                    'student_enrollment_id', $enrollment->id
+                )->sum('scholarship_amount');
+                $paid = $paidAmount + $scholarship;
                 $remaining = max(0, $due - $paid);
-                $rate = $due > 0 ? round(($paid / $due) * 100) : 0;
+                $rate = $due > 0
+                    ? round(($paid / $due) * 100)
+                    : 0;
                 $status = $paid <= 0 ? 'unpaid'
-                    : ($paid >= $due   ? 'paid' : 'partial');
-
+                    : ($paid >= $due ? 'paid' : 'partial');
+                
                 return compact(
-                    'enrollment', 'due', 'paid', 'remaining', 'rate', 'status'
+                    'enrollment', 'due', 'paid', 'scholarship', 'remaining', 'rate', 'status'
                 );
             });
 
-        $totalDue       = $enrollments->sum('due');
-        $totalPaid      = $enrollments->sum('paid');
-        $totalRemaining = $enrollments->sum('remaining');
-        $globalRate     = $totalDue > 0
+        $totalDue         = $enrollments->sum('due');
+        $totalPaid        = $enrollments->sum('paid');
+        $totalScholarship = $enrollments->sum('scholarship');
+        $totalRemaining   = max(0, $totalDue - $totalPaid);
+        $globalRate       = $totalDue > 0
             ? round(($totalPaid / $totalDue) * 100) : 0;
 
         return view('finances.class-students', compact(
             'classGroup', 'feeStructure', 'enrollments',
-            'totalDue', 'totalPaid', 'totalRemaining', 'globalRate'
+            'totalDue', 'totalPaid', 'totalScholarship',
+            'totalRemaining', 'globalRate'
         ));
     }
 
@@ -270,18 +344,30 @@ class FinanceController extends Controller
     {
         $installment = FeeInstallment::find($request->fee_installment_id);
 
-        // Vérifier qu'on ne dépasse pas le montant de la tranche
+        if (! $installment) {
+            return back()->with('error', 'Tranche introuvable pour ce paiement.');
+        }
+
+        // Vérifier qu'on ne dépasse pas le montant de la tranche en tenant compte des bourses déjà appliquées
         $alreadyPaid = StudentPayment::where([
             'student_enrollment_id' => $enrollment->id,
             'fee_installment_id'    => $installment->id,
-        ])->sum('amount_paid');
+        ])->sum('amount_paid')
+          + StudentPayment::where([
+            'student_enrollment_id' => $enrollment->id,
+            'fee_installment_id'    => $installment->id,
+        ])->sum('scholarship_amount');
 
-        $remaining = $installment->amount - $alreadyPaid;
+        $remaining = max(0, (int) $installment->amount - $alreadyPaid);
 
-        if ($request->amount_paid > $remaining + 1) {
+        if ($remaining <= 0) {
+            return back()->with('error', 'Cette tranche est déjà soldée, aucun paiement supplémentaire n’est possible.');
+        }
+
+        if ((int) round($request->amount_paid) > $remaining) {
             return back()->with('error',
-                "Le montant saisi ({$request->amount_paid} FCFA) dépasse "
-                . "le restant dû ({$remaining} FCFA) pour cette tranche.");
+                "Le montant saisi ({$request->amount_paid} FCFA) dépasse le restant dû "
+                . "de cette tranche ({$remaining} FCFA). Le paiement a été refusé.");
         }
 
         $payment = StudentPayment::create([
@@ -308,7 +394,8 @@ class FinanceController extends Controller
     public function bulkPay(Request $request, StudentEnrollment $enrollment)
     {
         $request->validate([
-            'amount_paid' => ['required', 'numeric', 'min:1'],
+            'amount_paid'       => ['required', 'numeric', 'min:0'],
+            'scholarship_amount' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $feeStructure = $enrollment->classGroup()->with('feeStructures.installments')->first()?->feeStructures->first();
@@ -317,8 +404,14 @@ class FinanceController extends Controller
         }
 
         $remainingAmount = (int) round($request->amount_paid);
-        if ($remainingAmount <= 0) {
-            return back()->with('error', 'Le montant à payer doit être supérieur à 0.');
+        $scholarshipAmount = (int) round($request->input('scholarship_amount', 0));
+
+        if ($remainingAmount <= 0 && $scholarshipAmount <= 0) {
+            return back()->with('error', 'Le montant à payer ou la bourse doit être supérieur à 0.');
+        }
+
+        if ($scholarshipAmount < 0) {
+            return back()->with('error', 'Le montant de la bourse ne peut pas être négatif.');
         }
 
         $installments = $feeStructure->installments()->with('payments')->get();
@@ -326,8 +419,38 @@ class FinanceController extends Controller
         foreach ($installments as $installment) {
             $paidAlready = $installment->payments
                 ->where('student_enrollment_id', $enrollment->id)
-                ->sum('amount_paid');
-            $remainingByInstallment[$installment->id] = max(0, (int) $installment->amount - (int) $paidAlready);
+                ->sum(fn($payment) => (int) $payment->amount_paid + (int) $payment->scholarship_amount);
+            $remainingByInstallment[$installment->id] = max(0, (int) $installment->amount - $paidAlready);
+        }
+
+        $totalRemaining = array_sum($remainingByInstallment);
+        $coverage = $remainingAmount + $scholarshipAmount;
+
+        if ($totalRemaining <= 0) {
+            $message = 'Le compte de cet élève est déjà soldé, aucun paiement supplémentaire n’est possible.';
+            if ($request->ajax()) {
+                return response()->json(['error' => $message], 422);
+            }
+            return back()->with('error', $message);
+        }
+
+        if ($coverage > $totalRemaining) {
+            $message = 'Le montant total du paiement et de la bourse dépasse le restant dû ('
+                . number_format($totalRemaining) . ' FCFA). Le paiement a été refusé.';
+            if ($request->ajax()) {
+                return response()->json(['error' => $message], 422);
+            }
+            return back()->with('error', $message);
+        }
+
+        if ($scholarshipAmount > 0 && StudentPayment::where('student_enrollment_id', $enrollment->id)
+                ->where('scholarship_amount', '>', 0)
+                ->exists()) {
+            $message = 'Une seule bourse par année scolaire est autorisée pour cet élève.';
+            if ($request->ajax()) {
+                return response()->json(['error' => $message], 422);
+            }
+            return back()->with('error', $message);
         }
 
         $paymentDate = $request->filled('payment_date')
@@ -337,23 +460,35 @@ class FinanceController extends Controller
             ? $request->input('payment_method')
             : 'cash';
 
+        $recordedById = Auth::id()
+            ?? optional($request->user())->id
+            ?? User::query()->value('id');
+
         $bulkPayment = StudentPayment::create([
             'student_enrollment_id' => $enrollment->id,
             'fee_installment_id'    => null,
             'amount_paid'           => $remainingAmount,
+            'scholarship_amount'    => $scholarshipAmount,
             'payment_date'          => $paymentDate,
             'payment_method'        => $paymentMethod,
             'reference'             => null,
             'receipt_number'        => StudentPayment::generateReceiptNumber(),
-            'recorded_by'           => Auth::id(),
-            'notes'                 => 'Paiement en bloc',
+            'recorded_by'           => $recordedById,
+            'notes'                 => $scholarshipAmount > 0
+                ? 'Paiement en bloc — bourse de ' . number_format($scholarshipAmount) . ' FCFA'
+                : 'Paiement en bloc',
             'is_bulk'               => true,
         ]);
 
+        // Distribute combined coverage (cash + scholarship) across installments.
+        $coverage = $remainingAmount + $scholarshipAmount;
         $allocated = 0;
         $allocationIndex = 0;
+        $remainingScholarship = $scholarshipAmount;
+        $remainingCash = $remainingAmount;
+
         foreach ($installments->sortBy('installment_number') as $installment) {
-            if ($allocated >= $remainingAmount) {
+            if ($allocated >= $coverage) {
                 break;
             }
 
@@ -362,32 +497,58 @@ class FinanceController extends Controller
                 continue;
             }
 
-            $amount = min($available, $remainingAmount - $allocated);
-            if ($amount <= 0) {
+            $need = min($available, $coverage - $allocated);
+            if ($need <= 0) {
                 continue;
             }
+
+            // Consume scholarship first, then cash for the required amount
+            $useScholarship = min($need, $remainingScholarship);
+            $useCash = $need - $useScholarship;
 
             $allocationIndex++;
 
             StudentPayment::create([
                 'student_enrollment_id' => $enrollment->id,
-                'parent_payment_id'      => $bulkPayment->id,
-                'fee_installment_id'     => $installment->id,
-                'amount_paid'            => $amount,
-                'payment_date'           => $paymentDate,
-                'payment_method'         => $paymentMethod,
-                'reference'              => null,
-                'receipt_number'         => $bulkPayment->receipt_number . '-A' . $allocationIndex,
-                'recorded_by'            => Auth::id(),
-                'notes'                  => 'Paiement en bloc',
-                'is_bulk'                => false,
+                'parent_payment_id'     => $bulkPayment->id,
+                'fee_installment_id'    => $installment->id,
+                'amount_paid'           => $useCash,
+                'scholarship_amount'    => $useScholarship,
+                'payment_date'          => $paymentDate,
+                'payment_method'        => $paymentMethod,
+                'reference'             => null,
+                'receipt_number'        => $bulkPayment->receipt_number . '-A' . $allocationIndex,
+                'recorded_by'           => $recordedById,
+                'notes'                 => 'Paiement en bloc',
+                'is_bulk'               => false,
             ]);
 
-            $allocated += $amount;
-            $remainingByInstallment[$installment->id] = $available - $amount;
+            $allocated += $need;
+            $remainingByInstallment[$installment->id] = $available - $need;
+            $remainingScholarship -= $useScholarship;
+            $remainingCash -= $useCash;
         }
 
+        // Update parent's snapshot totals to reflect current state
+        $feeTotal = $feeStructure->installments->sum('amount');
+        $totalPaid = (int) StudentPayment::visible()->where('student_enrollment_id', $enrollment->id)->sum('amount_paid');
+        $totalScholarship = (int) StudentPayment::visible()->where('student_enrollment_id', $enrollment->id)->sum('scholarship_amount');
+        $totalRemaining = max(0, $feeTotal - ($totalPaid + $totalScholarship));
+
+        $bulkPayment->forceFill([
+            'snapshot_total_due'       => $feeTotal,
+            'snapshot_total_paid'      => $totalPaid,
+            'snapshot_total_remaining' => $totalRemaining,
+        ])->saveQuietly();
+
         AuditLog::log('bulk_payment_recorded', $bulkPayment);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'receipt_url' => route('finances.receipt', $bulkPayment),
+            ]);
+        }
 
         return redirect()
             ->route('finances.receipt', $bulkPayment)
@@ -461,7 +622,7 @@ class FinanceController extends Controller
                 ->orderBy('name')->get()
             : collect();
 
-        $totalFiltered = $query->sum('amount_paid');
+        $totalFiltered = $query->sum('amount_paid') + $query->sum('scholarship_amount');
 
         $recorders = $isAdmin
             ? User::whereIn('id', StudentPayment::visible()
@@ -521,14 +682,18 @@ class FinanceController extends Controller
         $school      = \App\Models\SchoolSetting::instance();
         $phones      = \App\Models\SchoolPhone::orderByDesc('is_primary')->orderBy('id')->get();
         $enrollment  = $payment->studentEnrollment;
-        $section     = $enrollment->classGroup->level->section;
+        if (! $enrollment) {
+            abort(404, 'Inscription de l\'élève introuvable pour ce paiement.');
+        }
+        $section     = $enrollment->classGroup?->level?->section;
 
         $feeStructure   = $enrollment->classGroup()->with('feeStructures.installments')->first()?->feeStructures->first();
-        $totalDue       = $payment->snapshot_total_due ?? ($feeStructure?->installments->sum('amount') ?? 0);
-        $totalPaid      = $payment->snapshot_total_paid ?? StudentPayment::visible()->where(
-                            'student_enrollment_id', $enrollment->id
-                        )->sum('amount_paid');
-        $totalRemaining = $payment->snapshot_total_remaining ?? max(0, $totalDue - $totalPaid);
+        $totalDue = $payment->snapshot_total_due ?? ($feeStructure?->installments->sum('amount') ?? 0);
+        $totalPaid = $payment->snapshot_total_paid ?? StudentPayment::visible()->where('student_enrollment_id', $enrollment->id)
+            ->sum('amount_paid');
+        $totalScholarship = StudentPayment::visible()->where('student_enrollment_id', $enrollment->id)
+            ->sum('scholarship_amount');
+        $totalRemaining = $payment->snapshot_total_remaining ?? max(0, $totalDue - ($totalPaid + $totalScholarship));
 
         $isEnglishReceipt = $section?->isAnglophone() ?? false;
 
@@ -567,7 +732,7 @@ class FinanceController extends Controller
                         ->sortBy('installment_number') as $inst) {
                 $paid = $allocationsPayments
                     ->where('fee_installment_id', $inst->id)
-                    ->sum('amount_paid');
+                    ->sum(fn($p) => (int) $p->amount_paid + (int) $p->scholarship_amount);
 
                 $installmentSummary->push([
                     'label'     => $inst->label,
@@ -580,9 +745,10 @@ class FinanceController extends Controller
         }
 
         $totalDue       = $feeStructure?->total_amount ?? 0;
-        $totalPaid      = $payments->sum('amount_paid');
-        $totalRemaining = max(0, $totalDue - $totalPaid);
-        $school         = \App\Models\SchoolSetting::instance();
+        $totalPaid       = $payments->sum(fn ($payment) => (int) $payment->amount_paid + (int) $payment->scholarship_amount);
+        $totalScholarship = $payments->sum('scholarship_amount');
+        $totalRemaining  = max(0, $totalDue - $totalPaid);
+        $school          = \App\Models\SchoolSetting::instance();
         $phones         = \App\Models\SchoolPhone::orderByDesc('is_primary')->orderBy('id')->get();
         $isEnglishReceipt = $enrollment->classGroup->level->section?->isAnglophone() ?? false;
 
@@ -625,10 +791,13 @@ class FinanceController extends Controller
             $enrollment   = $payment->studentEnrollment;
             $feeStructure = $enrollment->classGroup()->with('feeStructures.installments')->first()?->feeStructures->first();
             $totalDue     = $payment->snapshot_total_due ?? ($feeStructure?->installments->sum('amount') ?? 0);
+            $totalScholarship = StudentPayment::visible()->where(
+                'student_enrollment_id', $enrollment->id
+            )->sum('scholarship_amount');
             $totalPaid    = $payment->snapshot_total_paid ?? StudentPayment::visible()->where(
                                 'student_enrollment_id', $enrollment->id
                             )->sum('amount_paid');
-            $totalRemaining = $payment->snapshot_total_remaining ?? max(0, $totalDue - $totalPaid);
+            $totalRemaining = $payment->snapshot_total_remaining ?? max(0, $totalDue - ($totalPaid + $totalScholarship));
             return compact('payment', 'totalDue', 'totalPaid', 'totalRemaining');
         });
 
@@ -985,7 +1154,7 @@ class FinanceController extends Controller
 
                 $installmentPayments = $payments->where('fee_installment_id', $installment->id);
                 $current->expected += (float) $installment->amount * (int) $class->enrolled_count;
-                $current->collected += (float) $installmentPayments->sum('amount_paid');
+                $current->collected += (float) $installmentPayments->sum(fn ($payment) => (int) $payment->amount_paid + (int) $payment->scholarship_amount);
                 $current->payers += $installmentPayments->pluck('student_enrollment_id')->unique()->count();
                 $current->count += $installmentPayments->count();
                 $current->installment_number = min((int) $current->installment_number, (int) $installment->installment_number);
@@ -1006,14 +1175,19 @@ class FinanceController extends Controller
 
     private function paymentCalendarYearForMonth(?AcademicYear $academicYear, int $month): int
     {
-        if (! $academicYear) {
+        if (! $academicYear || ! $academicYear->start_date) {
             return now()->year;
         }
 
-        $startYear = (int) $academicYear->start_date->format('Y');
-        $endYear = (int) $academicYear->end_date->format('Y');
+        $startYear  = (int) $academicYear->start_date->format('Y');
+        $endYear    = $academicYear->end_date ? (int) $academicYear->end_date->format('Y') : $startYear;
+        $startMonth = (int) $academicYear->start_date->format('n');
 
-        return $month >= 9 ? $startYear : $endYear;
+        if ($startYear === $endYear) {
+            return $startYear;
+        }
+
+        return $month >= $startMonth ? $startYear : $endYear;
     }
 
     private function buildYearlyEvolution($payments, ?AcademicYear $academicYear = null): array
@@ -1182,6 +1356,169 @@ class FinanceController extends Controller
     }
 
     // ── TABLEAU DE BORD DE GESTION GLOBALE ───────────────────────────────
+    public function scholarships(Request $request)
+    {
+        $filters = $this->resolveScholarshipFilters($request);
+        $query = $this->scholarshipQuery($filters);
+
+        $totalScholarships = (clone $query)->sum('scholarship_amount');
+        $scholarshipCount = (clone $query)->count();
+        $scholarships = $query
+            ->orderByDesc('payment_date')
+            ->orderByDesc('created_at')
+            ->paginate(30)
+            ->withQueryString();
+
+        return view('finances.scholarships', array_merge($filters, [
+            'years' => AcademicYear::orderByDesc('start_date')->get(),
+            'cashiers' => $this->scholarshipCashiers(),
+            'scholarships' => $scholarships,
+            'totalScholarships' => $totalScholarships,
+            'scholarshipCount' => $scholarshipCount,
+            'periodLabel' => $this->scholarshipPeriodLabel($filters),
+        ]));
+    }
+
+    public function printScholarships(Request $request)
+    {
+        $filters = $this->resolveScholarshipFilters($request);
+        $query = $this->scholarshipQuery($filters);
+
+        $scholarships = $query
+            ->orderByDesc('payment_date')
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('finances.scholarships-print', array_merge($filters, [
+            'school' => \App\Models\SchoolSetting::instance(),
+            'phones' => \App\Models\SchoolPhone::orderBy('id')->get(),
+            'agreements' => \App\Models\SchoolAgreement::orderBy('id')->get(),
+            'scholarships' => $scholarships,
+            'totalScholarships' => $scholarships->sum('scholarship_amount'),
+            'scholarshipCount' => $scholarships->count(),
+            'periodLabel' => $this->scholarshipPeriodLabel($filters),
+        ]));
+    }
+
+    private function resolveScholarshipFilters(Request $request): array
+    {
+        $activeYear = AcademicYear::active();
+        $selectedYearId = $request->input('year_id', $activeYear?->id);
+        $selectedYear = $selectedYearId ? AcademicYear::find($selectedYearId) : null;
+        $type = $request->input('type', 'annuel');
+        $date = $request->input('date', now()->toDateString());
+        $week = $request->input('week', now()->format('o-\\WW'));
+        $month = (int) $request->input('month', now()->month);
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $cashierId = $request->input('cashier_id');
+
+        $from = null;
+        $to = null;
+
+        if ($type === 'journalier') {
+            $from = Carbon::parse($date)->startOfDay();
+            $to = Carbon::parse($date)->endOfDay();
+        } elseif ($type === 'hebdomadaire') {
+            try {
+                $from = Carbon::parse($week . '-1')->startOfWeek(Carbon::MONDAY);
+            } catch (\Throwable $e) {
+                $from = now()->startOfWeek(Carbon::MONDAY);
+                $week = $from->format('o-\\WW');
+            }
+            $to = $from->copy()->endOfWeek(Carbon::SUNDAY);
+        } elseif ($type === 'mensuel') {
+            $month = max(1, min(12, $month));
+            // Instead of computing a specific calendar year for the chosen month
+            // (which is ambiguous when start month == end month, e.g. July→July),
+            // we scope to the academic year's full date range and filter by month number.
+            // The monthFilter key is used in scholarshipQuery via whereMonth().
+            if ($selectedYear) {
+                $from = $selectedYear->start_date
+                    ? Carbon::parse($selectedYear->start_date)->startOfDay()
+                    : null;
+                $to = $selectedYear->end_date
+                    ? Carbon::parse($selectedYear->end_date)->endOfDay()
+                    : null;
+            }
+            // $from/$to intentionally left null when no year selected (fallback: no date range)
+        } elseif ($type === 'entre-2-dates') {
+            $from = Carbon::parse($startDate ?: now()->toDateString())->startOfDay();
+            $to = Carbon::parse($endDate ?: now()->toDateString())->endOfDay();
+            $startDate = $from->toDateString();
+            $endDate = $to->toDateString();
+        } elseif ($selectedYear) {
+            $from = $selectedYear->start_date ? Carbon::parse($selectedYear->start_date)->startOfDay() : null;
+            $to = $selectedYear->end_date ? Carbon::parse($selectedYear->end_date)->endOfDay() : null;
+        }
+
+        return [
+            'selectedYear' => $selectedYear,
+            'type'        => $type,
+            'date'        => $date,
+            'week'        => $week,
+            'month'       => $month,
+            'monthFilter' => $type === 'mensuel' ? $month : null,
+            'startDate'   => $startDate,
+            'endDate'     => $endDate,
+            'cashierId'   => $cashierId,
+            'from'        => $from,
+            'to'          => $to,
+        ];
+    }
+
+    private function scholarshipQuery(array $filters)
+    {
+        return StudentPayment::visible()
+            ->where('scholarship_amount', '>', 0)
+            ->with([
+                'studentEnrollment.student',
+                'studentEnrollment.classGroup.level.section',
+                'feeInstallment',
+                'recordedBy',
+            ])
+            ->when($filters['selectedYear'], fn ($q) =>
+                $q->whereHas('studentEnrollment', fn ($q2) =>
+                    $q2->where('academic_year_id', $filters['selectedYear']->id)
+                )
+            )
+            ->when($filters['cashierId'], fn ($q) =>
+                $q->where('recorded_by', $filters['cashierId'])
+            )
+            // Monthly filter: scope by month number within the academic year date range
+            ->when($filters['monthFilter'] ?? null, fn ($q) =>
+                $q->whereMonth('payment_date', $filters['monthFilter'])
+            )
+            ->when($filters['from'], fn ($q) =>
+                $q->whereDate('payment_date', '>=', $filters['from']->toDateString())
+            )
+            ->when($filters['to'], fn ($q) =>
+                $q->whereDate('payment_date', '<=', $filters['to']->toDateString())
+            );
+    }
+
+    private function scholarshipCashiers()
+    {
+        $ids = StudentPayment::visible()
+            ->where('scholarship_amount', '>', 0)
+            ->whereNotNull('recorded_by')
+            ->pluck('recorded_by')
+            ->unique()
+            ->values();
+
+        return User::whereIn('id', $ids)->orderBy('name')->get();
+    }
+
+    private function scholarshipPeriodLabel(array $filters): string
+    {
+        return match ($filters['type']) {
+            'journalier' => 'Journee du ' . Carbon::parse($filters['date'])->format('d/m/Y'),
+            'hebdomadaire' => 'Semaine du ' . $filters['from']->format('d/m/Y') . ' au ' . $filters['to']->format('d/m/Y'),
+            'mensuel' => 'Mois de ' . Carbon::create(null, (int) $filters['month'], 1)->locale('fr')->translatedFormat('F'),
+            'entre-2-dates' => 'Du ' . $filters['from']->format('d/m/Y') . ' au ' . $filters['to']->format('d/m/Y'),
+            default => 'Annee scolaire ' . ($filters['selectedYear']?->label ?? '-'),
+        };
+    }
     public function global(Request $request)
     {
         $activeYear     = AcademicYear::active();
@@ -1218,11 +1555,17 @@ class FinanceController extends Controller
                 $fee       = $class->feeStructures->first();
                 $feeTotal  = $fee?->installments->sum('amount') ?? 0;
                 $expected  = $feeTotal * $class->enrolled_count;
-                $collected = \App\Models\StudentPayment::visible()->whereHas(
+                $paidAmount = \App\Models\StudentPayment::visible()->whereHas(
                     'studentEnrollment', fn($q) =>
                         $q->where('class_group_id', $class->id)
                         ->where('status', 'active')
                 )->sum('amount_paid');
+                $scholarshipAmount = \App\Models\StudentPayment::visible()->whereHas(
+                    'studentEnrollment', fn($q) =>
+                        $q->where('class_group_id', $class->id)
+                        ->where('status', 'active')
+                )->sum('scholarship_amount');
+                $collected = $paidAmount + $scholarshipAmount;
 
                 $classeStats->push([
                     'class'     => $class,
@@ -1262,9 +1605,13 @@ class FinanceController extends Controller
             ->map(function($e) {
                 $fee      = $e->classGroup->feeStructures->first();
                 $due      = $fee?->installments->sum('amount') ?? 0;
-                $paid     = \App\Models\StudentPayment::visible()->where(
+                $paidAmount = \App\Models\StudentPayment::visible()->where(
                     'student_enrollment_id', $e->id
                 )->sum('amount_paid');
+                $scholarshipAmount = \App\Models\StudentPayment::visible()->where(
+                    'student_enrollment_id', $e->id
+                )->sum('scholarship_amount');
+                $paid = $paidAmount + $scholarshipAmount;
                 $remaining = max(0, $due - $paid);
                 return ['enrollment' => $e, 'due' => $due,
                         'paid' => $paid, 'remaining' => $remaining];
@@ -1284,6 +1631,15 @@ class FinanceController extends Controller
                 : 0,
             'debtors'   => $debtors->count(),
         ];
+
+        // ── Bourses accordées
+        $totalScholarships = \App\Models\StudentPayment::visible()
+            ->when($selectedYear, fn($q) =>
+                $q->whereHas('studentEnrollment', fn($q2) =>
+                    $q2->where('academic_year_id', $selectedYear->id)
+                )
+            )
+            ->sum('scholarship_amount');
 
         // ── Calcul du taux d'élèves à jour
         $debtorsCount = $debtors->count();
@@ -1322,7 +1678,7 @@ class FinanceController extends Controller
 
         // ── Encaissements du jour
         $todayPaymentsCount = StudentPayment::visible()->whereDate('payment_date', today())->count();
-        $todayPaymentsAmount = StudentPayment::visible()->whereDate('payment_date', today())->sum('amount_paid');
+        $todayPaymentsAmount = StudentPayment::visible()->whereDate('payment_date', today())->get()->sum(fn ($p) => (int) $p->amount_paid + (int) $p->scholarship_amount);
         $lastPaymentTime = StudentPayment::visible()->orderByDesc('created_at')->first()?->created_at?->format('H:i') ?? '--:--';
 
         // ── Paiements récents
@@ -1341,6 +1697,22 @@ class FinanceController extends Controller
         ->get();
 
         // ── Évolution mensuelle (période de l'année scolaire)
+        $recentScholarships = StudentPayment::visible()->with([
+            'studentEnrollment.student',
+            'studentEnrollment.classGroup.level.section',
+            'feeInstallment',
+            'recordedBy',
+        ])
+        ->where('scholarship_amount', '>', 0)
+        ->when($selectedYear, fn($q) =>
+            $q->whereHas('studentEnrollment', fn($q2) =>
+                $q2->where('academic_year_id', $selectedYear->id)
+            )
+        )
+        ->orderByDesc('payment_date')
+        ->orderByDesc('created_at')
+        ->take(10)
+        ->get();
         $monthlyData = collect();
 
         if ($selectedYear) {
@@ -1356,7 +1728,7 @@ class FinanceController extends Controller
                         (int) $p->payment_date->format('n') === $period['month']
                         && (int) $p->payment_date->format('Y') === $period['year']
                     )
-                    ->sum('amount_paid');
+                    ->sum(fn ($p) => (int) $p->amount_paid + (int) $p->scholarship_amount);
 
                 $monthlyData->push((object) [
                     'label'      => $period['label'],
@@ -1371,7 +1743,7 @@ class FinanceController extends Controller
             'paymentMethods', 'installmentStats', 'debtors', 'globalStats',
             'paidInFullRate', 'sectionStats', 'todayPaymentsCount',
             'todayPaymentsAmount', 'lastPaymentTime', 'recentPayments',
-            'monthlyData'
+            'monthlyData', 'totalScholarships', 'recentScholarships'
         ));
     }
 }

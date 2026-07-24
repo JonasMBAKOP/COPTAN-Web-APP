@@ -101,7 +101,7 @@
 
         <x-sidebar-item
             icon="users"
-            {{-- icon="academic-cap" --}}
+            {{-- icon="currency-dollar" --}}
             label="Élèves"
             href="{{ route('students.index') }}"
             :active="request()->routeIs('students.*') && !request()->routeIs('students.documents.*') 
@@ -200,11 +200,11 @@
         @endcan
         @endcanany
 
-        {{-- ── PRÉSENCES ─────────────────────────────────────────── --}}
+        {{-- ── PRÉSENCES ÉLÈVES ─────────────────────────────────────────── --}}
         @can('view-absences')
         <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
              style="background-color: #D97706; color: #ffffff;">
-            Présences
+            Présences élèves
         </div>
 
         @can('manage-absences')
@@ -248,6 +248,11 @@
                 label="Paiements"
                 href="{{ route('finances.payments') }}"
                 :active="request()->routeIs('finances.payments', 'finances.student')" />
+            <x-sidebar-item
+                icon="currency-dollar"
+                label="Bourses"
+                href="{{ route('finances.scholarships') }}"
+                :active="request()->routeIs('finances.scholarships*')" />
 
             @can('configure-fees')
             <x-sidebar-item

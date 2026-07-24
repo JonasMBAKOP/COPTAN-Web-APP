@@ -63,7 +63,7 @@
 
             {{-- Titre --}}
             <div class="text-center mb-6">
-                <h1 class="text-xl font-bold" style="color: #1A3A6B;">
+                <h1 class="text-xl uppercase font-bold" style="color: #1A3A6B;">
                     Collège Polyvalent NTANKEU
                 </h1>
                 <p class="text-sm text-gray-500 mt-1">
@@ -212,7 +212,7 @@
     </div>
 
     {{-- Copyright --}}
-    <p class="mt-6 text-xs" style="color: rgba(0,0,0,0.45);">
+    <p class="mt-6 text-xs" style="color: white;">
         COPTAN © {{ date('Y') }} • Tous droits réservés
     </p>
 

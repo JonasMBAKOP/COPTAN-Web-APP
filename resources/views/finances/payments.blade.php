@@ -148,7 +148,7 @@
         </p>
         <span class="text-gray-300">|</span>
         <p class="text-sm font-semibold text-green-600">
-            Total : {{ number_format($payments->sum('amount_paid')) }} FCFA
+            Total : {{ number_format($payments->sum('amount_paid') + $payments->sum('scholarship_amount')) }} FCFA
         </p>
     </div>
 
@@ -257,7 +257,7 @@
                     </td>
                     <td class="px-4 py-3.5 text-right">
                         <span class="font-bold text-green-700 text-sm">
-                            {{ number_format($p->amount_paid) }}
+                            {{ number_format($p->amount_paid + ($p->scholarship_amount ?? 0)) }}
                         </span>
                         <span class="text-xs text-gray-400 ml-0.5">FCFA</span>
                     </td>

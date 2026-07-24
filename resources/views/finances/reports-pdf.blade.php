@@ -4,27 +4,26 @@
     <meta charset="UTF-8">
     <title>Rapport financier — {{ $selectedYear?->label ?? '' }}</title>
     @include('students.documents.partials.base-styles')
+    @include('finances.partials.pdf-document-styles')
     <style>
-        @page { size: A4 portrait; margin: 4mm 5mm; }
-
         .finance-doc-title {
             background: #d9d9d9;
             border-top: 1px solid #9CA3AF;
             border-bottom: 1px solid #9CA3AF;
-            padding: 10px 12px;
+            padding: 7px 8px;
             text-align: center;
             font-family: Georgia, 'Times New Roman', serif;
-            margin: 12px 0 16px;
+            margin: 7px 0 9px;
         }
         .finance-doc-title .main {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 900;
             text-transform: uppercase;
             line-height: 1.1;
             color: #111827;
         }
         .finance-doc-title .sub {
-            font-size: 12px;
+            font-size: 10px;
             color: #4B5563;
             margin-top: 6px;
             font-family: Arial, Helvetica, sans-serif;
@@ -33,15 +32,15 @@
 
         .kpi-row {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            margin-bottom: 14px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-bottom: 8px;
         }
         .kpi-box {
             background: #F8FAFC;
             border: 1px solid #E5E7EB;
             border-radius: 4px;
-            padding: 10px 12px;
+            padding: 7px 8px;
         }
         .kpi-box .label {
             font-size: 9px;
@@ -51,7 +50,7 @@
             letter-spacing: 0.4px;
         }
         .kpi-box .value {
-            font-size: 12px;
+            font-size: 10px;
             font-weight: 900;
             color: #1A3A6B;
             margin-top: 4px;
@@ -60,12 +59,12 @@
         .section-title {
             background: #F3F4F6;
             color: #374151;
-            padding: 6px 10px;
+            padding: 4px 6px;
             font-size: 10px;
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin: 12px 0 8px;
+            margin: 7px 0 5px;
             border-radius: 3px;
             border: 1px solid #E5E7EB;
         }
@@ -77,12 +76,12 @@
         .bar-track { height: 6px; background: #EEF2F7; border-radius: 3px; overflow: hidden; }
         .bar-fill { height: 6px; background: #4A6FA5; border-radius: 3px; }
 
-        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 6px; }
 
-        table { width: 100%; border-collapse: collapse; font-size: 8.5px; }
+        table { width: 100%; border-collapse: collapse; font-size: 7.6px; }
         thead tr { background: #F3F4F6; }
         thead th {
-            padding: 4px 5px;
+            padding: 3px 4px;
             text-align: left;
             font-weight: 700;
             font-size: 7.5px;
@@ -90,16 +89,16 @@
             border: 1px solid #E5E7EB;
         }
         thead th.right { text-align: right; }
-        tbody td { padding: 3px 5px; border: 1px solid #E5E7EB; }
+        tbody td { padding: 2px 4px; border: 1px solid #E5E7EB; }
         tbody tr:nth-child(even) { background: #FAFAFA; }
         tbody td.right { text-align: right; font-weight: 700; }
         tfoot tr { background: #F3F4F6; }
-        tfoot td { padding: 4px 5px; font-weight: 900; border: 1px solid #E5E7EB; }
+        tfoot td { padding: 3px 4px; font-weight: 900; border: 1px solid #E5E7EB; }
         tfoot td.right { text-align: right; color: #1A3A6B; }
 
         .footer-note {
             text-align: center;
-            margin-top: 12px;
+            margin-top: 7px;
             font-size: 8px;
             color: #9CA3AF;
             border-top: 1px solid #E5E7EB;
@@ -121,7 +120,7 @@
 <body>
 @include('students.documents.partials.print-toolbar')
 
-<div class="page cert-page">
+<div class="page cert-page pdf-document">
     @include('students.documents.partials.certificate-official-header', [
         'showCertificateTitle' => false,
     ])
@@ -176,7 +175,13 @@
     <div class="kpi-row">
         <div class="kpi-box">
             <div class="label">Total collecté</div>
-            <div class="value">{{ number_format($totalCollected) }} FCFA</div>
+            @php $totalWithScholarships = $totalCollected + (int)$allPayments->sum('scholarship_amount'); @endphp
+            <div class="value">{{ number_format($totalWithScholarships) }} FCFA</div>
+        </div>
+        <div class="kpi-box">
+            <div class="label">Bourses Accordées</div>
+            @php $scholarships = $allPayments->sum('scholarship_amount'); @endphp
+            <div class="value">{{ number_format($scholarships) }} FCFA</div>
         </div>
         <div class="kpi-box">
             <div class="label">Nb paiements</div>
@@ -184,17 +189,17 @@
         </div>
         <div class="kpi-box">
             <div class="label">Espèces</div>
-            @php $cash = $allPayments->where('payment_method','cash')->sum('amount_paid'); @endphp
+            @php $cash = $allPayments->where('payment_method','cash')->sum('amount_paid') + $allPayments->where('payment_method','cash')->sum('scholarship_amount'); @endphp
             <div class="value">{{ number_format($cash) }} FCFA</div>
         </div>
         <div class="kpi-box">
             <div class="label">Paiements Mobiles</div>
-            @php $mm = $allPayments->whereIn('payment_method',['orange_money','mtn_momo'])->sum('amount_paid'); @endphp
+            @php $mm = $allPayments->whereIn('payment_method',['orange_money','mtn_momo'])->sum('amount_paid') + $allPayments->whereIn('payment_method',['orange_money','mtn_momo'])->sum('scholarship_amount'); @endphp
             <div class="value">{{ number_format($mm) }} FCFA</div>
         </div>
         <div class="kpi-box">
             <div class="label">Virement</div>
-            @php $vir = $allPayments->where('payment_method','bank_transfer')->sum('amount_paid'); @endphp
+            @php $vir = $allPayments->where('payment_method','bank_transfer')->sum('amount_paid') + $allPayments->where('payment_method','bank_transfer')->sum('scholarship_amount'); @endphp
             <div class="value">{{ number_format($vir) }} FCFA</div>
         </div>
     </div>
@@ -221,8 +226,15 @@
 
         <div>
             <div class="section-title">Par mode de paiement</div>
-            @php $maxM = $byMethod->max('total') ?: 1; @endphp
-            @foreach($byMethod as $m)
+            @php
+                $byMethodWithScholarships = $byMethod->map(function($m) use ($allPayments) {
+                    $methodScholarships = $allPayments->where('payment_method', $m['method'])->sum('scholarship_amount');
+                    $m['total'] = $m['total'] + $methodScholarships;
+                    return $m;
+                });
+                $maxM = $byMethodWithScholarships->max('total') ?: 1;
+            @endphp
+            @foreach($byMethodWithScholarships as $m)
             <div class="bar-row">
                 <div class="bar-meta">
                     <span class="bar-label">{{ $m['label'] }}</span>
@@ -250,6 +262,7 @@
                 <th>Mode</th>
                 <th>Date</th>
                 <th>Caissier</th>
+                <th>N° Reçu</th>
             </tr>
         </thead>
         <tbody>
@@ -258,17 +271,18 @@
                 <td>{{ $p->studentEnrollment?->student?->full_name }}</td>
                 <td>{{ $p->studentEnrollment?->classGroup?->full_name }}</td>
                 <td>{{ $p->is_bulk ? 'Paiement groupé' : ($p->feeInstallment?->label ?? '—') }}</td>
-                <td class="right">{{ number_format($p->amount_paid) }} FCFA</td>
+                <td class="right">{{ number_format($p->amount_paid + $p->scholarship_amount) }} FCFA</td>
                 <td>{{ $p->payment_method_label }}</td>
                 <td>{{ $p->payment_date->format('d/m/Y') }}</td>
                 <td>{{ $p->recordedBy?->name ?? '—' }}</td>
+                <td>{{ $p->receipt_number }}</td>
             </tr>
             @endforeach
         </tbody>
         <tfoot>
             <tr>
                 <td colspan="3">TOTAL</td>
-                <td class="right">{{ number_format($totalCollected) }} FCFA</td>
+                <td class="right">{{ number_format($totalCollected + (int)$allPayments->sum('scholarship_amount')) }} FCFA</td>
                 <td colspan="3"></td>
             </tr>
         </tfoot>

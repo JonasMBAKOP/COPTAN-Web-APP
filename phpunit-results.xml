@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="C:\wamp64\www\COPTAN-Web-App\phpunit.xml" tests="1" assertions="2" errors="0" failures="1" skipped="0" time="8.799392">
+    <testsuite name="Feature" tests="1" assertions="2" errors="0" failures="1" skipped="0" time="8.799392">
+      <testsuite name="Tests\Feature\FinanceBulkPaymentTest" file="C:\wamp64\www\COPTAN-Web-App\tests\Feature\FinanceBulkPaymentTest.php" tests="1" assertions="2" errors="0" failures="1" skipped="0" time="8.799392">
+        <testcase name="test_bulk_payment_creates_allocations_and_redirects_to_receipt" file="C:\wamp64\www\COPTAN-Web-App\tests\Feature\FinanceBulkPaymentTest.php" line="22" class="Tests\Feature\FinanceBulkPaymentTest" classname="Tests.Feature.FinanceBulkPaymentTest" assertions="2" time="8.799392">
+          <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\Feature\FinanceBulkPaymentTest::test_bulk_payment_creates_allocations_and_redirects_to_receipt&#13;
+Failed asserting that actual size 0 matches expected size 4.
+&#13;
+C:\wamp64\www\COPTAN-Web-App\tests\Feature\FinanceBulkPaymentTest.php:108</failure>
+        </testcase>
+      </testsuite>
+    </testsuite>
+  </testsuite>
+</testsuites>

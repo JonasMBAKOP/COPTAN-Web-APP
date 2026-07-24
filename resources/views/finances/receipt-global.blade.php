@@ -430,6 +430,10 @@ body {
             <tr>
                 <td colspan="5" style="font-weight:900; letter-spacing:1px;">
                     {{ $isEnglishReceipt ? 'TOTAL PAYMENTS' : 'TOTAL DES VERSEMENTS' }}
+                    @php $totalScholarships = $payments->sum('scholarship_amount'); @endphp
+                    @if($totalScholarships > 0)
+                        &nbsp;|&nbsp; {{ $isEnglishReceipt ? 'SCHOLARSHIP APPLIED' : 'BOURSE APPLIQUÉE' }}: {{ number_format($totalScholarships, 0, ',', ' ') }} FCFA
+                    @endif
                 </td>
                 <td>{{ number_format($totalPaid, 0, ',', ' ') }} FCFA</td>
             </tr>
