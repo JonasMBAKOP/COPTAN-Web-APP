@@ -95,6 +95,11 @@ class ProfileController extends Controller
             $user->signature_seal = $request->file('signature_seal')->store('users/seals', 'public');
         }
 
+        // Mettre à jour l'établissement d'origine sur la fiche personnel
+        if ($user->staff && $request->has('origin_school')) {
+            $user->staff->update(['origin_school' => $request->origin_school]);
+        }
+
         $user->save();
 
         return redirect()->route('profile.show')

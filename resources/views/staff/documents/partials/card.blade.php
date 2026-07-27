@@ -2,6 +2,8 @@
     $mottoFr = 'Paix - Travail - Patrie';
     $mottoEn = 'Peace - Work - Fatherland';
 
+    // $year = $year ?? $enr?->academicYear;
+
     $ministryFr = strtoupper($school->ministry ?: 'MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES');
     $ministryEn = strtoupper($school->ministry_en ?: 'MINISTRY OF SECONDARY EDUCATION');
 
@@ -42,6 +44,11 @@
             ->unique();
     }
     $subjectsText = $subjects->isNotEmpty() ? $subjects->implode(', ') : '—';
+
+    $primaryPosKey = $staff->primaryPosition?->position;
+    $hideSubjects = in_array($primaryPosKey, ['econome', 'agent_d_entretien', 'surveillant_de_secteur', 'vigile', 'secretaire', 'autre'], true);
+    $hidePosition = ($primaryPosKey === 'autre');
+    $activeAcademicYear = $year ?? \App\Models\AcademicYear::where('is_active', true)->first();
 @endphp
 
 <!-- GUILLOCHE PATTERN BACKGROUND -->
@@ -92,13 +99,16 @@
         <!-- ÉCOLE INFO & TITRE -->
         <div class="id-card__school-header">
             <div class="id-card__school-info">
-                <div class="id-card__school-name" style="color: #1A3A6B">{{ strtoupper($school->full_name) }}</div>
-                @if($school->short_name)
+                <div class="id-card__school-name" style="color: #E87722">{{ strtoupper($school->full_name) }}</div>
+                {{-- @if($school->short_name)
                     <div class="id-card__school-acronym">{{ strtoupper($school->short_name) }}</div>
-                @endif
+                @endif --}}
             </div>
             <div class="id-card__title-section">
                 <div class="id-card__title">CARTE PROFESSIONNELLE / STAFF IDENTITY CARD</div>
+                @if($activeAcademicYear)
+                    <div class="id-card__subtitle">Année scolaire : {{ $activeAcademicYear->label }}</div>
+                @endif
             </div>
         </div>
 
@@ -135,13 +145,16 @@
                         </td>
                         <td class="id-card__info-value">{{ $staff->first_name ?? '—' }}</td>
                     </tr>
+                    @if(!$hidePosition)
                     <tr class="id-card__info-row">
                         <td class="id-card__info-label">
                             <span class="id-card__label-fr">Poste</span>
                             <span class="id-card__label-en">Position</span>
                         </td>
-                        <td class="id-card__info-value id-card__info-value--highlight">{{ $staff->primaryPosition ? (App\Models\Staff::positionLabels()[$staff->primaryPosition->position] ?? $staff->primaryPosition->position) : '—' }}</td>
+                        <td class="id-card__info-value id-card__info-value--highlight">{{ App\Models\Staff::positionLabels()[$staff->primaryPosition->position] ?? $staff->primaryPosition->position }}</td>
                     </tr>
+                    @endif
+                    @if(!$hideSubjects)
                     <tr class="id-card__info-row">
                         <td class="id-card__info-label">
                             <span class="id-card__label-fr">Matière(s)</span>
@@ -149,6 +162,7 @@
                         </td>
                         <td class="id-card__info-value">{{ $subjectsText }}</td>
                     </tr>
+                    @endif
                     <tr class="id-card__info-row">
                         <td class="id-card__info-label">
                             <span class="id-card__label-fr">Téléphone</span>

@@ -217,7 +217,7 @@
                     </div>
                     <div class="py-3 flex justify-between gap-4">
                         <dt class="text-gray-500">Établissement d'origine</dt>
-                        <dd class="font-bold text-gray-800 text-right">ENSET Douala</dd>
+                        <dd class="font-bold text-gray-800 text-right">{{ $staff->origin_school ?? '—' }}</dd>
                     </div>
                     <div class="py-3 flex justify-between gap-4">
                         <dt class="text-gray-500">Date d'embauche</dt>
@@ -229,6 +229,43 @@
                     </div>
                 </dl>
             </div>
+
+            @if($staff->censeurAssignments->isNotEmpty())
+            {{-- Affectation Préfet des études --}}
+            <div class="bg-white border border-blue-100 rounded-2xl shadow-sm p-5">
+                <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-[#1A3A6B] flex items-center gap-2">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0h4m-4 0V11m0 0l3-3m-3 3l-3-3" />
+                        </svg>
+                        Affectation Préfet des études
+                    </h3>
+                    <span class="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-blue-50 text-blue-700">Sections & Cycles</span>
+                </div>
+
+                @php
+                    $groupedAssignments = $staff->censeurAssignments->groupBy('section_id');
+                @endphp
+
+                <div class="space-y-3 text-xs">
+                    @foreach($groupedAssignments as $secId => $assigns)
+                    @php
+                        $section = $assigns->first()->section;
+                        $cycles = $assigns->pluck('cycle_label')->join(', ');
+                    @endphp
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-blue-50/50 border border-blue-100">
+                        <span class="font-bold text-gray-800 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-blue-600"></span>
+                            {{ $section?->name }} <span class="text-gray-400 font-normal">({{ $section?->code }})</span>
+                        </span>
+                        <span class="font-bold text-blue-900 bg-white px-2.5 py-1 rounded-lg border border-blue-200">
+                            {{ $cycles }}
+                        </span>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
 
             {{-- Performance d'enseignement --}}
             <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-5">

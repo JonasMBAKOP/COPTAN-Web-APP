@@ -50,13 +50,15 @@ class DashboardController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        if ($user->hasRole('super-admin'))         return redirect()->route('dashboard.admin');
-        if ($user->hasRole('directeur'))           return redirect()->route('dashboard.directeur');
-        if ($user->hasRole('fondateur'))           return redirect()->route('dashboard.directeur');
-        if ($user->hasRole('censeur'))             return redirect()->route('dashboard.censeur');
-        if ($user->hasRole('econome'))             return redirect()->route('dashboard.econome');
-        if ($user->hasRole('enseignant'))          return redirect()->route('dashboard.enseignant');
-        if ($user->hasRole('surveillant-general')) return redirect()->route('dashboard.surveillant');
+        if ($user->hasRole('super-admin'))              return redirect()->route('dashboard.admin');
+        if ($user->hasRole('directeur'))                return redirect()->route('dashboard.directeur');
+        if ($user->hasRole('fondateur'))                return redirect()->route('dashboard.directeur');
+        if ($user->hasRole('censeur'))                  return redirect()->route('dashboard.censeur');
+        if ($user->hasRole('econome'))                  return redirect()->route('dashboard.econome');
+        if ($user->hasRole('enseignant'))               return redirect()->route('dashboard.enseignant');
+        if ($user->hasRole('surveillant-general'))      return redirect()->route('dashboard.surveillant');
+        if ($user->hasRole('surveillant-de-secteur'))   return redirect()->route('dashboard.surveillant-secteur');
+        if ($user->hasRole('secretaire'))               return redirect()->route('dashboard.secretaire');
 
         return redirect()->route('dashboard.econome');
     }
@@ -1057,5 +1059,104 @@ class DashboardController extends Controller
         }
 
         return $sequences->last(); // tout est bouclé → dernière séquence
+    }
+
+    // ── SURVEILLANT DE SECTEUR ────────────────────────────────────────────
+    public function surveillantSecteur()
+    {
+        $activeYear = AcademicYear::active();
+
+        // Absences du jour
+        $todayAbsences = Absence::whereDate('absence_date', today())
+            ->with('studentEnrollment.student', 'studentEnrollment.classGroup')
+            ->get();
+
+        $todayHours    = (float)$todayAbsences->sum('hours');
+        $todayStudents = $todayAbsences->pluck('student_enrollment_id')->unique()->count();
+
+        $absentToday = $todayAbsences->groupBy('student_enrollment_id')->map(function ($g) {
+            $enr = $g->first()->studentEnrollment;
+            return [
+                'enrollment'   => $enr,
+                'hours'        => (float)$g->sum('hours'),
+                'is_justified' => $g->every(fn($a) => $a->is_justified),
+            ];
+        })->filter(fn($r) => $r['enrollment'])->sortByDesc('hours')->values();
+
+        // Semaine
+        $weekAbsences    = Absence::whereBetween('absence_date', [now()->startOfWeek(), now()->endOfWeek()])->get();
+        $weekHours       = (float)$weekAbsences->sum('hours');
+        $weekUnjustified = (float)$weekAbsences->where('is_justified', false)->sum('hours');
+
+        // Top absentéistes 30j
+        $topAbsentees = Absence::where('absence_date', '>=', now()->subDays(30))
+            ->selectRaw('student_enrollment_id, SUM(hours) as total_hours, SUM(CASE WHEN is_justified=0 THEN hours ELSE 0 END) as unjustified')
+            ->groupBy('student_enrollment_id')
+            ->orderByDesc('total_hours')->take(5)->get()
+            ->map(function ($row) {
+                $enr = StudentEnrollment::with('student', 'classGroup')->find($row->student_enrollment_id);
+                return $enr ? [
+                    'enrollment'  => $enr,
+                    'total_hours' => (float)$row->total_hours,
+                    'unjustified' => (float)$row->unjustified,
+                ] : null;
+            })->filter()->values();
+
+        // Discipline
+        $disciplinePending = DisciplineIncident::where('status', 'ouvert')->count();
+
+        $recentIncidents = DisciplineIncident::with('studentEnrollment.student', 'studentEnrollment.classGroup')
+            ->orderByDesc('created_at')->take(5)->get();
+
+        // Élèves totaux
+        $totalStudents = $activeYear
+            ? StudentEnrollment::where('academic_year_id', $activeYear->id)->where('status', 'active')->count()
+            : 0;
+
+        return view('dashboards.surveillant_secteur', compact(
+            'activeYear', 'todayHours', 'todayStudents', 'absentToday',
+            'weekHours', 'weekUnjustified', 'topAbsentees',
+            'disciplinePending', 'recentIncidents', 'totalStudents'
+        ));
+    }
+
+    // ── SECRÉTAIRE ───────────────────────────────────────────────────────
+    public function secretaire()
+    {
+        $activeYear = AcademicYear::active();
+
+        $totalStudents = $activeYear
+            ? StudentEnrollment::where('academic_year_id', $activeYear->id)->where('status', 'active')->count()
+            : 0;
+
+        $totalStaff = Staff::where('is_active', true)->count();
+
+        $totalClasses = $activeYear
+            ? ClassGroup::where('academic_year_id', $activeYear->id)->count()
+            : 0;
+
+        $pinnedAnnouncements = Announcement::published()->pinned()->count();
+
+        $recentAnnouncements = Announcement::published()
+            ->with('author')
+            ->orderByDesc('is_pinned')
+            ->orderByDesc('published_at')
+            ->take(6)->get();
+
+        $recentEnrollments = $activeYear
+            ? StudentEnrollment::where('academic_year_id', $activeYear->id)
+                ->with(['student', 'classGroup'])
+                ->orderByDesc('created_at')->take(8)->get()
+            : collect();
+
+        $staffList = Staff::where('is_active', true)
+            ->with('positions')
+            ->orderBy('last_name')->take(10)->get();
+
+        return view('dashboards.secretaire', compact(
+            'activeYear', 'totalStudents', 'totalStaff', 'totalClasses',
+            'pinnedAnnouncements', 'recentAnnouncements',
+            'recentEnrollments', 'staffList'
+        ));
     }
 }

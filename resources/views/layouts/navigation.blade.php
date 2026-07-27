@@ -39,13 +39,13 @@
                         </x-dropdown-link>
 
                         <!-- Authentication -->
-                        <form method="POST" action="{{ route('logout') }}">
+                        <form method="POST" action="{{ route('logout') }}" onsubmit="return confirm('Êtes-vous sûr de vouloir vous déconnecter ?');">
                             @csrf
 
                             <x-dropdown-link :href="route('logout')"
                                     onclick="event.preventDefault();
-                                                this.closest('form').submit();">
-                                {{ __('Log Out') }}
+                                                if(confirm('Êtes-vous sûr de vouloir vous déconnecter ?')){ this.closest('form').submit(); }">
+                                {{ __('Déconnexion') }}
                             </x-dropdown-link>
                         </form>
                     </x-slot>
@@ -85,13 +85,13 @@
                 </x-responsive-nav-link>
 
                 <!-- Authentication -->
-                <form method="POST" action="{{ route('logout') }}">
+                <form method="POST" action="{{ route('logout') }}" onsubmit="return confirm('Êtes-vous sûr de vouloir vous déconnecter ?');">
                     @csrf
 
                     <x-responsive-nav-link :href="route('logout')"
                             onclick="event.preventDefault();
-                                        this.closest('form').submit();">
-                        {{ __('Log Out') }}
+                                        if(confirm('Êtes-vous sûr de vouloir vous déconnecter ?')){ this.closest('form').submit(); }">
+                        {{ __('Déconnexion') }}
                     </x-responsive-nav-link>
                 </form>
             </div>

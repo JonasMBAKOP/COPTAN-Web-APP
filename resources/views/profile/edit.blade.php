@@ -58,6 +58,16 @@
                                class="w-full px-3 py-2.5 border border-gray-200 rounded-lg
                                       text-sm focus:outline-none">
                     </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Établissement d'origine
+                        </label>
+                        <input type="text" name="origin_school"
+                               value="{{ old('origin_school', $user->staff?->origin_school) }}"
+                               placeholder="Ex : ENSET Douala, Université de Yaoundé I…"
+                               class="w-full px-3 py-2.5 border border-gray-200 rounded-lg
+                                      text-sm focus:outline-none">
+                    </div>
                 </div>
             </div>
 

@@ -38,6 +38,7 @@ class UpdateStaffRequest extends FormRequest
             'photo'         => ['nullable', 'image',
                                 'mimes:jpg,jpeg,png', 'max:2048'],
             'diploma'       => ['nullable', 'string', 'max:255'],
+            'origin_school' => ['nullable', 'string', 'max:200'],
             'start_date'    => ['nullable', 'date'],
             'contract_type' => ['required',
                                 'in:permanent,vacataire,stagiaire'],

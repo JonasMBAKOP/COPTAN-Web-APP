@@ -136,11 +136,16 @@
                     {{-- Utilisateur --}}
                     <td class="px-4 py-3">
                         <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-full flex items-center
-                                        justify-center font-bold text-xs flex-shrink-0"
-                                 style="background-color: #1A3A6B; color: white;">
-                                {{ strtoupper(substr($user->name, 0, 2)) }}
-                            </div>
+                            @if($user->photo)
+                                <img src="{{ asset('storage/' . $user->photo) }}" alt="{{ $user->name }}"
+                                     class="w-9 h-9 rounded-full object-cover ring-2 ring-gray-100 flex-shrink-0">
+                            @else
+                                <div class="w-9 h-9 rounded-full flex items-center
+                                            justify-center font-bold text-xs flex-shrink-0"
+                                     style="background-color: #1A3A6B; color: white;">
+                                    {{ strtoupper(substr($user->name, 0, 2)) }}
+                                </div>
+                            @endif
                             <div class="min-w-0">
                                 <p class="text-sm font-medium text-gray-900 truncate">
                                     {{ $user->name }}
@@ -161,12 +166,14 @@
                             @foreach($user->roles as $role)
                                 @php
                                     $colors = [
-                                        'super-admin'         => 'bg-gray-800 text-white',
-                                        'directeur'           => 'bg-purple-100 text-purple-700',
-                                        'censeur'             => 'bg-blue-100 text-blue-700',
-                                        'econome'             => 'bg-orange-100 text-orange-700',
-                                        'enseignant'          => 'bg-green-100 text-green-700',
-                                        'surveillant-general' => 'bg-gray-100 text-gray-700',
+                                        'super-admin'            => 'bg-gray-800 text-white',
+                                        'directeur'              => 'bg-purple-100 text-purple-700',
+                                        'censeur'                => 'bg-blue-100 text-blue-700',
+                                        'econome'                => 'bg-orange-100 text-orange-700',
+                                        'enseignant'             => 'bg-green-100 text-green-700',
+                                        'surveillant-general'    => 'bg-gray-100 text-gray-700',
+                                        'surveillant-de-secteur' => 'bg-indigo-100 text-indigo-700',
+                                        'secretaire'             => 'bg-pink-100 text-pink-700',
                                     ];
                                     $color = $colors[$role->name] ?? 'bg-gray-100 text-gray-700';
                                 @endphp
@@ -286,11 +293,16 @@
         <div class="p-4 {{ !$user->is_active ? 'opacity-60' : '' }}">
             <div class="flex items-start justify-between gap-3">
                 <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center
-                                font-bold text-sm flex-shrink-0"
-                         style="background-color: #1A3A6B; color: white;">
-                        {{ strtoupper(substr($user->name, 0, 2)) }}
-                    </div>
+                    @if($user->photo)
+                        <img src="{{ asset('storage/' . $user->photo) }}" alt="{{ $user->name }}"
+                             class="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100 flex-shrink-0">
+                    @else
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center
+                                    font-bold text-sm flex-shrink-0"
+                             style="background-color: #1A3A6B; color: white;">
+                            {{ strtoupper(substr($user->name, 0, 2)) }}
+                        </div>
+                    @endif
                     <div class="min-w-0">
                         <p class="text-sm font-medium text-gray-900 truncate">
                             {{ $user->name }}

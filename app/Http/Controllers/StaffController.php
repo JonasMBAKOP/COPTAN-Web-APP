@@ -119,6 +119,7 @@ class StaffController extends Controller
         try {
             $staffMember = DB::transaction(function () use ($request, $data) {
                 // Gérer le compte utilisateur
+                $createdUser = null;
                 if ($request->input('user_option') === 'create') {
                     if ($request->filled('new_user_role') &&
                         ! $this->canAssignRole(Auth::user(), $request->new_user_role)) {
@@ -126,19 +127,25 @@ class StaffController extends Controller
                             ->with('error', 'Vous ne pouvez pas attribuer ce rôle.');
                     }
 
-                    $user = User::create([
+                    $createdUser = User::create([
                         'name'      => $request->new_user_name,
                         'email'     => $request->new_user_email,
                         'password'  => Hash::make($request->new_user_password),
                         'is_active' => true,
                     ]);
                     if ($request->filled('new_user_role')) {
-                        $user->assignRole($request->new_user_role);
+                        $createdUser->assignRole($request->new_user_role);
                     }
-                    $data['user_id'] = $user->id;
+                    $data['user_id'] = $createdUser->id;
                 }
 
                 $staff = Staff::create($data);
+
+                // Synchroniser la photo sous 'users/photos/' vers le compte utilisateur lié
+                $userToSync = $createdUser ?? ($staff->user_id ? User::find($staff->user_id) : null);
+                if ($userToSync) {
+                    $this->syncUserPhoto($userToSync, $request, $staff->photo);
+                }
 
                 // Créer les postes
                 $positions = $request->input('positions', []);
@@ -150,6 +157,12 @@ class StaffController extends Controller
                     $staff,
                     $positions,
                     $request->input('primary_position')
+                );
+
+                $this->syncCenseurAssignments(
+                    $staff,
+                    $positions,
+                    $request->input('censeur_assignments', [])
                 );
 
                 AuditLog::log('created', $staff, [], $staff->toArray());
@@ -511,7 +524,7 @@ class StaffController extends Controller
     // ── FORMULAIRE MODIFICATION ─────────────────────────────────────────────
     public function edit(Staff $staff)
     {
-        $staff->load('positions', 'user');
+        $staff->load('positions', 'user', 'censeurAssignments');
 
         return view('staff.edit', array_merge(
             ['staff' => $staff],
@@ -541,6 +554,7 @@ class StaffController extends Controller
         }
 
         // Gérer le compte utilisateur
+        $createdUser = null;
         if ($request->input('user_option') === 'create') {
             if ($request->filled('new_user_role') &&
                 ! $this->canAssignRole(Auth::user(), $request->new_user_role)) {
@@ -548,16 +562,16 @@ class StaffController extends Controller
                     ->with('error', 'Vous ne pouvez pas attribuer ce rôle.');
             }
 
-            $user = User::create([
+            $createdUser = User::create([
                 'name'      => $request->new_user_name,
                 'email'     => $request->new_user_email,
                 'password'  => Hash::make($request->new_user_password),
                 'is_active' => true,
             ]);
             if ($request->filled('new_user_role')) {
-                $user->assignRole($request->new_user_role);
+                $createdUser->assignRole($request->new_user_role);
             }
-            $data['user_id'] = $user->id;
+            $data['user_id'] = $createdUser->id;
         } elseif ($request->input('user_option') === 'existing') {
             $data['user_id'] = $request->user_id ?: null;
         } elseif ($request->input('user_option') === 'none') {
@@ -567,13 +581,26 @@ class StaffController extends Controller
         $old = $staff->toArray();
 
         try {
-            DB::transaction(function () use ($staff, $data, $request) {
+            DB::transaction(function () use ($staff, $data, $request, $createdUser) {
                 $staff->update($data);
 
+                // Synchroniser la photo sous 'users/photos/' vers le compte utilisateur lié
+                $userToSync = $createdUser ?? ($staff->user_id ? User::find($staff->user_id) : null);
+                if ($userToSync) {
+                    $this->syncUserPhoto($userToSync, $request, $staff->photo);
+                }
+
+                $positions = $request->input('positions', []);
                 $this->syncPositions(
                     $staff,
-                    $request->input('positions', []),
+                    $positions,
                     $request->input('primary_position')
+                );
+
+                $this->syncCenseurAssignments(
+                    $staff,
+                    $positions,
+                    $request->input('censeur_assignments', [])
                 );
             });
         } catch (\Throwable $e) {
@@ -590,6 +617,29 @@ class StaffController extends Controller
         return redirect()
             ->route('staff.show', $staff)
             ->with('success', "Dossier de {$staff->full_name} mis à jour.");
+    }
+
+    /**
+     * Synchronise la photo sous 'users/photos/' pour un compte utilisateur lié.
+     */
+    private function syncUserPhoto(User $user, Request $request, ?string $staffPhotoPath = null): void
+    {
+        if ($request->hasFile('photo')) {
+            if ($user->photo && Storage::disk('public')->exists($user->photo)) {
+                Storage::disk('public')->delete($user->photo);
+            }
+            $userPhotoPath = $request->file('photo')->store('users/photos', 'public');
+            $user->update(['photo' => $userPhotoPath]);
+        } elseif ($staffPhotoPath && Storage::disk('public')->exists($staffPhotoPath)) {
+            $ext = pathinfo($staffPhotoPath, PATHINFO_EXTENSION) ?: 'jpg';
+            $userPhotoPath = 'users/photos/' . Str::random(40) . '.' . $ext;
+            if (Storage::disk('public')->copy($staffPhotoPath, $userPhotoPath)) {
+                if ($user->photo && Storage::disk('public')->exists($user->photo)) {
+                    Storage::disk('public')->delete($user->photo);
+                }
+                $user->update(['photo' => $userPhotoPath]);
+            }
+        }
     }
      
     // public function update(UpdateStaffRequest $request, Staff $staff)
@@ -722,6 +772,7 @@ class StaffController extends Controller
         $roles = $this->allowedAccountRoles($authUser);
 
         return compact('availableUsers', 'roles') + [
+            'sections'       => \App\Models\Section::orderBy('name')->get(),
             'positionLabels' => Staff::positionLabels(),
             'contractLabels' => Staff::contractLabels(),
             'diplomas'       => Staff::DIPLOMAS,
@@ -792,6 +843,32 @@ class StaffController extends Controller
         // if (!$hasPrimary) {
         if (!$primaryPosition || !in_array($primaryPosition, $positions)) {
             $staff->positions()->first()?->update(['is_primary' => true]);
+        }
+    }
+
+    private function syncCenseurAssignments(
+        Staff $staff,
+        array $positions,
+        array $assignmentsData
+    ): void {
+        $isCenseur = in_array('censeur', $positions, true) || in_array('prefet_des_etudes', $positions, true);
+        
+        $staff->censeurAssignments()->delete();
+
+        if ($isCenseur && !empty($assignmentsData)) {
+            foreach ($assignmentsData as $sectionId => $cycles) {
+                if (is_array($cycles)) {
+                    foreach ($cycles as $cycle) {
+                        if (in_array($cycle, ['1er', '2nd'], true)) {
+                            \App\Models\CenseurAssignment::create([
+                                'staff_id'   => $staff->id,
+                                'section_id' => $sectionId,
+                                'cycle'      => $cycle,
+                            ]);
+                        }
+                    }
+                }
+            }
         }
     }
 

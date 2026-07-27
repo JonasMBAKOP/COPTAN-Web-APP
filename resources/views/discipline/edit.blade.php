@@ -228,6 +228,13 @@
         <div class="fixed bottom-0 left-0 md:left-64 right-0 z-30 bg-white border-t border-gray-200 shadow-xl px-5 py-3.5 flex items-center justify-between gap-4">
             <p class="text-sm text-gray-500 hidden sm:block">Les champs marqués <span class="text-red-500">*</span> sont obligatoires</p>
             <div class="flex gap-2 ml-auto">
+                @can('manage-discipline')
+                <button type="button"
+                        onclick="if(confirm('Êtes-vous sûr de vouloir supprimer définitivement cet incident ?')){ document.getElementById('delete-incident-form').submit(); }"
+                        class="px-4 py-2.5 border border-red-200 bg-red-50 text-red-700 rounded-xl text-sm font-semibold hover:bg-red-100 transition-colors">
+                    Supprimer l'incident
+                </button>
+                @endcan
                 <a href="{{ route('discipline.show', $incident) }}"
                    class="px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50">
                     Annuler
@@ -243,6 +250,12 @@
             </div>
         </div>
     </form>
+    @can('manage-discipline')
+    <form id="delete-incident-form" method="POST" action="{{ route('discipline.destroy', $incident) }}" class="hidden">
+        @csrf
+        @method('DELETE')
+    </form>
+    @endcan
 </div>
 
 @endsection

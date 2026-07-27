@@ -2,22 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class StaffPosition extends Model
+class CenseurAssignment extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'staff_id',
-        'position',
-        'is_primary',
+        'section_id',
+        'cycle',
     ];
-
-    protected function casts(): array
-    {
-        return [
-            'is_primary' => 'boolean',
-        ];
-    }
 
     // ── Relations ──────────────────────────────────────────────────────────
     public function staff()
@@ -25,9 +21,18 @@ class StaffPosition extends Model
         return $this->belongsTo(Staff::class);
     }
 
-    // ── Méthodes utilitaires ───────────────────────────────────────────────
-    public function getPositionLabelAttribute(): string
+    public function section()
     {
-        return \App\Models\Staff::positionLabels()[$this->position] ?? 'Autre';
+        return $this->belongsTo(Section::class);
+    }
+
+    // ── Méthodes utilitaires ───────────────────────────────────────────────
+    public function getCycleLabelAttribute(): string
+    {
+        return match($this->cycle) {
+            '1er'   => '1er Cycle',
+            '2nd'   => '2nd Cycle',
+            default => $this->cycle,
+        };
     }
 }

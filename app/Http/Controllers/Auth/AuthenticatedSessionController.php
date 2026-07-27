@@ -52,15 +52,7 @@ class AuthenticatedSessionController extends Controller
 
     private function redirectBasedOnRole($user): string
     {
-        return match(true) {
-            $user->hasRole('super-admin')         => route('admin.dashboard'),
-            $user->hasRole('directeur')           => route('directeur.dashboard'),
-            $user->hasRole('censeur')             => route('censeur.dashboard'),
-            $user->hasRole('econome')             => route('econome.dashboard'),
-            $user->hasRole('enseignant')          => route('enseignant.dashboard'),
-            $user->hasRole('surveillant-general') => route('surveillant.dashboard'),
-            default                               => route('login'),
-        };
+        return $user->getDashboardRoute();
     }
 
 

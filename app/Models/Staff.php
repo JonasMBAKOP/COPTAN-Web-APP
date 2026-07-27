@@ -16,6 +16,9 @@ class Staff extends Model
         'prefet_des_etudes',
         'econome',
         'surveillant_general',
+        'surveillant_de_secteur',
+        'vigile',
+        'agent_d_entretien',
         'directeur',
         'fondateur',
         'secretaire',
@@ -34,6 +37,7 @@ class Staff extends Model
 
 // Fin
 
+
     protected $fillable = [
         'user_id',
         'first_name',
@@ -44,6 +48,7 @@ class Staff extends Model
         'email',
         'photo',
         'diploma',
+        'origin_school',
         'start_date',
         'contract_type',
         'monthly_salary',
@@ -83,6 +88,11 @@ class Staff extends Model
     public function titularClasses()
     {
         return $this->hasMany(ClassGroup::class, 'titular_staff_id');
+    }
+
+    public function censeurAssignments()
+    {
+        return $this->hasMany(CenseurAssignment::class);
     }
 
     // ── Méthodes utilitaires ───────────────────────────────────────────────
@@ -186,15 +196,18 @@ class Staff extends Model
     public static function positionLabels(): array
     {
         return [
-            'enseignant'          => 'Enseignant(e)',
-            'censeur'             => 'Préfet des études / Dean',
-            'prefet_des_etudes'   => 'Préfet des études / Dean',
-            'econome'             => 'Économe',
-            'surveillant_general' => 'Surveillant(e) Général(e)',
-            'directeur'           => 'Directeur / Principal',
-            'fondateur'           => 'Fondateur / Fondatrice',
-            'secretaire'          => 'Secrétaire',
-            'autre'               => 'Autre',
+            'enseignant'             => 'Enseignant(e)',
+            'censeur'                => 'Préfet des études / Dean',
+            'prefet_des_etudes'      => 'Préfet des études / Dean',
+            'econome'                => 'Économe',
+            'surveillant_general'    => 'Surveillant(e) Général(e)',
+            'surveillant_de_secteur' => 'Surveillant(e) de Secteur',
+            'vigile'                 => 'Vigile',
+            'agent_d_entretien'      => 'Agent d\'entretien',
+            'directeur'              => 'Directeur / Principal',
+            'fondateur'              => 'Fondateur / Fondatrice',
+            'secretaire'             => 'Secrétaire',
+            'autre'                  => 'Autre',
         ];
     }
 

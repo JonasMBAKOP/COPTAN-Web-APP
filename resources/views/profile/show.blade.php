@@ -131,8 +131,24 @@
                 <dt class="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">
                     Poste
                 </dt>
-                <dd class="text-sm font-semibold text-gray-800">
+                <dd class="text-sm font-semibold text-gray-800 pb-2 border-b border-gray-100">
                     {{ $user->staff->primaryPosition?->position_label ?? '—' }}
+                </dd>
+            </div>
+            <div>
+                <dt class="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">
+                    Diplôme le plus élevé
+                </dt>
+                <dd class="text-sm font-semibold text-gray-800 pb-2 border-b border-gray-100">
+                    {{ $user->staff->diploma ?? '—' }}
+                </dd>
+            </div>
+            <div>
+                <dt class="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">
+                    Établissement d'origine
+                </dt>
+                <dd class="text-sm font-semibold text-gray-800">
+                    {{ $user->staff->origin_school ?? '—' }}
                 </dd>
             </div>
             @endif

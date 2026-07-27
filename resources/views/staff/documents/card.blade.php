@@ -1,31 +1,32 @@
-@extends('layouts.blank')
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Carte professionnelle — {{ $staff->full_name }}</title>
+@include('students.documents.partials.card-styles')
+<style>
+@page { size: A4 portrait; margin: 5mm; }
+@media print { .no-print { display: none !important; } body { background:#fff!important;padding:0!important; } }
+* { margin:0;padding:0;box-sizing:border-box; }
+body { font-family: Arial, sans-serif; background:#eef1f5; padding:10px; }
+.single-card-wrap {
+    width: fit-content;
+    margin: 16px auto;
+    padding: 5mm;
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.08);
+}
+</style>
+</head>
+<body>
+@include('students.documents.partials.print-toolbar')
 
-@section('title', $staff->full_name . ' — Carte professionnelle')
-
-@section('content')
-    @include('students.documents.partials.card-styles')
-
-    <style>
-        body {
-            background: #f3f4f6;
-        }
-        .staff-card-preview {
-            width: 100%;
-            max-width: 210mm;
-            margin: 0 auto;
-            padding: 16px 0 24px;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-        }
-        .staff-card-preview .id-card {
-            transform: scale(1);
-        }
-    </style>
-
-    @include('students.documents.partials.print-toolbar')
-
-    <div class="staff-card-preview">
-        @include('staff.documents.partials.card', ['staff' => $staff])
-    </div>
-@endsection
+<div class="single-card-wrap">
+    @include('staff.documents.partials.card', ['staff' => $staff])
+</div>
+<p style="text-align:center;font-size:10px;color:#6B7280;margin-top:12px;" class="no-print">
+    Format carte d'identité professionnelle — découpez le cadre après impression.
+</p>
+</body>
+</html>

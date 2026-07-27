@@ -115,7 +115,7 @@
                     Mon profil
                 </a>
                 <div class="border-t border-gray-100 mt-1 pt-1">
-                    <form method="POST" action="{{ route('logout') }}">
+                    <form method="POST" action="{{ route('logout') }}" onsubmit="return confirm('Êtes-vous sûr de vouloir vous déconnecter ?');">
                         @csrf
                         <button type="submit"
                                 class="w-full flex items-center gap-2 px-4 py-2

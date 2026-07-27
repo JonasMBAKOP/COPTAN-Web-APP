@@ -36,13 +36,15 @@ class User extends Authenticatable
     public function getDashboardRoute(): string
     {
         return match(true) {
-            $this->hasRole('super-admin')         => route('admin.dashboard'),
-            $this->hasRole('directeur')           => route('directeur.dashboard'),
-            $this->hasRole('censeur')             => route('censeur.dashboard'),
-            $this->hasRole('econome')             => route('econome.dashboard'),
-            $this->hasRole('enseignant')          => route('enseignant.dashboard'),
-            $this->hasRole('surveillant-general') => route('surveillant.dashboard'),
-            default                               => route('login'),
+            $this->hasRole('super-admin')            => route('admin.dashboard'),
+            $this->hasRole('directeur')              => route('directeur.dashboard'),
+            $this->hasRole('censeur')                => route('censeur.dashboard'),
+            $this->hasRole('econome')                => route('econome.dashboard'),
+            $this->hasRole('enseignant')             => route('enseignant.dashboard'),
+            $this->hasRole('surveillant-general')    => route('surveillant.dashboard'),
+            $this->hasRole('surveillant-de-secteur') => route('surveillant-secteur.dashboard'),
+            $this->hasRole('secretaire')             => route('secretaire.dashboard'),
+            default                                  => route('login'),
         };
     }
 
@@ -62,12 +64,14 @@ class User extends Authenticatable
 
     // Tableau de hiérarchie des rôles (plus le nombre est élevé, plus le rôle est puissant)
     private static array $roleHierarchy = [
-        'super-admin'         => 6,
-        'directeur'           => 5,
-        'censeur'             => 4,
-        'econome'             => 3,
-        'surveillant-general' => 2,
-        'enseignant'          => 1,
+        'super-admin'            => 8,
+        'directeur'              => 7,
+        'censeur'                => 6,
+        'econome'                => 5,
+        'surveillant-general'    => 4,
+        'surveillant-de-secteur' => 3,
+        'secretaire'             => 2,
+        'enseignant'             => 1,
     ];
 
     // Retourne le niveau hiérarchique du rôle le plus élevé

@@ -51,136 +51,139 @@
 
         {{-- ── ACADÉMIQUE ────────────────────────────────────────── --}}
         @canany(['view-classes', 'manage-classes'])
-        <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
-             style="background-color: #D946EF; color: #ffffff;">
-            Académique
-        </div>
+            <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
+                style="background-color: #D946EF; color: #ffffff;">
+                Académique
+            </div>
 
-        @can('manage-academic-years')
-        <x-sidebar-item
-            icon="calendar"
-            label="Années scolaires"
-            href="{{ route('academic-years.index') }}"
-            :active="request()->routeIs('academic-years.*')" />
-        @endcan
+            @can('manage-academic-years')
+                <x-sidebar-item
+                    icon="calendar"
+                    label="Années scolaires"
+                    href="{{ route('academic-years.index') }}"
+                    :active="request()->routeIs('academic-years.*')" />
+            @endcan
 
-        <x-sidebar-item
-            icon="building"
-            label="Sections & Classes"
-            href="{{ route('classes.index') }}"
-            {{-- :active="request()->routeIs('class-groups.*')" /> --}}
-            :active="request()->routeIs('classes.*')" />
+            <x-sidebar-item
+                icon="building"
+                label="Sections & Classes"
+                href="{{ route('classes.index') }}"
+                {{-- :active="request()->routeIs('class-groups.*')" /> --}}
+                :active="request()->routeIs('classes.*')" />
 
-        @can('manage-subjects')
-        <x-sidebar-item
-            icon="book"
-            label="Matières"
-            href="{{ route('subjects.index') }}"
-            :active="request()->routeIs('subjects.*')" />
-        @endcan
+            @can('manage-subjects')
+                <x-sidebar-item
+                    icon="book"
+                    label="Matières"
+                    href="{{ route('subjects.index') }}"
+                    :active="request()->routeIs('subjects.*')" />
+            @endcan
 
-        <x-sidebar-item
-            icon="clock"
-            label="Emploi du temps"
-            href="{{ route('timetable.index') }}"
-            :active="request()->routeIs('timetable.index')" />
+            <x-sidebar-item
+                icon="clock"
+                label="Emploi du temps"
+                href="{{ route('timetable.index') }}"
+                :active="request()->routeIs('timetable.index')" />
 
-        <x-sidebar-item 
-            icon="calendar" 
-            label="Mon emploi du temps"
-            href="{{ route('timetable.teacher') }}"
-            :active="request()->routeIs('timetable.teacher')" />
+            <x-sidebar-item 
+                icon="calendar" 
+                label="Mon emploi du temps"
+                href="{{ route('timetable.teacher') }}"
+                :active="request()->routeIs('timetable.teacher')" />
         @endcanany
 
         {{-- ── ÉLÈVES ────────────────────────────────────────────── --}}
         @can('view-students')
-        <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
-             style="background-color: #1D4ED8; color: #ffffff;">
-            Élèves
-        </div>
+            <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
+                style="background-color: #1D4ED8; color: #ffffff;">
+                Élèves
+            </div>
 
-        <x-sidebar-item
-            icon="users"
-            {{-- icon="currency-dollar" --}}
-            label="Élèves"
-            href="{{ route('students.index') }}"
-            :active="request()->routeIs('students.*') && !request()->routeIs('students.documents.*') 
-                  && !request()->routeIs('students.create')
-                  && !request()->routeIs('students.enroll')" />
+            <x-sidebar-item
+                icon="users"
+                {{-- icon="currency-dollar" --}}
+                label="Élèves"
+                href="{{ route('students.index') }}"
+                :active="request()->routeIs('students.*') && !request()->routeIs('students.documents.*') 
+                    && !request()->routeIs('students.create')
+                    && !request()->routeIs('students.enroll')" />
 
-        @can('manage-enrollments')
-        <x-sidebar-item
-            icon="user-plus"
-            label="Inscriptions"
-            href="{{ route ('students.create') }}"
-            :active="request()->routeIs('students.create', 'students.enroll')" />
-        @endcan
+            @can('manage-enrollments')
+                <x-sidebar-item
+                    icon="user-plus"
+                    label="Inscriptions"
+                    href="{{ route ('students.create') }}"
+                    :active="request()->routeIs('students.create', 'students.enroll')" />
+            @endcan
         @endcan
 
         {{-- ── DOCUMENTS (hors finances) ─────────────────────────── --}}
         @can('view-students')
-        <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
-             style="background-color: #B45309; color: #ffffff;">
-            Documents
-        </div>
+            <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
+                style="background-color: #B45309; color: #ffffff;">
+                Documents
+            </div>
 
-        <x-sidebar-item
-            icon="document"
-            label="Impressions élèves"
-            href="{{ route('students.documents.index') }}"
-            :active="request()->routeIs('students.documents.*')" />
+            <x-sidebar-item
+                icon="document"
+                label="Impressions élèves"
+                href="{{ route('students.documents.index') }}"
+                :active="request()->routeIs('students.documents.*')" />
         @endcan
 
         {{-- ── PERSONNEL ─────────────────────────────────────────── --}}
         @can('view-staff')
-        <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
-             style="background-color: #6D28D9; color: #ffffff;">
-            Personnel
-        </div>
+            <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
+                style="background-color: #6D28D9; color: #ffffff;">
+                Personnel
+            </div>
 
-        <x-sidebar-item
-            icon="briefcase"
-            {{-- icon="users" --}}
-            {{-- label="Personnel" --}}
-            label="Enseignants & Staff"
-            href="{{ route('staff.index') }}"
-            :active="request()->routeIs('staff.*') && !request()->routeIs('staff.salaries') && !request()->routeIs('staff.salary.edit')" />
-        
-        <x-sidebar-item
-            icon="bank"
-            label="Salaires"
-            href="{{ route('staff.salaries') }}"
-            :active="request()->routeIs('staff.salaries', 'staff.salary.edit')" />
+            <x-sidebar-item
+                icon="briefcase"
+                {{-- icon="users" --}}
+                {{-- label="Personnel" --}}
+                label="Enseignants & Staff"
+                href="{{ route('staff.index') }}"
+                :active="request()->routeIs('staff.*') && !request()->routeIs('staff.salaries') && !request()->routeIs('staff.salary.edit')" />
             
+            <x-sidebar-item
+                icon="bank"
+                label="Salaires"
+                href="{{ route('staff.salaries') }}"
+                :active="request()->routeIs('staff.salaries', 'staff.salary.edit')" />
+        @endcan    
         
+
+        {{-- ── EVALUATIONS ET NOTES ─────────────────────────────────────────── --}}
+        @canany(['view-grades', 'enter-grades',])
+            <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
+                style="background-color: #BE185D; color: #ffffff;">
+                évaluations
+            </div>
+        @endcanany
 
         @can('manage-academic-years')
-        <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
-             style="background-color: #BE185D; color: #ffffff;">
-            évaluations
-        </div>
-
-        <x-sidebar-item
-            icon="eye"
-            label="Vue Globale"
-            href="{{ route('grades.index')}}"
-            :active="request()->routeIs('grades.index')" />
+            <x-sidebar-item
+                icon="eye"
+                label="Vue Globale"
+                href="{{ route('grades.index')}}"
+                :active="request()->routeIs('grades.index')" />
         @endcan
 
         @canany(['view-grades', 'enter-grades'])
-        <x-sidebar-item
-            icon="search"
-            label="Consultation Notes"
-            href="{{ route('grades.notes')}}"
-            :active="request()->routeIs('grades.notes')" />
+            <x-sidebar-item
+                icon="search"
+                label="Consultation Notes"
+                href="{{ route('grades.notes')}}"
+                :active="request()->routeIs('grades.notes')" />
         @endcanany
 
         @can('enter-grades')
-        <x-sidebar-item
-            icon="pencil"
-            label="Saisie des notes"
-            href="{{ route('grades.entry.form')}}"
-            :active="request()->routeIs('grades.entry*')" />
+            <x-sidebar-item
+                icon="pencil"
+                label="Saisie des notes"
+                href="{{ route('grades.entry.form')}}"
+                :active="request()->routeIs('grades.entry*')" />
         @endcan
 
         {{-- @can('validate-grades')
@@ -192,34 +195,35 @@
         @endcan --}}
 
         @can('view-bulletins')
-        <x-sidebar-item
-            icon="document"
-            label="Bulletins"
-            href="{{ route('bulletins.index') }}"
-            :active="request()->routeIs('bulletins.*')" />
+            <x-sidebar-item
+                icon="document"
+                label="Bulletins"
+                href="{{ route('bulletins.index') }}"
+                :active="request()->routeIs('bulletins.*')" />
         @endcan
-        @endcanany
+        {{-- @endcanany --}}
 
+        
         {{-- ── PRÉSENCES ÉLÈVES ─────────────────────────────────────────── --}}
         @can('view-absences')
-        <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
-             style="background-color: #D97706; color: #ffffff;">
-            Présences élèves
-        </div>
+            <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
+                style="background-color: #D97706; color: #ffffff;">
+                Présences élèves
+            </div>
 
-        @can('manage-absences')
-        <x-sidebar-item
-            icon="clipboard"
-            label="Appel du jour"
-            href="#"
-            :active="request()->routeIs('attendance.*')" />
-        @endcan
+            @can('manage-absences')
+                <x-sidebar-item
+                    icon="clipboard"
+                    label="Appel du jour"
+                    href="#"
+                    :active="request()->routeIs('attendance.*')" />
+            @endcan
 
-        <x-sidebar-item
-            icon="x-circle"
-            label="Absences"
-            href="{{ route('absences.index') }}"
-            :active="request()->routeIs('absences.*')" />
+            <x-sidebar-item
+                icon="x-circle"
+                label="Absences"
+                href="{{ route('absences.index') }}"
+                :active="request()->routeIs('absences.*')" />
         @endcan
 
         {{-- ── FINANCES ──────────────────────────────────────────── --}}
@@ -271,16 +275,16 @@
 
         {{-- ── DISCIPLINE ────────────────────────────────────────── --}}
         @can('view-discipline')
-        <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
-             style="background-color: #DC2626; color: #ffffff;">
-            Discipline
-        </div>
+            <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
+                style="background-color: #DC2626; color: #ffffff;">
+                Discipline
+            </div>
 
-        <x-sidebar-item
-            icon="shield"
-            label="Incidents"
-            href="{{ route('discipline.index') }}"
-            :active="request()->routeIs('discipline.*')" />
+            <x-sidebar-item
+                icon="shield"
+                label="Incidents"
+                href="{{ route('discipline.index') }}"
+                :active="request()->routeIs('discipline.*')" />
         @endcan
 
         {{-- ── COMMUNICATION ─────────────────────────────────────── --}}
@@ -306,35 +310,35 @@
             :active="request()->routeIs('communication.messages.*')" />
 
         @can('manage-parent-communication')
-        <x-sidebar-item
-            icon="chat"
-            label="Messages Parents"
-            href="{{ route('communication.parents.index') }}"
-            :active="request()->routeIs('communication.parents.*')" />
+            <x-sidebar-item
+                icon="chat"
+                label="Messages Parents"
+                href="{{ route('communication.parents.index') }}"
+                :active="request()->routeIs('communication.parents.*')" />
         @endcan
 
         {{-- ── ADMINISTRATION ────────────────────────────────────── --}}
         @canany(['manage-settings', 'manage-users'])
-        <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
-             style="background-color: #06B6D4; color: #ffffff;">
-            Administration
-        </div>
+            <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
+                style="background-color: #06B6D4; color: #ffffff;">
+                Administration
+            </div>
 
-        @can('manage-users')
-        <x-sidebar-item
-            icon="user-group"
-            label="Comptes utilisateurs"
-            href="{{ route('users.index') }}"
-            :active="request()->routeIs('users.*')" />
-        @endcan
+            @can('manage-users')
+                <x-sidebar-item
+                    icon="user-group"
+                    label="Comptes utilisateurs"
+                    href="{{ route('users.index') }}"
+                    :active="request()->routeIs('users.*')" />
+            @endcan
 
-        @can('manage-settings')
-        <x-sidebar-item
-            icon="adjustments"
-            label="Paramètres"
-            href="{{ route('settings.index') }}"
-            :active="request()->routeIs('settings.*')" />
-        @endcan
+            @can('manage-settings')
+                <x-sidebar-item
+                    icon="adjustments"
+                    label="Paramètres"
+                    href="{{ route('settings.index') }}"
+                    :active="request()->routeIs('settings.*')" />
+            @endcan
         @endcanany
 
     </nav>
@@ -363,7 +367,7 @@
                 </p>
             </div>
             {{-- Déconnexion --}}
-            <form method="POST" action="{{ route('logout') }}">
+            <form method="POST" action="{{ route('logout') }}" onsubmit="return confirm('Êtes-vous sûr de vouloir vous déconnecter ?');">
                 @csrf
                 <button type="submit"
                         title="Déconnexion"

@@ -11,6 +11,7 @@
     <link rel="mask-icon" href="{{ asset('images/logo.jpg') }}" color="#1A3A6B">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
+        [x-cloak] { display: none !important; }
         /* Scrollbar sidebar */
         .scrollbar-thin::-webkit-scrollbar { width: 4px; }
         .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }

@@ -133,6 +133,33 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-reports',
         ]);
 
+        // 7. SURVEILLANT DE SECTEUR
+        $surveillantSecteur = Role::firstOrCreate(['name' => 'surveillant-de-secteur']);
+        $surveillantSecteur->syncPermissions([
+            'view-students',
+            'view-classes',
+            'view-absences', 'manage-absences',
+            'view-discipline', 'manage-discipline',
+            'view-timetable',
+            'view-announcements',
+            'view-messages', 'send-messages',
+            'view-reports'
+        ]);
+
+        // 8. SECRÉTAIRE
+        $secretaire = Role::firstOrCreate(['name' => 'secretaire']);
+        $secretaire->syncPermissions([
+            'view-students',
+            'view-classes',
+            // 'view-absences',
+            'view-subjects',
+            'view-grades', 'enter-grades',
+            'view-bulletins', 'manage-bulletins',
+            'view-timetable',
+            'view-announcements',
+            'view-messages', 'send-messages',
+        ]);
+
         $this->command->info('✅ Rôles et permissions créés avec succès.');
     }
 }

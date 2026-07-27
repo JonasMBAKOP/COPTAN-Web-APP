@@ -82,8 +82,24 @@
                     @forelse($staff as $member)
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="px-4 py-4">
-                                <a href="{{ route('staff.show', $member) }}" class="font-semibold text-gray-900 hover:text-blue-600">
-                                    {{ $member->full_name }}
+                                <a href="{{ route('staff.show', $member) }}"
+                                   class="flex items-center gap-3 group">
+                                    @if($member->photo)
+                                        <img src="{{ asset('storage/' . $member->photo) }}"
+                                             alt="{{ $member->full_name }}"
+                                             class="w-9 h-9 rounded-full object-cover ring-2 ring-gray-100
+                                                    group-hover:ring-blue-300 flex-shrink-0 transition-all">
+                                    @else
+                                        <div class="w-9 h-9 rounded-full flex items-center justify-center
+                                                    font-bold text-xs flex-shrink-0 text-white transition-all
+                                                    group-hover:ring-2 group-hover:ring-blue-300"
+                                             style="background-color: #1A3A6B;">
+                                            {{ strtoupper(substr($member->first_name ?? '', 0, 1) . substr($member->last_name ?? '', 0, 1)) }}
+                                        </div>
+                                    @endif
+                                    <span class="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                                        {{ $member->full_name }}
+                                    </span>
                                 </a>
                             </td>
                             <td class="px-4 py-4 text-sm text-gray-600">{{ $member->email ?? '—' }}</td>

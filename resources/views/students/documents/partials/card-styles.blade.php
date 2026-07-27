@@ -142,7 +142,7 @@
 
 .id-card__subtitle {
     font-size: 4.1pt;
-    color: black;
+    color: #E87722;
     margin-top: 0.3mm;
     font-weight: 800;
 }

@@ -2,61 +2,50 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cartes professionnelles</title>
+    <title>Cartes professionnelles — impression groupée</title>
     @include('students.documents.partials.card-styles')
     <style>
         @page { size: A4 portrait; margin: 2mm; }
-        body { margin: 0; padding: 0; background: #fff; font-family: 'Inter', 'Segoe UI', Arial, sans-serif; }
-        .print-toolbar-wrapper { padding: 2mm 2mm 0; }
-        .cards-container { padding: 1mm 2mm 2mm; }
-        .cards-page {
-            width: 100%;
-            max-width: 194mm;
-            margin: 0 auto 2mm;
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            grid-template-rows: repeat(5, minmax(0, 1fr));
-            gap: 1.5mm 2.5mm;
-            page-break-after: always;
-            page-break-inside: avoid;
-        }
-        .cards-page:last-child { page-break-after: auto; margin-bottom: 0; }
-        .card-slot {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .card-slot .id-card {
-            width: 90mm;
-            height: 54mm;
-            transform: none;
-        }
         @media print {
-            body { margin: 0; }
-            .print-toolbar-wrapper { display: none !important; }
+            .no-print { display: none !important; }
+            body { background: #fff !important; padding: 0 !important; margin: 0 !important; }
+            .cards-sheet { page-break-after: always; box-shadow: none !important; margin: 0 !important; }
+            .cards-sheet:last-child { page-break-after: auto; }
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #eef1f5; padding: 2px; }
+        
+        .cards-sheet {
+            width: 210mm;
+            height: 297mm;
+            margin: 0 auto 4px;
+            background: #fff;
+            padding: 1.2mm;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 1.2mm;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .cards-sheet .id-card {
+            margin: 0;
         }
     </style>
 </head>
 <body>
-    <div class="print-toolbar-wrapper">
-        @include('students.documents.partials.print-toolbar')
-    </div>
+    @include('students.documents.partials.print-toolbar')
 
-    <div class="cards-container">
-        {{-- <div class="cards-intro">
-            <div class="cards-intro__title">Cartes professionnelles — Personnel</div>
-            <div class="cards-intro__meta">{{ $staff->count() }} carte(s) prête(s) à l’impression</div>
-        </div> --}}
-        @foreach($staff->chunk(10) as $chunk)
-            <div class="cards-page">
-                @foreach($chunk as $s)
-                    <div class="card-slot">
-                        @include('staff.documents.partials.card', ['staff' => $s])
-                    </div>
-                @endforeach
-            </div>
-        @endforeach
-    </div>
+    @foreach($staff->chunk(10) as $chunk)
+        <div class="cards-sheet">
+            @foreach($chunk as $s)
+                @include('staff.documents.partials.card', ['staff' => $s])
+            @endforeach
+        </div>
+    @endforeach
+
+    <p class="no-print" style="text-align: center; font-size: 11px; color: #6B7280; margin: 12px;">
+        {{ $staff->count() }} carte(s) — {{ ceil($staff->count() / 10) }} page(s) A4 (10 cartes par page en 2×5)
+    </p>
 </body>
 </html>

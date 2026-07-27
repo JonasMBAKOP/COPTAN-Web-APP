@@ -141,12 +141,14 @@
                 @foreach($roles as $role)
                 @php
                     $descriptions = [
-                        'super-admin'         => 'Accès total à la plateforme',
-                        'directeur'           => 'Gestion globale de l\'établissement',
-                        'censeur'             => 'Gestion académique et discipline',
-                        'econome'             => 'Inscriptions et finances',
-                        'enseignant'          => 'Notes et classes assignées',
-                        'surveillant-general' => 'Présences et discipline',
+                        'super-admin'            => 'Accès total à la plateforme',
+                        'directeur'              => 'Gestion globale de l\'établissement',
+                        'censeur'                => 'Gestion académique et discipline',
+                        'econome'                => 'Inscriptions et finances',
+                        'enseignant'             => 'Notes et classes assignées',
+                        'surveillant-general'    => 'Présences et discipline',
+                        'surveillant-de-secteur' => 'Suivi de secteur, présences et discipline',
+                        'secretaire'             => 'Secrétariat, édition de documents et courriers',
                     ];
                     $desc = $descriptions[$role->name] ?? '';
                 @endphp
