@@ -74,7 +74,7 @@ class DashboardController extends Controller
         $activeYear = AcademicYear::active();
 
         if (!$activeYear) {
-            return view('dashboards.directeur', ['activeYear' => null]);
+return view('dashboards.directeur', ['activeYear' => null]);
         }
 
         // ── EFFECTIFS ──────────────────────────────────────────────────────
@@ -360,6 +360,25 @@ class DashboardController extends Controller
                 return $paid < $due;
             })->count();
 
+        // COPTAN_FULL_DEBTORS_COUNT: include students with no payment and partial payments.
+        $debtorsCount = \App\Models\StudentEnrollment::query()
+            ->active()
+            ->where('academic_year_id', \App\Models\AcademicYear::active()?->id)
+            ->with([
+                'classGroup.feeStructures.installments',
+                'payments' => fn ($query) => $query->visible(),
+            ])
+            ->get()
+            ->filter(function ($enrollment) {
+                $installments = $enrollment->classGroup?->feeStructures->first()?->installments ?? collect();
+                $due = (int) $installments->sum('amount');
+                $paid = (int) $enrollment->payments->sum(fn ($payment) =>
+                    (int) $payment->amount_paid + (int) $payment->scholarship_amount
+                );
+
+                return $due > 0 && $paid < $due;
+            })
+            ->count();
         return view('dashboards.directeur', compact(
             'activeYear', 'totalStudents', 'totalStaff', 'totalTeachers', 'totalClasses',
             'bySection', 'totalExpected', 'totalCollected', 'collectionRate', 'revenueChart',

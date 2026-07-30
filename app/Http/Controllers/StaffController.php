@@ -397,6 +397,46 @@ class StaffController extends Controller
         return view('staff.documents.salary-list', $data);
     }
 
+    public function printList(Request $request)
+    {
+        $type = $request->input('type', 'permanent');
+
+        abort_unless(in_array($type, ['permanent', 'vacataire', 'administrative'], true), 404);
+
+        $contractTypes = $type === 'administrative'
+            ? ['permanent', 'vacataire']
+            : [$type];
+
+        $staff = Staff::with('positions')
+            ->active()
+            ->whereIn('contract_type', $contractTypes)
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get();
+
+        $school = \App\Models\SchoolSetting::instance();
+        $phones = \App\Models\SchoolPhone::orderByDesc('is_primary')->orderBy('id')->get();
+        $agreements = \App\Models\SchoolAgreement::orderBy('cycle')->get();
+        $activeYear = AcademicYear::active();
+        $classGroup = (object) ['academicYear' => $activeYear];
+
+        $titles = [
+            'permanent' => 'LISTE DU PERSONNEL PERMANENT',
+            'vacataire' => 'LISTE DU PERSONNEL VACATAIRE',
+            'administrative' => 'LISTE ADMINISTRATIVE DU PERSONNEL',
+        ];
+
+        return view('staff.documents.list', compact(
+            'type',
+            'staff',
+            'school',
+            'phones',
+            'agreements',
+            'activeYear',
+            'classGroup',
+            'titles'
+        ));
+    }
     public function paySlip(Staff $staff, ?Request $request = null)
     {
         $data = $this->staffDocumentContext($staff);

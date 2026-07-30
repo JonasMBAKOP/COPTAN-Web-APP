@@ -22,7 +22,7 @@
                     ring-2 ring-white/30 flex-shrink-0"> --}}
         <div class="overflow-hidden">
             <p class="text-white font-bold text-base leading-tight truncate">
-                COPTAN
+                GESCOP
             </p>
             <p class="text-white/60 text-sm truncate">
                 Gestion Scolaire
@@ -257,6 +257,11 @@
                 label="Bourses"
                 href="{{ route('finances.scholarships') }}"
                 :active="request()->routeIs('finances.scholarships*')" />
+            <x-sidebar-item
+                icon="x-circle"
+                label="Élèves insolvables"
+                href="{{ route('finances.insolvables') }}"
+                :active="request()->routeIs('finances.insolvables*')" />
 
             @can('configure-fees')
             <x-sidebar-item

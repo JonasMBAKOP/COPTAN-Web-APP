@@ -543,6 +543,7 @@ class StudentController extends Controller
                 'id'             => $c->id,
                 'full_name'      => $c->full_name,
                 'level_id'       => $c->level_id,
+                'level_order'    => $c->level?->order_index,
                 'section_id'     => $c->level?->section_id,
                 'max_students'   => $c->max_students,
                 'students_count' => $c->studentEnrollments()
@@ -553,8 +554,10 @@ class StudentController extends Controller
             ];
         }
 
+        $school = \App\Models\SchoolSetting::instance();
+
         return view('students.enroll', compact(
-            'student', 'activeYear', 'existingEnrollment', 'previousEnrollment',
+            'student', 'activeYear', 'existingEnrollment', 'previousEnrollment', 'school',
             'allClasses', 'sectionsJson', 'classesJson',
             'repeatClasses', 'promotionClasses'
         ));
@@ -587,25 +590,27 @@ class StudentController extends Controller
                 // ATTENTION: Limite de capacité RETIRÉE par choix du client (point 2 du feedback)
                 // $this->enrollments->assertClassHasCapacity($class);
 
-                $previousClassId = $request->previous_class_group_id;
-
-                if (! $previousClassId) {
-                    $prev = $this->enrollments
-                        ->previousEnrollmentForRenewal($student, $activeYear);
-                    $previousClassId = $prev?->class_group_id;
+                $previousEnrollment = $this->enrollments->previousEnrollmentForRenewal($student, $activeYear);
+                $previousClass = $previousEnrollment?->classGroup;
+                if (! $previousClass) {
+                    throw new \InvalidArgumentException('Aucune inscription précédente n’a été trouvée pour cet élève.');
                 }
-
+                $class->loadMissing('level.section');
+                $previousClass->loadMissing('level.section');
+                $sameLevel = (int) $class->level_id === (int) $previousClass->level_id;
+                $sameSection = (int) $class->level?->section_id === (int) $previousClass->level?->section_id;
+                $isPromotion = $sameSection && (int) $class->level?->order_index > (int) $previousClass->level?->order_index;
+                if (! $sameLevel && ! $isPromotion) {
+                    throw new \InvalidArgumentException('La classe choisie doit être le même niveau (redoublement) ou un niveau supérieur de la même section (promotion).');
+                }
+                $school = \App\Models\SchoolSetting::instance();
                 $enrollment = StudentEnrollment::create([
-                    'student_id'              => $student->id,
-                    'academic_year_id'        => $activeYear->id,
-                    'class_group_id'          => $request->class_group_id,
-                    'enrollment_date'         => $request->enrollment_date,
-                    'is_repeating'            => $request->boolean('is_repeating'),
-                    'previous_class_group_id' => $previousClassId,
-                    'origin_school'           => $request->origin_school,
-                    'status'                  => StudentEnrollment::STATUS_ACTIVE,
+                    'student_id' => $student->id, 'academic_year_id' => $activeYear->id,
+                    'class_group_id' => $request->class_group_id, 'enrollment_date' => $request->enrollment_date,
+                    'is_repeating' => $sameLevel, 'previous_class_group_id' => $previousClass->id,
+                    'previous_class_label' => $previousClass->full_name, 'origin_school' => $school->full_name,
+                    'status' => StudentEnrollment::STATUS_ACTIVE,
                 ]);
-
                 AuditLog::log('enrolled', $enrollment);
             });
         } catch (\InvalidArgumentException $e) {

@@ -408,6 +408,8 @@ Route::middleware(['auth', 'permission:view-staff'])
             ->name('salaries');
         Route::get('/salaries/print', [StaffController::class, 'printSalaryList'])
             ->name('salaries.print');
+        Route::get('/lists/print', [StaffController::class, 'printList'])
+            ->name('lists.print');
         Route::get('/{staff}/pay-slip', [StaffController::class, 'paySlip'])
             ->name('pay-slip');
         Route::post('/{staff}/pay-slip', [StaffController::class, 'storePaySlip'])
@@ -519,6 +521,10 @@ Route::middleware(['auth', 'permission:view-finances'])
             ->name('reports');
         Route::get('/reports/export', [FinanceController::class, 'exportReport'])
             ->name('reports.export');
+        Route::get('/insolvables', [FinanceController::class, 'insolvables'])
+            ->name('insolvables');
+        Route::get('/insolvables/print', [FinanceController::class, 'printInsolvables'])
+            ->name('insolvables.print');
 
         Route::middleware('role:directeur,super-admin')->group(function () {
             Route::get('/global', [FinanceController::class, 'global'])

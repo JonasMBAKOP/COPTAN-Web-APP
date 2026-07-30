@@ -12,9 +12,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    /* min-width: 200px; */
+    white-space: nowrap;
     gap: .5rem;
     transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease, opacity .16s ease;
 }
+.fin-action svg { flex: 0 0 auto; }
 .fin-action:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(26,58,107,.08); }
 .fin-chip {
     display: inline-flex;
