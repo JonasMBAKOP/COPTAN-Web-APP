@@ -141,10 +141,13 @@ class StaffController extends Controller
 
                 $staff = Staff::create($data);
 
-                // Synchroniser la photo sous 'users/photos/' vers le compte utilisateur lié
                 $userToSync = $createdUser ?? ($staff->user_id ? User::find($staff->user_id) : null);
                 if ($userToSync) {
-                    $this->syncUserPhoto($userToSync, $request, $staff->photo);
+                    $sharedPhotoPath = $staff->photo ?: $userToSync->photo;
+                    if ($sharedPhotoPath && $staff->photo !== $sharedPhotoPath) {
+                        $staff->update(['photo' => $sharedPhotoPath]);
+                    }
+                    $this->syncUserPhoto($userToSync, $sharedPhotoPath);
                 }
 
                 // Créer les postes
@@ -584,10 +587,8 @@ class StaffController extends Controller
         $data['is_active'] = $request->boolean('is_active');
 
         $newPhotoPath = null;
+        $oldStaffPhotoPath = $staff->photo;
         if ($request->hasFile('photo')) {
-            if ($staff->photo) {
-                Storage::disk('public')->delete($staff->photo);
-            }
             $newPhotoPath = $request->file('photo')
                 ->store('staff/photos', 'public');
             $data['photo'] = $newPhotoPath;
@@ -624,10 +625,13 @@ class StaffController extends Controller
             DB::transaction(function () use ($staff, $data, $request, $createdUser) {
                 $staff->update($data);
 
-                // Synchroniser la photo sous 'users/photos/' vers le compte utilisateur lié
                 $userToSync = $createdUser ?? ($staff->user_id ? User::find($staff->user_id) : null);
                 if ($userToSync) {
-                    $this->syncUserPhoto($userToSync, $request, $staff->photo);
+                    $sharedPhotoPath = $staff->photo ?: $userToSync->photo;
+                    if ($sharedPhotoPath && $staff->photo !== $sharedPhotoPath) {
+                        $staff->update(['photo' => $sharedPhotoPath]);
+                    }
+                    $this->syncUserPhoto($userToSync, $sharedPhotoPath);
                 }
 
                 $positions = $request->input('positions', []);
@@ -651,6 +655,10 @@ class StaffController extends Controller
                 ->with('error', 'Erreur lors de la mise à jour : ' . $e->getMessage());
         }
 
+        if ($newPhotoPath && $oldStaffPhotoPath && $oldStaffPhotoPath !== $newPhotoPath) {
+            Storage::disk('public')->delete($oldStaffPhotoPath);
+        }
+
         $staff->refresh();
         AuditLog::log('updated', $staff, $old, $staff->toArray());
 
@@ -659,26 +667,18 @@ class StaffController extends Controller
             ->with('success', "Dossier de {$staff->full_name} mis à jour.");
     }
 
-    /**
-     * Synchronise la photo sous 'users/photos/' pour un compte utilisateur lié.
-     */
-    private function syncUserPhoto(User $user, Request $request, ?string $staffPhotoPath = null): void
+    /** Keep the linked login account on the same physical photo as the staff record. */
+    private function syncUserPhoto(User $user, ?string $sharedPhotoPath): void
     {
-        if ($request->hasFile('photo')) {
-            if ($user->photo && Storage::disk('public')->exists($user->photo)) {
-                Storage::disk('public')->delete($user->photo);
-            }
-            $userPhotoPath = $request->file('photo')->store('users/photos', 'public');
-            $user->update(['photo' => $userPhotoPath]);
-        } elseif ($staffPhotoPath && Storage::disk('public')->exists($staffPhotoPath)) {
-            $ext = pathinfo($staffPhotoPath, PATHINFO_EXTENSION) ?: 'jpg';
-            $userPhotoPath = 'users/photos/' . Str::random(40) . '.' . $ext;
-            if (Storage::disk('public')->copy($staffPhotoPath, $userPhotoPath)) {
-                if ($user->photo && Storage::disk('public')->exists($user->photo)) {
-                    Storage::disk('public')->delete($user->photo);
-                }
-                $user->update(['photo' => $userPhotoPath]);
-            }
+        if (! $sharedPhotoPath || $user->photo === $sharedPhotoPath) {
+            return;
+        }
+
+        $previousPhotoPath = $user->photo;
+        $user->update(['photo' => $sharedPhotoPath]);
+
+        if ($previousPhotoPath && Storage::disk('public')->exists($previousPhotoPath)) {
+            Storage::disk('public')->delete($previousPhotoPath);
         }
     }
      

@@ -379,14 +379,16 @@ class SubjectController extends Controller
         $request->validate([
             'name_fr'     => ['required', 'string', 'max:100'],
             'name_en'     => ['nullable', 'string', 'max:100'],
-            'order_index' => ['required', 'integer', 'min:1'],
         ]);
 
-        SubjectCategory::create($request->only(
-            'name_fr', 'name_en', 'order_index'
-        ));
+        SubjectCategory::create([
+            'name_fr' => (string) $request->string('name_fr')->trim(),
+            'name_en' => $request->filled('name_en') ? (string) $request->string('name_en')->trim() : null,
+            'order_index' => ((int) SubjectCategory::max('order_index')) + 1,
+        ]);
 
-        return back()->with('success', 'Catégorie ajoutée.');
+        return redirect()->route('subjects.index', ['categories' => 1])
+            ->with('success', 'Catégorie ajoutée.');
     }
 
     public function updateCategory(Request $request,
@@ -395,14 +397,14 @@ class SubjectController extends Controller
         $request->validate([
             'name_fr'     => ['required', 'string', 'max:100'],
             'name_en'     => ['nullable', 'string', 'max:100'],
-            'order_index' => ['required', 'integer', 'min:1'],
         ]);
 
-        $category->update($request->only(
-            'name_fr', 'name_en', 'order_index'
-        ));
+        $category->update([
+            'name_fr' => (string) $request->string('name_fr')->trim(),
+            'name_en' => $request->filled('name_en') ? (string) $request->string('name_en')->trim() : null,
+        ]);
 
-        return back()->with('success',
+        return redirect()->route('subjects.index', ['categories' => 1])->with('success',
             "Catégorie « {$category->name_fr} » mise à jour.");
     }
 
@@ -417,7 +419,7 @@ class SubjectController extends Controller
         $name = $category->name_fr;
         $category->delete();
 
-        return back()->with('success',
+        return redirect()->route('subjects.index', ['categories' => 1])->with('success',
             "Catégorie « {$name} » supprimée.");
     }
 }
