@@ -19,20 +19,20 @@ class StudentPayment extends Model
         'recorded_by',
         'notes',
         'is_bulk',
+        'snapshot_total_due',
+        'snapshot_total_paid',
+        'snapshot_total_remaining',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'amount_paid'               => 'decimal:0',
-            'scholarship_amount'        => 'integer',
-            'payment_date'              => 'date',
-            'is_bulk'                   => 'boolean',
-            'snapshot_total_due'        => 'integer',
-            'snapshot_total_paid'       => 'integer',
-            'snapshot_total_remaining'  => 'integer',
-        ];
-    }
+    protected $casts = [
+        'amount_paid'               => 'decimal:0',
+        'scholarship_amount'        => 'integer',
+        'payment_date'              => 'date',
+        'is_bulk'                   => 'boolean',
+        'snapshot_total_due'        => 'integer',
+        'snapshot_total_paid'       => 'integer',
+        'snapshot_total_remaining'  => 'integer',
+    ];
 
     protected static function booted(): void
     {
@@ -117,6 +117,24 @@ class StudentPayment extends Model
         }
 
         return $this->feeInstallment?->label ?? '—';
+    }
+
+    public function getIsManualInsolvablePaymentAttribute(): bool
+    {
+        return $this->fee_installment_id === null && ! $this->is_bulk;
+    }
+
+    public function getReceiptPaymentSubjectAttribute(): ?string
+    {
+        if ($this->is_manual_insolvable_payment) {
+            return null;
+        }
+
+        if ($this->is_bulk) {
+            return $this->allocation_summary ?: ($this->feeInstallment?->label ?? 'Paiement groupé');
+        }
+
+        return $this->feeInstallment?->label;
     }
 
     public function getAllocationSummaryAttribute(): string

@@ -214,15 +214,17 @@ class SubjectController extends Controller
             ->get()
             ->groupBy('level.section_id');
 
-        // Liste des enseignants disponibles
+        // Liste des personnels éligibles à l'enseignement
         $teachers = \App\Models\Staff::where('is_active', true)
-            ->whereHas('positions', fn($q) =>
-                $q->where('position', 'enseignant')
-            )
-            ->orWhere(fn($q) =>
-                $q->where('is_active', true)
-                ->whereDoesntHave('positions')
-            )
+            ->where(function ($q) {
+                $q->whereHas('positions', fn($sq) =>
+                    $sq->whereIn('position', ['enseignant', 'prefet_des_etudes', 'censeur', 'surveillant_general'])
+                )
+                ->orWhere(fn($sq) =>
+                    $sq->where('is_active', true)
+                        ->whereDoesntHave('positions')
+                );
+            })
             ->orderBy('last_name')
             ->get();
 

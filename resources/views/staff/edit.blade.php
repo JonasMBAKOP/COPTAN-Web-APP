@@ -123,7 +123,7 @@
                         {{-- Email --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
-                                E-mail professionnel
+                                E-mail
                             </label>
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-3.5 flex items-center text-gray-400 pointer-events-none">
@@ -201,7 +201,7 @@
                                 @foreach([
                                     'permanent' => 'Permanent',
                                     'vacataire' => 'Vacataire',
-                                    'stagiaire' => 'Stagiaire',
+                                    'semi_permanent' => 'Semi Permanent',
                                 ] as $val => $lbl)
                                 <option value="{{ $val }}" {{ old('contract_type', $staff->contract_type) === $val ? 'selected' : '' }}>
                                     {{ $lbl }}
@@ -210,14 +210,14 @@
                             </select>
                         </div>
 
-                        {{-- Salaire mensuel --}}
-                        <div class="sm:col-span-2" x-show="contractType === 'permanent'" x-cloak>
+                        {{-- Salaire mensuel (permanent / semi permanent) --}}
+                        <div class="sm:col-span-2" x-show="contractType === 'permanent' || contractType === 'semi_permanent'" x-cloak>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
                                 Salaire mensuel
                             </label>
                             <div class="relative">
                                 <input type="number" name="monthly_salary"
-                                       x-bind:disabled="contractType !== 'permanent'"
+                                       x-bind:disabled="contractType === 'vacataire'"
                                        value="{{ old('monthly_salary', $staff->monthly_salary) }}"
                                        min="0" step="500"
                                        class="w-full pl-3.5 pr-14 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all">
@@ -227,8 +227,8 @@
                             </div>
                         </div>
 
-                        {{-- Tarif horaire --}}
-                        <div class="sm:col-span-2" x-show="contractType !== 'permanent'" x-cloak>
+                        {{-- Tarif horaire (vacataire) --}}
+                        <div class="sm:col-span-2" x-show="contractType === 'vacataire'" x-cloak>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
                                 Tarif horaire
                             </label>

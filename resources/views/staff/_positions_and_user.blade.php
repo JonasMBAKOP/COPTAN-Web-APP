@@ -1,16 +1,6 @@
 @php
-    $positionsList = [
-        'enseignant'             => 'Enseignant(e)',
-        'directeur'              => 'Directeur',
-        'prefet_des_etudes'      => 'Préfet des études',
-        'econome'                => 'Économe',
-        'surveillant_general'    => 'Surveillant général',
-        'surveillant_de_secteur' => 'Surveillant de secteur',
-        'vigile'                 => 'Vigile',
-        'agent_d_entretien'      => 'Agent d\'entretien',
-        'secretaire'             => 'Secrétaire',
-        'autre'                  => 'Autre',
-    ];
+    // The controller supplies only positions the connected user can assign.
+    $positionsList = $positionLabels ?? \App\Models\Staff::positionLabels();
 
     $currentPositions = old('positions',
         isset($staff)
@@ -38,6 +28,7 @@
         'surveillant-general'    => 'Surveillant général',
         'surveillant-de-secteur' => 'Surveillant de secteur',
         'secretaire'             => 'Secrétaire',
+        'infirmier'              => 'Infirmier(e)',
         'enseignant'             => 'Enseignant(e)',
     ];
 

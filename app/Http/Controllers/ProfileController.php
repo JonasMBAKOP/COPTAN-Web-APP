@@ -82,21 +82,14 @@ class ProfileController extends Controller
 
         $photosToDelete = [];
         if ($request->hasFile('photo')) {
-            $staff = $user->staff;
-            $newPhotoPath = $request->file('photo')->store(
-                $staff ? 'staff/photos' : 'users/photos',
-                'public'
-            );
+            // Store user profile photo independently from staff HR photo
+            $newPhotoPath = $request->file('photo')->store('users/photos', 'public');
 
             $photosToDelete = array_filter([
                 $user->photo,
-                $staff?->photo,
             ], fn ($path) => $path && $path !== $newPhotoPath);
 
             $user->photo = $newPhotoPath;
-            if ($staff) {
-                $staff->update(['photo' => $newPhotoPath]);
-            }
         }
 
         // Traiter le cachet/signature (sauf pour les enseignants)
@@ -144,13 +137,10 @@ class ProfileController extends Controller
     {
         /** @var \App\Models\User|null $user */
         $user = Auth::user();
-        $staff = $user->staff;
-        $photosToDelete = array_filter([$user->photo, $staff?->photo]);
+        // Only delete the user profile photo; do not touch staff HR photo.
+        $photosToDelete = array_filter([$user->photo]);
 
         $user->update(['photo' => null]);
-        if ($staff) {
-            $staff->update(['photo' => null]);
-        }
 
         foreach (array_unique($photosToDelete) as $photoPath) {
             Storage::disk('public')->delete($photoPath);

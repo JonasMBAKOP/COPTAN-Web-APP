@@ -119,6 +119,13 @@
                              2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
                 </svg>
                 @break
+            @case('heart')
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 21s-7-4.35-9.5-8.25C.5 9.65 2.2 5 6.25 5c2.2 0 3.45 1.28 4.1 2.42C11 6.28 12.25 5 14.45 5c4.05 0 5.75 4.65 3.75 7.75C19 16.65 12 21 12 21z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-3-3v6"/>
+                </svg>
+                @break
             @case('x-circle')
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

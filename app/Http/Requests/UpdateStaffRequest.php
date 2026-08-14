@@ -41,11 +41,9 @@ class UpdateStaffRequest extends FormRequest
             'origin_school' => ['nullable', 'string', 'max:200'],
             'start_date'    => ['nullable', 'date'],
             'contract_type' => ['required',
-                                'in:permanent,vacataire,stagiaire'],
-            'monthly_salary' => ['nullable', 'numeric', 'min:0',
-                                'required_if:contract_type,permanent'],
-            'hourly_rate'    => ['nullable', 'numeric', 'min:0',
-                                'required_if:contract_type,vacataire,stagiaire'],
+                                'in:permanent,vacataire,semi_permanent,stagiaire'],
+            'monthly_salary' => ['nullable', 'numeric', 'min:0'],
+            'hourly_rate'    => ['nullable', 'numeric', 'min:0'],
             'period_rate'    => ['nullable', 'numeric', 'min:0'],
             'is_active'     => ['boolean'],
             'user_id'       => ['nullable', 'exists:users,id'],
@@ -113,9 +111,17 @@ class UpdateStaffRequest extends FormRequest
             $primary = $positions[0];
         }
 
+        // Normalize empty numeric fields to null so DB accepts nullable columns
+        $monthly = $this->input('monthly_salary');
+        $hourly = $this->input('hourly_rate');
+        $period = $this->input('period_rate');
+
         $this->merge([
             'positions'        => $positions,
             'primary_position' => $primary,
+            'monthly_salary' => $monthly === '' ? null : $monthly,
+            'hourly_rate' => $hourly === '' ? null : $hourly,
+            'period_rate' => $period === '' ? null : $period,
         ]);
     }
 
@@ -126,8 +132,8 @@ class UpdateStaffRequest extends FormRequest
             'last_name.required'        => 'Le nom est obligatoire.',
             'gender.required'           => 'Le sexe est obligatoire.',
             'contract_type.required'    => 'Le type de contrat est obligatoire.',
-            'monthly_salary.required_if'=> 'Le salaire mensuel est requis pour un contrat permanent.',
-            'hourly_rate.required_if'   => 'Le tarif horaire est requis pour un contrat vacataire ou stagiaire.',
+            'monthly_salary.required_if'=> 'Le salaire mensuel est requis pour un contrat permanent ou semi permanent.',
+            'hourly_rate.required_if'   => 'Le tarif horaire est requis pour un contrat vacataire.',
             'positions.required'        => 'Veuillez sélectionner au moins un poste.',
             'positions.min'             => 'Veuillez sélectionner au moins un poste.',
             'primary_position.required' => 'Veuillez indiquer le poste principal.',

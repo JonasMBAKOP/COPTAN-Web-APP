@@ -404,6 +404,18 @@ Route::middleware(['auth', 'permission:view-staff'])
             Route::post('/cartes/print', [\App\Http\Controllers\StaffDocumentController::class, 'printBulk'])->name('cards.print');
         });
 
+        Route::get('/planning-passage', [StaffController::class, 'passagePlanning'])
+            ->name('passage-planning');
+        Route::get('/presences', [\App\Http\Controllers\PresenceController::class, 'index'])
+            ->name('presences.index');
+        Route::get('/presences/dossier', [\App\Http\Controllers\PresenceController::class, 'dossier'])
+            ->name('presences.dossier');
+        Route::get('/presences/mark', [\App\Http\Controllers\PresenceController::class, 'mark'])
+            ->name('presences.mark');
+        Route::post('/presences', [\App\Http\Controllers\PresenceController::class, 'store'])
+            ->name('presences.store');
+        Route::get('/planning-passage/preview', [StaffController::class, 'previewPassagePlanning'])
+            ->name('passage-planning.preview');
         Route::get('/salaries', [StaffController::class, 'salaries'])
             ->name('salaries');
         Route::get('/salaries/print', [StaffController::class, 'printSalaryList'])
@@ -427,6 +439,24 @@ Route::middleware(['auth', 'permission:view-staff'])
         });
 
         Route::get('/{staff}', [StaffController::class, 'show'])->name('show');
+    });
+
+Route::middleware(['auth', 'permission:view-health'])
+    ->prefix('infirmary')
+    ->name('infirmary.')
+    ->group(function () {
+        Route::get('/', [\App\Http\Controllers\InfirmaryController::class, 'index'])->name('index');
+        Route::get('/print', [\App\Http\Controllers\InfirmaryController::class, 'print'])->name('print');
+        Route::get('/patients', [\App\Http\Controllers\InfirmaryController::class, 'patients'])->name('patients');
+        Route::get('/patients/{student}', [\App\Http\Controllers\InfirmaryController::class, 'patient'])->name('patients.show');
+
+        Route::middleware('permission:manage-health')->group(function () {
+            Route::get('/create', [\App\Http\Controllers\InfirmaryController::class, 'create'])->name('create');
+            Route::post('/visits', [\App\Http\Controllers\InfirmaryController::class, 'store'])->name('visits.store');
+            Route::get('/{visit}/edit', [\App\Http\Controllers\InfirmaryController::class, 'edit'])->name('edit');
+            Route::put('/{visit}', [\App\Http\Controllers\InfirmaryController::class, 'update'])->name('update');
+            Route::delete('/{visit}', [\App\Http\Controllers\InfirmaryController::class, 'destroy'])->name('destroy');
+        });
     });
 
 
@@ -544,6 +574,12 @@ Route::middleware(['auth', 'permission:view-finances'])
             Route::post('/students/{enrollment}/bulk-pay',
                 [FinanceController::class, 'bulkPay'])
                 ->name('bulk-pay');
+            // Manual insolvables management
+            Route::get('/insolvables/create', [FinanceController::class, 'createManualInsolvable'])->name('insolvables.create');
+            Route::post('/insolvables', [FinanceController::class, 'storeManualInsolvable'])->name('insolvables.store');
+            Route::post('/insolvables/pay', [FinanceController::class, 'payManualInsolvable'])->name('insolvables.pay');
+            Route::get('/insolvables/enrollment-search', [FinanceController::class, 'searchEnrollments'])->name('insolvables.enrollment-search');
+            Route::get('/insolvables/enrollment/{enrollment}/installments', [FinanceController::class, 'enrollmentInstallments'])->name('insolvables.enrollment-installments');
         });
     });
 

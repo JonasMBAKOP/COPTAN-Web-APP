@@ -178,6 +178,55 @@
     @endif
 </div>
 @endif
+@php
+    $sameLevelConflict = session('same_level_teacher_conflict');
+@endphp
+
+@if($sameLevelConflict)
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const payload = @json($sameLevelConflict);
+    if (!payload) return;
+
+    const proceed = window.confirm(payload.message);
+
+    if (proceed) {
+        const form = document.createElement('form');
+        form.method = payload.method || 'POST';
+        form.action = payload.action;
+
+        if ((payload.method || 'POST').toUpperCase() === 'PUT') {
+            const methodInput = document.createElement('input');
+            methodInput.type = 'hidden';
+            methodInput.name = '_method';
+            methodInput.value = 'PUT';
+            form.appendChild(methodInput);
+        }
+
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = '_token';
+        csrf.value = '{{ csrf_token() }}';
+        form.appendChild(csrf);
+
+        Object.entries(payload.fields || {}).forEach(([name, value]) => {
+            const field = document.createElement('input');
+            field.type = 'hidden';
+            field.name = name;
+            field.value = value;
+            form.appendChild(field);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+        return;
+    }
+
+    window.location.href = payload.cancelUrl || '{{ route('timetable.index', ['class_id' => $selectedClass?->id ?? '']) }}';
+});
+</script>
+@endif
+
 @endsection
 
 @push('scripts')

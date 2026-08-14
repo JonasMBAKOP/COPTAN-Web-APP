@@ -33,7 +33,7 @@ return new class extends Migration
             $table->date('start_date')->nullable()
                   ->comment('Date d\'entrée dans l\'établissement');
             $table->enum('contract_type', [
-                'permanent', 'vacataire', 'stagiaire'
+                'permanent', 'vacataire', 'semi_permanent', 'stagiaire'
             ])->default('permanent');
             $table->boolean('is_active')->default(true);
             $table->timestamps();

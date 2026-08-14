@@ -276,6 +276,9 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 @foreach($positionLabels as $value => $label)
+                @if($value === 'directeur' && !auth()->user()->hasRole('super-admin'))
+                    @continue
+                @endif
                 <label class="flex items-start gap-3 p-3 rounded-xl border cursor-pointer
                               transition-all duration-150 select-none
                               hover:bg-white hover:shadow-sm"

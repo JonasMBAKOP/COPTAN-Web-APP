@@ -44,6 +44,7 @@ class User extends Authenticatable
             $this->hasRole('surveillant-general')    => route('surveillant.dashboard'),
             $this->hasRole('surveillant-de-secteur') => route('surveillant-secteur.dashboard'),
             $this->hasRole('secretaire')             => route('secretaire.dashboard'),
+            $this->hasRole('infirmier')              => route('infirmary.index'),
             default                                  => route('login'),
         };
     }
@@ -71,6 +72,7 @@ class User extends Authenticatable
         'surveillant-general'    => 4,
         'surveillant-de-secteur' => 3,
         'secretaire'             => 2,
+        'infirmier'              => 2,
         'enseignant'             => 1,
     ];
 

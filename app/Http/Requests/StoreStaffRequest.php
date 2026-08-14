@@ -37,11 +37,9 @@ class StoreStaffRequest extends FormRequest
             'origin_school' => ['nullable', 'string', 'max:200'],
             'start_date'    => ['nullable', 'date'],
             'contract_type' => ['required',
-                                'in:permanent,vacataire,stagiaire'],
-            'monthly_salary' => ['nullable', 'numeric', 'min:0',
-                                'required_if:contract_type,permanent'],
-            'hourly_rate'    => ['nullable', 'numeric', 'min:0',
-                                'required_if:contract_type,vacataire,stagiaire'],
+                                'in:permanent,vacataire,semi_permanent,stagiaire'],
+            'monthly_salary' => ['nullable', 'numeric', 'min:0'],
+            'hourly_rate' => ['nullable', 'numeric', 'min:0'],
             'period_rate'    => ['nullable', 'numeric', 'min:0'],
             'is_active'     => ['nullable', 'boolean'],
             'user_id'       => ['nullable', 'exists:users,id'],
@@ -76,6 +74,39 @@ class StoreStaffRequest extends FormRequest
         // ]);
     }
 
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $positions = (array) $this->input('positions', []);
+            $primary = $this->input('primary_position');
+            if ($primary && ! in_array($primary, $positions, true)) {
+                $validator->errors()->add('primary_position', 'Le poste principal doit faire partie des postes selectionnes.');
+            }
+        });
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $positions = array_values(array_unique(array_filter((array) $this->input('positions', []))));
+        $primary = $this->input('primary_position');
+        if ((! $primary || ! in_array($primary, $positions, true)) && count($positions) > 0) {
+            $primary = $positions[0];
+        }
+        // Normalize empty numeric fields to null so DB accepts nullable columns
+        $monthly = $this->input('monthly_salary');
+        $hourly = $this->input('hourly_rate');
+        $period = $this->input('period_rate');
+
+        $this->merge([
+            'positions' => $positions,
+            'primary_position' => $primary,
+            'user_id' => $this->input('user_id') ?: null,
+            'monthly_salary' => $monthly === '' ? null : $monthly,
+            'hourly_rate' => $hourly === '' ? null : $hourly,
+            'period_rate' => $period === '' ? null : $period,
+        ]);
+    }
     public function messages(): array
     {
         return [
@@ -83,8 +114,8 @@ class StoreStaffRequest extends FormRequest
             'last_name.required'           => 'Le nom est obligatoire.',
             'gender.required'              => 'Le genre est obligatoire.',
             'contract_type.required'       => 'Le type de contrat est obligatoire.',
-            'monthly_salary.required_if'   => 'Le salaire mensuel est requis pour un contrat permanent.',
-            'hourly_rate.required_if'      => 'Le tarif horaire est requis pour un contrat vacataire ou stagiaire.',
+            'monthly_salary.required_if'   => 'Le salaire mensuel est requis pour un contrat permanent ou semi permanent.',
+            'hourly_rate.required_if'      => 'Le tarif horaire est requis pour un contrat vacataire.',
             'positions.required'           => 'Veuillez sélectionner au moins un poste.',
             // 'positions.min'                => 'Veuillez sélectionner au moins un poste.',
             // 'primary_position.required'    => 'Veuillez indiquer le poste principal.',

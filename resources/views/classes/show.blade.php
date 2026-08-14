@@ -411,14 +411,24 @@
                         $teacher = $cs->teacherAssignments
                             ->where('academic_year_id', $classGroup->academic_year_id)
                             ->first()?->staff;
+                        $category = $cs->subject->category;
+                        $categoryColors = [
+                            ['bg' => 'bg-blue-50', 'text' => 'text-blue-700', 'border' => 'border-blue-100'],
+                            ['bg' => 'bg-violet-50', 'text' => 'text-violet-700', 'border' => 'border-violet-100'],
+                            ['bg' => 'bg-emerald-50', 'text' => 'text-emerald-700', 'border' => 'border-emerald-100'],
+                            ['bg' => 'bg-amber-50', 'text' => 'text-amber-700', 'border' => 'border-amber-100'],
+                            ['bg' => 'bg-rose-50', 'text' => 'text-rose-700', 'border' => 'border-rose-100'],
+                            ['bg' => 'bg-cyan-50', 'text' => 'text-cyan-700', 'border' => 'border-cyan-100'],
+                        ];
+                        $categoryColor = $categoryColors[crc32((string) ($category?->id ?? 0)) % count($categoryColors)];
                     @endphp
                     <tr class="hover:bg-gray-50/70 transition-colors">
                         <td class="px-6 py-4 font-bold text-gray-800">
                             {{ $cs->subject->name_fr }}
                         </td>
                         <td class="px-6 py-4 text-center">
-                            <span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
-                                {{ $cs->subject->category->name_fr }}
+                            <span class="px-2 py-0.5 rounded text-xs font-bold border {{ $categoryColor['bg'] }} {{ $categoryColor['text'] }} {{ $categoryColor['border'] }}">
+                                {{ $category?->name_fr ?? 'Sans categorie' }}
                             </span>
                         </td>
                         <td class="px-6 py-4 text-center font-bold text-gray-800">

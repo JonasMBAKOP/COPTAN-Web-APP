@@ -39,6 +39,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-bulletins', 'manage-bulletins', 'generate-bulletins', 'print-bulletins',
             // Absences
             'view-absences', 'manage-absences',
+            // Infirmerie
+            'view-health', 'manage-health',
             // Finances
             'view-finances', 'manage-finances', 'configure-fees',
             // Discipline
@@ -160,6 +162,15 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-messages', 'send-messages',
         ]);
 
-        $this->command->info('✅ Rôles et permissions créés avec succès.');
+        // 9. INFIRMIER(E)
+        $infirmier = Role::firstOrCreate(['name' => 'infirmier']);
+        $infirmier->syncPermissions([
+            'view-students',
+            'view-health', 'manage-health',
+            'view-announcements',
+            'view-messages', 'send-messages',
+        ]);
+
+        $this->command->info('Roles and permissions created.');
     }
 }

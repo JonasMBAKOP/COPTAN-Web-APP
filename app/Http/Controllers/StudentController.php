@@ -597,12 +597,11 @@ class StudentController extends Controller
                 }
                 $class->loadMissing('level.section');
                 $previousClass->loadMissing('level.section');
+
+                // Autoriser le renouvellement inter-sections : on ne force plus la même section
+                // Déterminer uniquement si l'élève redouble (même niveau)
                 $sameLevel = (int) $class->level_id === (int) $previousClass->level_id;
-                $sameSection = (int) $class->level?->section_id === (int) $previousClass->level?->section_id;
-                $isPromotion = $sameSection && (int) $class->level?->order_index > (int) $previousClass->level?->order_index;
-                if (! $sameLevel && ! $isPromotion) {
-                    throw new \InvalidArgumentException('La classe choisie doit être le même niveau (redoublement) ou un niveau supérieur de la même section (promotion).');
-                }
+
                 $school = \App\Models\SchoolSetting::instance();
                 $enrollment = StudentEnrollment::create([
                     'student_id' => $student->id, 'academic_year_id' => $activeYear->id,

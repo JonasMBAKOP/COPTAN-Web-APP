@@ -47,6 +47,7 @@
             <select id="staff-list-type" name="type" class="h-10 min-w-[190px] rounded-xl border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-700 shadow-sm focus:border-[#1A3A6B] focus:outline-none focus:ring-2 focus:ring-[#1A3A6B]/20">
                 <option value="permanent">Liste des permanents</option>
                 <option value="vacataire">Liste des vacataires</option>
+                <option value="semi_permanent">Liste des semi permanents</option>
                 <option value="administrative">Liste administrative</option>
             </select>
             <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-xl bg-[#1A3A6B] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#163450] focus:outline-none focus:ring-2 focus:ring-[#1A3A6B]/20">
@@ -446,15 +447,10 @@
         </div>
     </div>
 
-    {{-- Charger plus de membres button --}}
+    {{-- Pagination --}}
     @if($staff->hasPages())
-        <div class="flex justify-center mt-8 mb-4">
-            <a href="{{ $staff->nextPageUrl() }}" class="inline-flex items-center gap-2 px-6 py-2.5 border border-gray-300 rounded-full text-xs font-semibold text-gray-500 bg-white hover:bg-gray-50 transition-colors uppercase tracking-wider">
-                Charger plus de membres
-                <svg class="w-4.5 h-4.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                </svg>
-            </a>
+        <div class="mt-8 border-t border-gray-100 pt-5">
+            {{ $staff->onEachSide(1)->links() }}
         </div>
     @endif
 

@@ -148,7 +148,7 @@
                         </label>
                         @if($user->photo)
                         <button type="button"
-                                onclick="document.getElementById('deletePhotoForm').submit()"
+                                onclick="if(confirm('Confirmer la suppression ?')) document.getElementById('deletePhotoForm').submit()"
                                 class="text-xs text-red-500 hover:underline">
                             Supprimer
                         </button>
@@ -223,9 +223,9 @@
     </div>
 </form>
 
-<form method="DELETE" action="{{ route('profile.photo.delete') }}"
-      id="deletePhotoForm" class="hidden">
-    @csrf @method('DELETE')
+<form method="POST" action="{{ route('profile.photo.delete') }}"
+            id="deletePhotoForm" class="hidden">
+        @csrf @method('DELETE')
 </form>
 
 <form method="POST" action="{{ route('profile.seal.delete') }}"

@@ -380,7 +380,7 @@
             <div id="bulk-payment-error" class="hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             </div>
             <div>
-                <label class="block text-xs text-gray-500 mb-1">Montant à payer (FCFA)</label>
+                <label class="block text-xs text-gray-500 mb-1">Montant versé (FCFA)</label>
                 <input type="number" name="amount_paid" min="0" value="0"
                        class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100">
             </div>
