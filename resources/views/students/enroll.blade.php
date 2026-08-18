@@ -382,10 +382,18 @@
                 if (!this.selectedClass) return 'Sélectionnez une classe';
                 const selected = this.allClasses.find(c => String(c.id) === String(this.selectedClass));
                 if (!selected || !this.previousClass.levelId) return 'Nouvelle inscription';
-                if (String(selected.level_id) === String(this.previousClass.levelId)) return 'Redoublant(e)';
+                if (String(selected.level_id) === String(this.previousClass.levelId)) {
+                    return String(selected.section_id) === String(this.previousClass.sectionId)
+                        ? 'Redoublant(e)'
+                        : 'Redoublant(e) avec changement de section';
+                }
                 const promoted = String(selected.section_id) === String(this.previousClass.sectionId)
                     && Number(selected.level_order) > Number(this.previousClass.levelOrder);
-                return promoted ? 'Promu(e)' : 'Classe non compatible';
+                if (promoted) return 'Promu(e)';
+
+                return String(selected.section_id) !== String(this.previousClass.sectionId)
+                    ? 'Renouvellement avec changement de section'
+                    : 'Renouvellement';
             }
         }
     }

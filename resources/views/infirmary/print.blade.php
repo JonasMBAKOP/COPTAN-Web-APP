@@ -28,6 +28,7 @@
         th { background: #EFF6FF; color: #172554; text-align: center; font-size: 8px; font-weight: 800; text-transform: uppercase; }
         td { color: #111827; line-height: 1.25; }
         .center { text-align: center; }
+        .temperature-column { width: 34px; }
         .empty { padding: 14px; text-align: center; color: #64748B; font-style: italic; }
         @media print { .infirmary-report { max-width: none; padding: 0; } }
     </style>
@@ -42,12 +43,12 @@
     ])
     <p class="report-subtitle">Annee scolaire : {{ $academicYearLabel }} - {{ $visits->count() }} consultation(s)</p>
     <table>
-        <thead><tr><th>Date</th><th>Heure</th><th>Eleve</th><th>Sexe</th><th>Classe</th><th>Age</th><th>Parent</th><th>Temperature</th><th>Motif</th><th>Traitement</th><th>Enregistre par</th></tr></thead>
+        <thead><tr><th>Date</th><th>Eleve</th><th>Sexe</th><th>Classe</th><th>Age</th><th>Parent</th><th class="temperature-column">T°</th><th>Motif</th><th>Traitement</th><th>Enregistre par</th></tr></thead>
         <tbody>
             @forelse($visits as $visit)
-                <tr><td class="center">{{ $visit->visit_date?->format('d/m/Y') }}</td><td class="center">{{ substr((string) $visit->visit_time, 0, 5) }}</td><td>{{ $visit->student_name }}</td><td class="center">{{ $visit->student_gender ?: '-' }}</td><td>{{ $visit->class_name ?? '-' }}</td><td class="center">{{ $visit->student_age !== null ? $visit->student_age . ' ans' : '-' }}</td><td>{{ $visit->parent_phone ?? '-' }}</td><td class="center">{{ $visit->temperature !== null ? number_format((float) $visit->temperature, 1, ',', ' ') . ' C' : '-' }}</td><td>{{ $visit->visit_reason }}</td><td>{{ $visit->treatment ?: '-' }}</td><td>{{ $visit->recorder_name }}</td></tr>
+                <tr><td class="center">{{ $visit->visit_date?->format('d/m/Y') }}<br><span style="font-size: 7px; color: #64748B;">{{ substr((string) $visit->visit_time, 0, 5) }}</span></td><td>{{ $visit->student_name }}</td><td class="center">{{ $visit->student_gender ?: '-' }}</td><td>{{ $visit->class_name ?? '-' }}</td><td class="center">{{ $visit->student_age !== null ? $visit->student_age . ' ans' : '-' }}</td>@php($parentPhones = collect([$visit->student?->father_phone, $visit->student?->mother_phone, $visit->student?->guardian_phone, $visit->parent_phone])->filter(fn ($phone) => filled($phone))->map(fn ($phone) => trim($phone))->unique()->values())<td>@forelse($parentPhones as $phone)<div>{{ $phone }}</div>@empty-@endforelse</td><td class="center temperature-column">{{ $visit->temperature !== null ? number_format((float) $visit->temperature, 1, ',', ' ') . ' C' : '-' }}</td><td>{{ $visit->visit_reason }}</td><td>{{ $visit->treatment ?: '-' }}</td><td>{{ $visit->recorder_name }}</td></tr>
             @empty
-                <tr><td colspan="11" class="empty">Aucune consultation pour les filtres selectionnes.</td></tr>
+                <tr><td colspan="10" class="empty">Aucune consultation pour les filtres selectionnes.</td></tr>
             @endforelse
         </tbody>
     </table>

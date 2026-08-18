@@ -8,7 +8,7 @@
 <div class="max-w-7xl mx-auto space-y-6">
     <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <form method="GET" action="{{ route('staff.presences.dossier') }}" class="flex flex-col gap-4 xl:flex-row xl:items-end">
-            <div class="w-full xl:w-[220px]">
+            <div id="contract-field" class="w-full xl:w-[220px]">
                 <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Type de contrat</label>
                 <select name="contract_type" id="contract_type" class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
                     <option value="all" {{ $contractType === 'all' ? 'selected' : '' }}>Tous</option>
@@ -18,7 +18,7 @@
                 </select>
             </div>
 
-            <div class="w-full xl:w-[260px]">
+            <div id="staff-field" class="w-full xl:w-[260px]">
                 <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Personnel</label>
                 <select name="staff_id" id="staff_id" class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
                     @foreach($availableStaff as $member)
@@ -29,7 +29,7 @@
                 </select>
             </div>
 
-            <div class="w-full xl:w-[180px]">
+            <div id="dossier-type-field" class="w-full xl:w-[180px]">
                 <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Type de dossier</label>
                 <select name="dossier_type" id="dossier_type" class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
                     <option value="month" {{ $dossierType === 'month' ? 'selected' : '' }}>Mensuel</option>
@@ -43,13 +43,13 @@
             </div>
 
             <div id="range-fields" class="w-full min-w-0 {{ $dossierType === 'range' ? '' : 'hidden' }} flex flex-col gap-3 sm:flex-row sm:items-end">
-                <div class="w-full sm:w-[170px]">
+                <div class="w-full sm:w-[145px]">
                     <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Date de début</label>
-                    <input type="date" name="start_date" value="{{ $startDate }}" class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
+                    <input type="date" name="start_date" value="{{ $startDate }}" class="w-full rounded-xl border border-gray-200 bg-white px-2 py-2.5 pr-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
                 </div>
-                <div class="w-full sm:w-[170px]">
+                <div class="w-full sm:w-[145px]">
                     <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Date de fin</label>
-                    <input type="date" name="end_date" value="{{ $endDate }}" class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
+                    <input type="date" name="end_date" value="{{ $endDate }}" class="w-full rounded-xl border border-gray-200 bg-white px-2 py-2.5 pr-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
                 </div>
             </div>
 
@@ -127,6 +127,9 @@
     const rangeFields = document.getElementById('range-fields');
     const contractType = document.getElementById('contract_type');
     const staffSelect = document.getElementById('staff_id');
+    const contractField = document.getElementById('contract-field');
+    const staffField = document.getElementById('staff-field');
+    const dossierTypeField = document.getElementById('dossier-type-field');
 
     const optionsByContract = @json($staffByContract);
 
@@ -159,6 +162,12 @@
         const isMonth = dossierType.value === 'month';
         monthField.classList.toggle('hidden', !isMonth);
         rangeFields.classList.toggle('hidden', isMonth);
+        contractField.classList.toggle('xl:w-[230px]', !isMonth);
+        contractField.classList.toggle('xl:w-[220px]', isMonth);
+        staffField.classList.toggle('xl:w-[290px]', !isMonth);
+        staffField.classList.toggle('xl:w-[260px]', isMonth);
+        dossierTypeField.classList.toggle('xl:w-[190px]', !isMonth);
+        dossierTypeField.classList.toggle('xl:w-[180px]', isMonth);
     }
 
     dossierType.addEventListener('change', toggleDossierMode);

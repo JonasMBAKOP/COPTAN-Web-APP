@@ -116,9 +116,7 @@ class StudentController extends Controller
         // Stats (uniquement inscriptions actives)
         $stats = [
             'total'     => $selectedYear
-                ? StudentEnrollment::where('academic_year_id', $selectedYear->id)
-                    ->where('status', StudentEnrollment::STATUS_ACTIVE)
-                    ->count()
+                ? StudentEnrollment::where('academic_year_id', $selectedYear->id)->count()
                 : StudentEnrollment::where('status', StudentEnrollment::STATUS_ACTIVE)->count(),
             'boys'      => $selectedYear
                 ? StudentEnrollment::where('academic_year_id', $selectedYear->id)

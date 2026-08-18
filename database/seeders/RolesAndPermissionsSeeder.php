@@ -89,7 +89,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-announcements', 'manage-announcements', 'manage-parent-communication',
             'view-messages', 'send-messages',
             'view-reports', 'export-reports',
-            'view-academic-years', 'manage-academic-years',
+            // 'view-academic-years', 'manage-academic-years',
         ]);
 
         // 4. ÉCONOME

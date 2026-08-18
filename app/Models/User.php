@@ -49,15 +49,11 @@ class User extends Authenticatable
         };
     }
 
-    // URL de la photo utilisateur (user.photo ou staff.photo)
+    // URL de la photo du compte de connexion uniquement.
     public function getPhotoUrlAttribute(): string
     {
         if ($this->photo) {
             return asset('storage/' . $this->photo);
-        }
-
-        if ($this->staff?->photo) {
-            return asset('storage/' . $this->staff->photo);
         }
 
         return asset('images/default-avatar.png');

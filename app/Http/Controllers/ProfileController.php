@@ -108,7 +108,9 @@ class ProfileController extends Controller
         $user->save();
 
         foreach (array_unique($photosToDelete) as $photoPath) {
-            Storage::disk('public')->delete($photoPath);
+            if ($user->staff?->photo !== $photoPath) {
+                Storage::disk('public')->delete($photoPath);
+            }
         }
 
         return redirect()->route('profile.show')
@@ -143,7 +145,9 @@ class ProfileController extends Controller
         $user->update(['photo' => null]);
 
         foreach (array_unique($photosToDelete) as $photoPath) {
-            Storage::disk('public')->delete($photoPath);
+            if ($user->staff?->photo !== $photoPath) {
+                Storage::disk('public')->delete($photoPath);
+            }
         }
         return back()->with('success', 'Photo supprimée.');
     }

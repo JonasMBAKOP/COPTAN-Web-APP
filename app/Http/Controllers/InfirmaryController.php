@@ -178,7 +178,16 @@ class InfirmaryController extends Controller
             $selectedClassLabel ? 'Classe : ' . $selectedClassLabel : null,
         ])->filter()->join(' - ') ?: 'Toutes les consultations';
 
-        return view('infirmary.print', compact('activeYear', 'visits', 'school', 'phones', 'agreements', 'classGroup', 'filterLabel'));
+        return view('infirmary.print', [
+            'activeYear' => $activeYear,
+            'academicYearLabel' => $this->academicYearLabel($activeYear),
+            'visits' => $visits,
+            'school' => $school,
+            'phones' => $phones,
+            'agreements' => $agreements,
+            'classGroup' => $classGroup,
+            'filterLabel' => $filterLabel,
+        ]);
     }
 
     private function validateVisit(Request $request): array
@@ -210,7 +219,7 @@ class InfirmaryController extends Controller
             'student_gender' => $student->gender,
             'class_name' => $classGroup?->full_name,
             'student_age' => $student->date_of_birth ? Carbon::parse($student->date_of_birth)->age : null,
-            'parent_phone' => $student->guardian_phone ?: ($student->father_phone ?: $student->mother_phone),
+            'parent_phone' => $this->parentPhones($student),
             'temperature' => $data['temperature'] ?? null,
             'visit_reason' => trim($data['visit_reason']),
             'treatment' => filled($data['treatment'] ?? null) ? trim($data['treatment']) : null,
@@ -223,6 +232,20 @@ class InfirmaryController extends Controller
             ->when($activeYear, fn ($query) => $query->where('academic_year_id', $activeYear->id))
             ->when($date, fn ($query) => $query->whereDate('visit_date', $date))
             ->when($classGroupId, fn ($query) => $query->where('class_group_id', $classGroupId));
+    }
+
+    private function parentPhones(Student $student): ?string
+    {
+        $phones = collect([
+            $student->father_phone,
+            $student->mother_phone,
+            $student->guardian_phone,
+        ])->filter(fn ($phone) => filled($phone))
+            ->map(fn ($phone) => trim($phone))
+            ->unique()
+            ->values();
+
+        return $phones->isNotEmpty() ? $phones->implode("\n") : null;
     }
 
     private function currentAcademicYear(): ?AcademicYear

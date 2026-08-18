@@ -184,6 +184,11 @@ class PresenceController extends Controller
         $cursor = $start->copy();
 
         while ($cursor->lte($end)) {
+            if ($cursor->isSunday()) {
+                $cursor->addDay();
+                continue;
+            }
+
             if ($selectedStaff) {
                 $dateString = $cursor->toDateString();
                 $isProgrammed = $this->isStaffScheduledOnDate($selectedStaff, $cursor);

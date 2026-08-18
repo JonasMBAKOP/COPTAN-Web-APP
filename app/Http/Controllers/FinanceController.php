@@ -237,6 +237,47 @@ class FinanceController extends Controller
         ));
     }
 
+    public function deletePayment(StudentPayment $payment)
+    {
+        $enrollmentId = $payment->student_enrollment_id;
+        $receiptNumber = $payment->receipt_number;
+        $amount = (int) $payment->amount_paid;
+        $isManual = $payment->is_manual_insolvable_payment;
+
+        DB::transaction(function () use ($payment, $enrollmentId, $receiptNumber, $amount, $isManual): void {
+            if ($payment->is_bulk) {
+                StudentPayment::where('parent_payment_id', $payment->id)->delete();
+            }
+
+            $payment->delete();
+
+            if ($isManual) {
+                $manual = ManualInsolvable::where('student_enrollment_id', $enrollmentId)
+                    ->latest('id')
+                    ->first();
+
+                if ($manual) {
+                    $totalPaid = max(0, (int) $manual->total_paid - $amount);
+                    $manual->update([
+                        'total_paid' => $totalPaid,
+                        'remaining' => max(0, (int) $manual->total_due - $totalPaid),
+                    ]);
+                }
+            }
+
+            AuditLog::log('payment_deleted', null, [], [
+                'payment_id' => $payment->id,
+                'receipt_number' => $receiptNumber,
+                'student_enrollment_id' => $enrollmentId,
+                'amount_paid' => $amount,
+                'was_bulk' => (bool) $payment->is_bulk,
+            ]);
+        });
+
+        return redirect()->route('finances.student', $enrollmentId)
+            ->with('success', 'Paiement supprimé. Les soldes financiers ont été recalculés.');
+    }
+
     private function cleanupOverpaidPayments(StudentEnrollment $enrollment): void
     {
         $feeStructure = $enrollment->classGroup()->with('feeStructures.installments')->first()?->feeStructures->first();

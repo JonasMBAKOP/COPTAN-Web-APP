@@ -248,7 +248,7 @@
                 icon="clipboard"
                 label="Consultations"
                 href="{{ route('infirmary.index') }}"
-                :active="request()->routeIs('infirmary.index') || request()->routeIs('infirmary.edit') || request()->routeIs('infirmary.create') || request()->routeIs('infirmary.print')" />
+                :active="request()->routeIs('infirmary.index') || request()->routeIs('infirmary.edit') || request()->routeIs('infirmary.print')" />
 
             <x-sidebar-item
                 icon="folder-open"

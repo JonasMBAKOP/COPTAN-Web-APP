@@ -797,7 +797,8 @@ class StaffController extends Controller
                 ->with('error', 'Erreur lors de la mise à jour : ' . $e->getMessage());
         }
 
-        if ($newPhotoPath && $oldStaffPhotoPath && $oldStaffPhotoPath !== $newPhotoPath) {
+        if ($newPhotoPath && $oldStaffPhotoPath && $oldStaffPhotoPath !== $newPhotoPath
+            && ! User::query()->where('photo', $oldStaffPhotoPath)->exists()) {
             Storage::disk('public')->delete($oldStaffPhotoPath);
         }
 
@@ -1083,9 +1084,11 @@ class StaffController extends Controller
     // ── SUPPRESSION PHOTO ─────────────────────────────────────────────────
     public function deletePhoto(Staff $staff)
     {
-        if ($staff->photo) {
-            Storage::disk('public')->delete($staff->photo);
-            $staff->update(['photo' => null]);
+        $photoPath = $staff->photo;
+        $staff->update(['photo' => null]);
+
+        if ($photoPath && ! User::query()->where('photo', $photoPath)->exists()) {
+            Storage::disk('public')->delete($photoPath);
         }
 
         return back()->with('success', 'Photo supprimée.');

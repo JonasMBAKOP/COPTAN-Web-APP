@@ -574,6 +574,8 @@ Route::middleware(['auth', 'permission:view-finances'])
             Route::post('/students/{enrollment}/bulk-pay',
                 [FinanceController::class, 'bulkPay'])
                 ->name('bulk-pay');
+            Route::delete('/payments/{payment}', [FinanceController::class, 'deletePayment'])
+                ->name('payment.delete');
             // Manual insolvables management
             Route::get('/insolvables/create', [FinanceController::class, 'createManualInsolvable'])->name('insolvables.create');
             Route::post('/insolvables', [FinanceController::class, 'storeManualInsolvable'])->name('insolvables.store');
