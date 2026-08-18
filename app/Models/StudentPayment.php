@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 
 class StudentPayment extends Model
 {
@@ -37,6 +38,12 @@ class StudentPayment extends Model
     protected static function booted(): void
     {
         static::created(function (self $payment): void {
+            if (! Schema::hasColumn('student_payments', 'snapshot_total_due')
+                || ! Schema::hasColumn('student_payments', 'snapshot_total_paid')
+                || ! Schema::hasColumn('student_payments', 'snapshot_total_remaining')) {
+                return;
+            }
+
             if (
                 ! is_null($payment->snapshot_total_due)
                 && ! is_null($payment->snapshot_total_paid)
@@ -53,7 +60,9 @@ class StudentPayment extends Model
             $feeStructure = $enrollment->classGroup()->with('feeStructures.installments')->first()?->feeStructures->first();
             $totalDue = (int) ($feeStructure?->installments->sum('amount') ?? 0);
             $totalPaid = (int) static::visible()->where('student_enrollment_id', $enrollment->id)->sum('amount_paid');
-            $totalScholarship = (int) static::visible()->where('student_enrollment_id', $enrollment->id)->sum('scholarship_amount');
+            $totalScholarship = Schema::hasColumn('student_payments', 'scholarship_amount')
+                ? (int) static::visible()->where('student_enrollment_id', $enrollment->id)->sum('scholarship_amount')
+                : 0;
             $totalRemaining = max(0, $totalDue - ($totalPaid + $totalScholarship));
 
             $payment->forceFill([

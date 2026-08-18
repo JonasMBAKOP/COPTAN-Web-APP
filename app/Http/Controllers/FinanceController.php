@@ -18,6 +18,9 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 class FinanceController extends Controller
 {
@@ -412,7 +415,8 @@ class FinanceController extends Controller
                 . "de cette tranche ({$remaining} FCFA). Le paiement a été refusé.");
         }
 
-        $payment = StudentPayment::create([
+        try {
+            $payment = StudentPayment::create([
             'student_enrollment_id' => $enrollment->id,
             'fee_installment_id'    => $request->fee_installment_id,
             'amount_paid'           => $request->amount_paid,
@@ -422,7 +426,15 @@ class FinanceController extends Controller
             'receipt_number'        => StudentPayment::generateReceiptNumber(),
             'recorded_by'           => Auth::id(),
             'notes'                 => $request->notes,
-        ]);
+            ]);
+        } catch (Throwable $exception) {
+            Log::error('Payment recording failed', [
+                'enrollment_id' => $enrollment->id,
+                'exception' => $exception->getMessage(),
+            ]);
+
+            return back()->withInput()->with('error', 'Le paiement n’a pas pu être enregistré. Vérifiez la configuration de la base de données.');
+        }
 
         AuditLog::log('payment_recorded', $payment);
 
@@ -506,7 +518,8 @@ class FinanceController extends Controller
             ?? optional($request->user())->id
             ?? User::query()->value('id');
 
-        $bulkPayment = StudentPayment::create([
+        try {
+            $bulkPayment = StudentPayment::create([
             'student_enrollment_id' => $enrollment->id,
             'fee_installment_id'    => null,
             'amount_paid'           => $remainingAmount,
@@ -520,7 +533,19 @@ class FinanceController extends Controller
                 ? 'Paiement en bloc — bourse de ' . number_format($scholarshipAmount) . ' FCFA'
                 : 'Paiement en bloc',
             'is_bulk'               => true,
-        ]);
+            ]);
+        } catch (Throwable $exception) {
+            Log::error('Bulk payment parent creation failed', [
+                'enrollment_id' => $enrollment->id,
+                'exception' => $exception->getMessage(),
+            ]);
+
+            if ($request->ajax()) {
+                return response()->json(['error' => 'Le paiement en bloc n’a pas pu être enregistré. Vérifiez la configuration de la base de données.'], 500);
+            }
+
+            return back()->withInput()->with('error', 'Le paiement en bloc n’a pas pu être enregistré. Vérifiez la configuration de la base de données.');
+        }
 
         // Distribute combined coverage (cash + scholarship) across installments.
         $coverage = $remainingAmount + $scholarshipAmount;
@@ -577,11 +602,15 @@ class FinanceController extends Controller
         $totalScholarship = (int) StudentPayment::visible()->where('student_enrollment_id', $enrollment->id)->sum('scholarship_amount');
         $totalRemaining = max(0, $feeTotal - ($totalPaid + $totalScholarship));
 
-        $bulkPayment->forceFill([
-            'snapshot_total_due'       => $feeTotal,
-            'snapshot_total_paid'      => $totalPaid,
-            'snapshot_total_remaining' => $totalRemaining,
-        ])->saveQuietly();
+        if (Schema::hasColumn('student_payments', 'snapshot_total_due')
+            && Schema::hasColumn('student_payments', 'snapshot_total_paid')
+            && Schema::hasColumn('student_payments', 'snapshot_total_remaining')) {
+            $bulkPayment->forceFill([
+                'snapshot_total_due'       => $feeTotal,
+                'snapshot_total_paid'      => $totalPaid,
+                'snapshot_total_remaining' => $totalRemaining,
+            ])->saveQuietly();
+        }
 
         AuditLog::log('bulk_payment_recorded', $bulkPayment);
 
