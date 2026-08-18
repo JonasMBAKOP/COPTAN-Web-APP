@@ -394,14 +394,18 @@ class FinanceController extends Controller
         }
 
         // Vérifier qu'on ne dépasse pas le montant de la tranche en tenant compte des bourses déjà appliquées
+        $hasScholarshipColumn = Schema::hasColumn('student_payments', 'scholarship_amount');
         $alreadyPaid = StudentPayment::where([
             'student_enrollment_id' => $enrollment->id,
             'fee_installment_id'    => $installment->id,
-        ])->sum('amount_paid')
-          + StudentPayment::where([
+        ])->sum('amount_paid');
+
+        if ($hasScholarshipColumn) {
+            $alreadyPaid += StudentPayment::where([
             'student_enrollment_id' => $enrollment->id,
             'fee_installment_id'    => $installment->id,
-        ])->sum('scholarship_amount');
+            ])->sum('scholarship_amount');
+        }
 
         $remaining = max(0, (int) $installment->amount - $alreadyPaid);
 
@@ -459,6 +463,15 @@ class FinanceController extends Controller
 
         $remainingAmount = (int) round($request->amount_paid);
         $scholarshipAmount = (int) round($request->input('scholarship_amount', 0));
+        $hasScholarshipColumn = Schema::hasColumn('student_payments', 'scholarship_amount');
+
+        if ($scholarshipAmount > 0 && ! $hasScholarshipColumn) {
+            $message = 'La colonne des bourses est absente de la base de données. Exécutez les migrations puis réessayez.';
+            if ($request->ajax()) {
+                return response()->json(['error' => $message], 500);
+            }
+            return back()->withInput()->with('error', $message);
+        }
 
         if ($remainingAmount <= 0 && $scholarshipAmount <= 0) {
             return back()->with('error', 'Le montant à payer ou la bourse doit être supérieur à 0.');
@@ -468,12 +481,20 @@ class FinanceController extends Controller
             return back()->with('error', 'Le montant de la bourse ne peut pas être négatif.');
         }
 
-        $installments = $feeStructure->installments()->with('payments')->get();
+        $installments = $feeStructure->installments()->get();
+        $paymentColumns = ['fee_installment_id', 'amount_paid'];
+        if ($hasScholarshipColumn) {
+            $paymentColumns[] = 'scholarship_amount';
+        }
+        $paymentsByInstallment = StudentPayment::query()
+            ->where('student_enrollment_id', $enrollment->id)
+            ->whereIn('fee_installment_id', $installments->pluck('id'))
+            ->get($paymentColumns)
+            ->groupBy('fee_installment_id');
         $remainingByInstallment = [];
         foreach ($installments as $installment) {
-            $paidAlready = $installment->payments
-                ->where('student_enrollment_id', $enrollment->id)
-                ->sum(fn($payment) => (int) $payment->amount_paid + (int) $payment->scholarship_amount);
+            $paidAlready = $paymentsByInstallment->get($installment->id, collect())
+                ->sum(fn($payment) => (int) $payment->amount_paid + ($hasScholarshipColumn ? (int) $payment->scholarship_amount : 0));
             $remainingByInstallment[$installment->id] = max(0, (int) $installment->amount - $paidAlready);
         }
 
@@ -518,12 +539,13 @@ class FinanceController extends Controller
             ?? optional($request->user())->id
             ?? User::query()->value('id');
 
+        DB::beginTransaction();
+
         try {
-            $bulkPayment = StudentPayment::create([
+            $bulkPaymentData = [
             'student_enrollment_id' => $enrollment->id,
             'fee_installment_id'    => null,
             'amount_paid'           => $remainingAmount,
-            'scholarship_amount'    => $scholarshipAmount,
             'payment_date'          => $paymentDate,
             'payment_method'        => $paymentMethod,
             'reference'             => null,
@@ -533,8 +555,14 @@ class FinanceController extends Controller
                 ? 'Paiement en bloc — bourse de ' . number_format($scholarshipAmount) . ' FCFA'
                 : 'Paiement en bloc',
             'is_bulk'               => true,
-            ]);
+            ];
+            if ($hasScholarshipColumn) {
+                $bulkPaymentData['scholarship_amount'] = $scholarshipAmount;
+            }
+
+            $bulkPayment = StudentPayment::create($bulkPaymentData);
         } catch (Throwable $exception) {
+            DB::rollBack();
             Log::error('Bulk payment parent creation failed', [
                 'enrollment_id' => $enrollment->id,
                 'exception' => $exception->getMessage(),
@@ -575,12 +603,11 @@ class FinanceController extends Controller
 
             $allocationIndex++;
 
-            StudentPayment::create([
+            $allocationData = [
                 'student_enrollment_id' => $enrollment->id,
                 'parent_payment_id'     => $bulkPayment->id,
                 'fee_installment_id'    => $installment->id,
                 'amount_paid'           => $useCash,
-                'scholarship_amount'    => $useScholarship,
                 'payment_date'          => $paymentDate,
                 'payment_method'        => $paymentMethod,
                 'reference'             => null,
@@ -588,7 +615,28 @@ class FinanceController extends Controller
                 'recorded_by'           => $recordedById,
                 'notes'                 => 'Paiement en bloc',
                 'is_bulk'               => false,
-            ]);
+            ];
+            if ($hasScholarshipColumn) {
+                $allocationData['scholarship_amount'] = $useScholarship;
+            }
+
+            try {
+                StudentPayment::create($allocationData);
+            } catch (Throwable $exception) {
+                DB::rollBack();
+                Log::error('Bulk payment allocation failed', [
+                    'enrollment_id' => $enrollment->id,
+                    'parent_payment_id' => $bulkPayment->id,
+                    'installment_id' => $installment->id,
+                    'exception' => $exception->getMessage(),
+                ]);
+
+                $message = 'Le paiement en bloc n’a pas pu être enregistré. Vérifiez la configuration de la base de données.';
+                if ($request->ajax()) {
+                    return response()->json(['error' => $message], 500);
+                }
+                return back()->withInput()->with('error', $message);
+            }
 
             $allocated += $need;
             $remainingByInstallment[$installment->id] = $available - $need;
@@ -599,7 +647,9 @@ class FinanceController extends Controller
         // Update parent's snapshot totals to reflect current state
         $feeTotal = $feeStructure->installments->sum('amount');
         $totalPaid = (int) StudentPayment::visible()->where('student_enrollment_id', $enrollment->id)->sum('amount_paid');
-        $totalScholarship = (int) StudentPayment::visible()->where('student_enrollment_id', $enrollment->id)->sum('scholarship_amount');
+        $totalScholarship = $hasScholarshipColumn
+            ? (int) StudentPayment::visible()->where('student_enrollment_id', $enrollment->id)->sum('scholarship_amount')
+            : 0;
         $totalRemaining = max(0, $feeTotal - ($totalPaid + $totalScholarship));
 
         if (Schema::hasColumn('student_payments', 'snapshot_total_due')
@@ -611,6 +661,8 @@ class FinanceController extends Controller
                 'snapshot_total_remaining' => $totalRemaining,
             ])->saveQuietly();
         }
+
+        DB::commit();
 
         AuditLog::log('bulk_payment_recorded', $bulkPayment);
 
