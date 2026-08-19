@@ -145,7 +145,7 @@
                 label="Enseignants & Staff"
                 href="{{ route('staff.index') }}"
                 :active="request()->routeIs('staff.*') && !request()->routeIs('staff.presences.*') && !request()->routeIs('staff.passage-planning') && !request()->routeIs('staff.salaries') && !request()->routeIs('staff.salary.edit')" />
-            
+
             <x-sidebar-item
                 icon="calendar"
                 label="Planning de passage"

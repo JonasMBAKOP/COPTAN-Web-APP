@@ -412,6 +412,8 @@ Route::middleware(['auth', 'permission:view-staff'])
             ->name('presences.dossier');
         Route::get('/presences/mark', [\App\Http\Controllers\PresenceController::class, 'mark'])
             ->name('presences.mark');
+        Route::get('/presences/print', [\App\Http\Controllers\PresenceController::class, 'print'])
+            ->name('presences.print');
         Route::post('/presences', [\App\Http\Controllers\PresenceController::class, 'store'])
             ->name('presences.store');
         Route::get('/planning-passage/preview', [StaffController::class, 'previewPassagePlanning'])
@@ -445,6 +447,9 @@ Route::middleware(['auth', 'permission:view-health'])
     ->prefix('infirmary')
     ->name('infirmary.')
     ->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\InfirmaryController::class, 'dashboard'])
+            ->middleware('role:infirmier')
+            ->name('dashboard');
         Route::get('/', [\App\Http\Controllers\InfirmaryController::class, 'index'])->name('index');
         Route::get('/print', [\App\Http\Controllers\InfirmaryController::class, 'print'])->name('print');
         Route::get('/patients', [\App\Http\Controllers\InfirmaryController::class, 'patients'])->name('patients');

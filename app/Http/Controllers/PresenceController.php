@@ -152,6 +152,48 @@ class PresenceController extends Controller
         return back()->with('success', 'Présences sauvegardées.');
     }
 
+    public function print(Request $request)
+    {
+        $date = $request->query('date') ? Carbon::parse($request->query('date')) : Carbon::today();
+        $contractType = $request->query('contract_type', 'all');
+        $dayNumber = (int) $date->isoWeekday();
+
+        $slots = TimetableSlot::with('classSubject.teacherAssignments.staff')
+            ->where('day_of_week', $dayNumber)
+            ->get();
+        $scheduledStaffIds = $slots->flatMap(fn ($slot) =>
+            $slot->classSubject?->teacherAssignments?->pluck('staff_id') ?? []
+        )->unique()->values()->all();
+        $permanentStaffIds = Staff::active()->where('contract_type', 'permanent')->pluck('id')->all();
+        $expectedIds = collect(array_merge($scheduledStaffIds, $permanentStaffIds))->unique()->values();
+
+        $staffQuery = Staff::whereIn('id', $expectedIds)
+            ->with('positions')
+            ->orderBy('last_name')
+            ->orderBy('first_name');
+        if ($contractType !== 'all') {
+            $contractValue = [
+                'semi' => 'semi_permanent',
+                'semi_permanent' => 'semi_permanent',
+            ][$contractType] ?? $contractType;
+            $staffQuery->where('contract_type', $contractValue);
+        }
+
+        $staff = $staffQuery->get();
+        $presences = StaffPresence::whereIn('staff_id', $staff->pluck('id'))
+            ->whereDate('date', $date->toDateString())
+            ->get()
+            ->keyBy('staff_id');
+        $school = \App\Models\SchoolSetting::instance();
+        $phones = \App\Models\SchoolPhone::orderByDesc('is_primary')->orderBy('id')->get();
+        $activeYear = \App\Models\AcademicYear::active();
+        $classGroup = (object) ['academicYear' => $activeYear];
+
+        return view('staff.presences.print', compact(
+            'date', 'contractType', 'staff', 'presences', 'school', 'phones', 'classGroup'
+        ));
+    }
+
     public function mark(Request $request)
     {
         $date = $request->query('date') ? Carbon::parse($request->query('date')) : Carbon::today();
