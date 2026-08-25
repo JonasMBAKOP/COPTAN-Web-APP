@@ -413,6 +413,7 @@
                             ->first()?->staff;
                         $category = $cs->subject->category;
                         $categoryName = strtolower(trim((string) ($category?->name_fr ?? '')));
+                        $categoryKey = preg_replace('/\s+/', ' ', trim(\Illuminate\Support\Str::ascii($categoryName)));
                         $categoryPalette = [
                             'matieres litteraires' => ['bg' => 'bg-blue-50', 'text' => 'text-blue-700', 'border' => 'border-blue-100'],
                             'matieres scientifiques' => ['bg' => 'bg-violet-50', 'text' => 'text-violet-700', 'border' => 'border-violet-100'],
@@ -426,7 +427,7 @@
                             ['bg' => 'bg-rose-50', 'text' => 'text-rose-700', 'border' => 'border-rose-100'],
                             ['bg' => 'bg-cyan-50', 'text' => 'text-cyan-700', 'border' => 'border-cyan-100'],
                         ];
-                        $categoryColor = $categoryPalette[$categoryName] ?? $categoryColors[crc32((string) ($category?->id ?? 0)) % count($categoryColors)];
+                        $categoryColor = $categoryPalette[$categoryKey] ?? $categoryColors[crc32((string) ($category?->id ?? 0)) % count($categoryColors)];
                     @endphp
                     <tr class="hover:bg-gray-50/70 transition-colors">
                         <td class="px-6 py-4 font-bold text-gray-800">

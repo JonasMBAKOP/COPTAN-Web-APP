@@ -107,8 +107,7 @@
         <div class="cert-signature__date">
             <div>
                 <span>Fait à {{ $city }}, le</span>
-                {{-- <strong>{{ now()->format('d/m/Y') }}</strong> --}}
-                <strong>_________________</strong>
+                <strong class="cert-generated-date">{{ now()->format('d/m/Y') }}</strong>
             </div>
             <div class="cert-translation">Done in {{ $city }}, on</div>
         </div>

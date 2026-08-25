@@ -10,7 +10,7 @@
 
     @page {
         size: A4 portrait;
-        margin: 6mm 8mm;
+        margin: 1mm;
     }
 
     * {
@@ -29,11 +29,15 @@
     }
 
     .bulletin-page {
-        width: 210mm;
-        min-height: 295mm;
-        margin: 0 auto;
-        padding: 0mm 2mm;
+        width: 208mm;
+        max-width: 100%;
+        min-height: 291mm;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 3mm 4mm;
         background: white;
+        border: 4px solid var(--bleu);
+        box-sizing: border-box;
         position: relative;
         overflow: hidden;
     }
@@ -86,6 +90,8 @@
         text-align: center;
         padding: 6px;
     }
+
+    .student-photo-fallback span { display: none; }
 
     .header-center {
         text-align: center;
