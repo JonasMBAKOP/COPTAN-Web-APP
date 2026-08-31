@@ -16,15 +16,33 @@ class AttendanceController extends Controller
     public function index(Request $request)
     {
         $activeYear = AcademicYear::active();
-        $date = Carbon::parse($request->input('date', now()->toDateString()));
-        if ($date->isFuture()) $date = today();
-        $classes = $activeYear ? ClassGroup::where('academic_year_id', $activeYear->id)->with('level.section')->orderBy('name')->get() : collect();
+        $user = Auth::user();
+        $isUnrestricted = $this->canManageAllAttendance($user);
+        $isTeacher = $user?->hasRole('enseignant') && ! $isUnrestricted;
+        $staffId = $user?->staff?->id;
+        $date = $isTeacher
+            ? today()
+            : Carbon::parse($request->input('date', now()->toDateString()));
+        $classes = $activeYear
+            ? ClassGroup::where('academic_year_id', $activeYear->id)
+                ->when($isTeacher, fn ($query) => $query->whereHas(
+                    'classSubjects.teacherAssignments', fn ($assignment) =>
+                        $assignment->where('staff_id', $staffId)
+                            ->where('academic_year_id', $activeYear->id)
+                ))
+                ->with('level.section')->orderBy('name')->get()
+            : collect();
         $selectedClass = $classes->firstWhere('id', (int) $request->input('class_id'));
         $periods = collect(); $enrollments = collect(); $existing = [];
 
         if ($selectedClass) {
             $slots = TimetableSlot::where('academic_year_id', $activeYear->id)
                 ->where('class_group_id', $selectedClass->id)->where('day_of_week', $date->dayOfWeekIso)
+                ->when($isTeacher, fn ($query) => $query->whereHas(
+                    'classSubject.teacherAssignments', fn ($assignment) =>
+                        $assignment->where('staff_id', $staffId)
+                            ->where('academic_year_id', $activeYear->id)
+                ))
                 ->with('classSubject.subject')->orderBy('period_index')->get();
             foreach ($slots as $slot) {
                 $count = max(1, (int) ($slot->periods_count ?: 1));
@@ -44,15 +62,37 @@ class AttendanceController extends Controller
                     ->each(fn ($absence) => $existing[$absence->student_enrollment_id.':'.$absence->timetable_slot_id.':'.$absence->timetable_period_index] = true);
             }
         }
-        return view('attendance.index', compact('activeYear', 'date', 'classes', 'selectedClass', 'periods', 'enrollments', 'existing'));
+        return view('attendance.index', compact('activeYear', 'date', 'classes', 'selectedClass', 'periods', 'enrollments', 'existing', 'isUnrestricted'));
     }
 
     public function store(Request $request)
     {
-        $data = $request->validate(['class_group_id' => ['required', 'integer', 'exists:class_groups,id'], 'absence_date' => ['required', 'date', 'before_or_equal:today'], 'periods' => ['required', 'array', 'min:1'], 'periods.*' => ['required', 'regex:/^slot-[0-9]+-[0-9]+$/'], 'attendance' => ['nullable', 'array']]);
-        $year = AcademicYear::active(); $class = ClassGroup::where('academic_year_id', $year?->id)->findOrFail($data['class_group_id']); $date = Carbon::parse($data['absence_date']);
+        $user = Auth::user();
+        $isUnrestricted = $this->canManageAllAttendance($user);
+        $rules = ['class_group_id' => ['required', 'integer', 'exists:class_groups,id'], 'absence_date' => ['required', 'date'], 'periods' => ['required', 'array', 'min:1'], 'periods.*' => ['required', 'regex:/^slot-[0-9]+-[0-9]+$/'], 'attendance' => ['nullable', 'array']];
+        if (! $isUnrestricted) $rules['absence_date'][] = 'before_or_equal:today';
+        $data = $request->validate($rules);
+        $year = AcademicYear::active();
+        $isTeacher = $user?->hasRole('enseignant') && ! $isUnrestricted;
+        $staffId = $user?->staff?->id;
+        $class = ClassGroup::where('academic_year_id', $year?->id)->findOrFail($data['class_group_id']);
+        $date = Carbon::parse($data['absence_date']);
+        abort_if($isTeacher && $date->toDateString() !== today()->toDateString(), 403,
+            'Un enseignant ne peut enregistrer que l’appel du jour.');
+        abort_if($isTeacher && ! $class->classSubjects()->whereHas(
+            'teacherAssignments', fn ($assignment) =>
+                $assignment->where('staff_id', $staffId)
+                    ->where('academic_year_id', $year?->id)
+        )->exists(), 403, 'Cette classe ne vous est pas attribuée.');
         $wanted = collect($data['periods']); $definitions = collect();
         $slots = TimetableSlot::where(['academic_year_id' => $class->academic_year_id, 'class_group_id' => $class->id, 'day_of_week' => $date->dayOfWeekIso])->get();
+        if ($isTeacher) {
+            $slots = $slots->filter(fn ($slot) => $slot->classSubject()
+                ->whereHas('teacherAssignments', fn ($assignment) =>
+                    $assignment->where('staff_id', $staffId)
+                        ->where('academic_year_id', $year?->id)
+                )->exists());
+        }
         foreach ($slots as $slot) for ($offset = 0; $offset < max(1, (int) ($slot->periods_count ?: 1)); $offset++) {
             $index = (int) $slot->period_index + $offset; $key = "slot-{$slot->id}-{$index}";
             if ($wanted->contains($key)) $definitions->push(['key' => $key, 'slot_id' => $slot->id, 'index' => $index, 'label' => 'Période '.$index, 'class_subject_id' => $slot->class_subject_id]);
@@ -68,5 +108,11 @@ class AttendanceController extends Controller
             } else $query->where('is_justified', false)->delete();
         }
         return redirect()->route('attendance.index', ['class_id' => $class->id, 'date' => $date->toDateString()])->with('success', "Appel enregistré : {$saved} absence(s) sur les périodes sélectionnées.");
+    }
+    private function canManageAllAttendance($user): bool
+    {
+        if (! $user) return false;
+        if ($user->hasAnyRole(['super-admin', 'directeur', 'censeur', 'surveillant-general'])) return true;
+        return $user->staff?->positions?->contains(fn ($position) => in_array($position->position, ['directeur', 'censeur', 'prefet_des_etudes', 'surveillant_general'], true)) ?? false;
     }
 }

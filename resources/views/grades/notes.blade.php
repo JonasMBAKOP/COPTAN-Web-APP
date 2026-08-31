@@ -12,6 +12,15 @@
 
 @section('content')
 
+<style>
+    .grades-notes-page .grades-notes-results-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .grades-notes-page .grades-notes-results-scroll table { min-width: 680px; }
+</style>
+<div class="grades-notes-page -mx-2 -mt-2 -mb-2 lg:-mx-4 lg:-mt-4 lg:-mb-4">
+
 @if(!$activeYear)
 <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
     <p class="text-amber-700 font-semibold"><svg class="inline h-4 w-4 mr-1 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Aucune année scolaire active.</p>
@@ -175,7 +184,7 @@
     @endcan
 </div>
 
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+<div class="grades-notes-results-scroll bg-white rounded-2xl shadow-sm border border-gray-100">
     <table class="w-full">
         <thead>
             <tr style="background:#F8FAFC; border-bottom:2px solid #E5E7EB;">
@@ -281,6 +290,7 @@
 @endif
 @endif
 
+</div>
 @endsection
 
 @push('scripts')
