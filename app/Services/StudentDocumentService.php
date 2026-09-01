@@ -240,12 +240,21 @@ class StudentDocumentService
             return collect();
         }
 
-        return $enrollment->classGroup
+        $subjects = $enrollment->classGroup
             ->classSubjects()
             ->where('is_active', true)
             ->with(['subject.category'])
             ->get()
             ->sortBy(fn ($cs) => $cs->subject?->name_fr ?? $cs->subject?->name_en ?? '');
+
+        if ($enrollment->isEligibleForSubjectSelection()) {
+            $selectedIds = $enrollment->selectedClassSubjects()->pluck('class_subjects.id');
+            if ($selectedIds->isNotEmpty()) {
+                $subjects = $subjects->whereIn('id', $selectedIds)->values();
+            }
+        }
+
+        return $subjects;
     }
 
     public function sequencesForYear(?AcademicYear $year): Collection

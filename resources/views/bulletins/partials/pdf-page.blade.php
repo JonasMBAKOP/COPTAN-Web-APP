@@ -44,7 +44,16 @@
     $groupedDetails = collect($details)->groupBy(function($detail) {
         return $detail['subject']->category->name_fr ?? 'AUTRES MATIERES';
     });
-    $categoryLetters = ['A', 'B', 'C', 'D', 'E'];
+    $categoryCode = function (int $index): string {
+        $code = '';
+        do {
+            $code = chr(65 + ($index % 26)) . $code;
+            $index = intdiv($index, 26) - 1;
+        } while ($index >= 0);
+        return $code;
+    };
+    $categoryCodes = collect(range(0, max(0, $groupedDetails->count() - 1)))
+        ->map($categoryCode)->all();
     $catIndex = 0;
     $activeAppreciationCode = $average !== null
         ? \App\Models\AppreciationScale::forGrade((float) $average)?->code
@@ -122,6 +131,16 @@
     .bulletin-page .coptan-appreciations { grid-column: 2; grid-row: 1; }
     .bulletin-page .coptan-stats-secondary { grid-column: 3; grid-row: 1; }
     .bulletin-page .coptan-bottom-grid > div[style^="margin-top: 6px"] { grid-column: 1 / -1; }
+    .bulletin-page .student-info-row-one .student-sex-content {
+        display: block;
+        position: relative;
+        left: -38px !important;
+        margin-left: -34px !important;
+        white-space: nowrap;
+    }
+    .bulletin-page .student-info-row-three {
+        gap: 82px !important;
+    }
 </style>
 
 <div class="bulletin-page">
@@ -211,32 +230,41 @@
             <td style="border: none; padding: 0; vertical-align: top;">
                 <table style="width: 100%; border-collapse: collapse; border: none; background: transparent; font-size: 8px;">
                     <tbody>
-                    <tr>
-                        {{-- Ligne 1 : Nom et Prénom(s) | Matricule --}}
-                        <td style="border: none; padding: 2px 0; vertical-align: middle; width: 62%;">
+                    <tr class="student-info-row-one">
+                        {{-- Ligne 1 : Nom et Prénom(s) | Matricule | Sexe --}}
+                        <td style="border: none; padding: 2px 0; vertical-align: middle; width: 56%;">
                             <div style="display: inline-block; vertical-align: middle; margin-right: 4px; line-height: 1.1;">
                                 <span class="info-label" style="font-weight: 800; font-size: 7.5px;">Nom et Prénom(s)</span><br>
                                 <span class="info-sublabel" style="font-size: 5.5px; font-style: italic; color: #6B7280;">Student name</span>
                             </div>
                             <span class="info-value" style="font-weight: 800; font-size: 9px; vertical-align: middle;">: {{ strtoupper($enrollment->student->last_name . ' ' . $enrollment->student->first_name) }}</span>
                         </td>
-                        <td style="border: none; padding: 2px 0; vertical-align: middle;">
+                        <td style="border: none; padding: 2px 0; vertical-align: middle; width: 20%;">
                             <div style="display: inline-block; vertical-align: middle; margin-right: 4px; line-height: 1.1;">
                                 <span class="info-label" style="font-weight: 800; font-size: 7.5px;">Matricule</span><br>
                                 <span class="info-sublabel" style="font-size: 5.5px; font-style: italic; color: #6B7280;">Mat No</span>
                             </div>
                             <span class="info-value" style="font-weight: 800; font-size: 9px; vertical-align: middle;">: {{ $enrollment->student->matricule ?? '—' }}</span>
                         </td>
+                        <td class="student-sex-cell" style="border: none; padding: 2px 0; vertical-align: middle; width: 24%;">
+                            <div class="student-sex-content">
+                            <div style="display: inline-block; vertical-align: middle; margin-right: 4px; line-height: 1.1;">
+                                <span class="info-label" style="font-weight: 800; font-size: 7.5px;">Sexe</span><br>
+                                <span class="info-sublabel" style="font-size: 5.5px; font-style: italic; color: #6B7280;">Sex</span>
+                            </div>
+                            <span class="info-value" style="font-weight: 800; font-size: 9px; vertical-align: middle;">: {{ $enrollment->student->gender ?? '—' }}</span>
+                            </div>
+                        </td>
                     </tr>
                     <tr>
-                        {{-- Ligne 2 : Né(e) le / A | Sexe --}}
-                        <td style="border: none; padding: 2px 0; vertical-align: middle; width: 62%;">
+                        {{-- Ligne 2 : Né(e) le / A | Classe --}}
+                        <td style="border: none; padding: 2px 0; vertical-align: middle; width: 58%;">
                             {{-- <div style="display: inline-block; vertical-align: middle; margin-right: 4px; line-height: 1.1;">
                                 <span class="info-label" style="font-weight: 800; font-size: 7.5px;">Né(e) le / A</span><br>
                                 <span class="info-sublabel" style="font-size: 5.5px; font-style: italic; color: #6B7280;">Born on / At</span>
                             </div>
                             <span class="info-value" style="font-weight: 800; font-size: 9px; vertical-align: middle;">: {{ $enrollment->student->date_of_birth?->format('d/m/Y') ?? '—' }} à {{ strtoupper($enrollment->student->place_of_birth ?? '—') }}</span> --}}
-                            <div style="display: flex; gap: 70px;">
+                            <div style="display: flex; gap: 86px;">
                                 <div style="display: inline-flex; align-items: center;">
                                     <div style="display: inline-block; vertical-align: middle; margin-right: 4px; line-height: 1.1;">
                                         <span class="info-label" style="font-weight: 800; font-size: 7.5px;">Né(e) le </span><br>
@@ -253,25 +281,18 @@
                                 </div>
                             </div>  
                         </td>
-                        <td style="border: none; padding: 2px 0; vertical-align: middle;">
+                        <td style="border: none; padding: 2px 0; vertical-align: middle; width: 42%;">
                             <div style="display: inline-block; vertical-align: middle; margin-right: 4px; line-height: 1.1;">
-                                <span class="info-label" style="font-weight: 800; font-size: 7.5px;">Sexe</span><br>
-                                <span class="info-sublabel" style="font-size: 5.5px; font-style: italic; color: #6B7280;">Sex</span>
+                                <span class="info-label" style="font-weight: 800; font-size: 7.5px;">Classe</span><br>
+                                <span class="info-sublabel" style="font-size: 5.5px; font-style: italic; color: #6B7280;">Class</span>
                             </div>
-                            <span class="info-value" style="font-weight: 800; font-size: 9px; vertical-align: middle;">: {{ $enrollment->student->gender ?? '—' }}</span>
+                            <span class="info-value" style="font-weight: 800; font-size: 9px; vertical-align: middle;">: {{ $classGroup->full_name }}</span>
                         </td>
                     </tr>
                     <tr>
-                        {{-- Ligne 3 : Classe | Effectif | Redoublant --}}
+                        {{-- Ligne 3 : Effectif | Redoublant | Prof. Titulaire --}}
                         <td style="border: none; padding: 2px 0; vertical-align: middle;" colspan="2">
-                            <div style="display: flex; gap: 70px;">
-                                <div style="display: inline-flex; align-items: center;">
-                                    <div style="display: inline-block; margin-right: 4px; line-height: 1.1;">
-                                        <span class="info-label" style="font-weight: 800; font-size: 7.5px;">Classe</span><br>
-                                        <span class="info-sublabel" style="font-size: 5.5px; font-style: italic; color: #6B7280;">Class</span>
-                                    </div>
-                                    <span class="info-value" style="font-weight: 800; font-size: 9px;">: {{ $classGroup->full_name }}</span>
-                                </div>
+                            <div class="student-info-row-three" style="display: flex; gap: 82px;">
                                 <div style="display: inline-flex; align-items: center;">
                                     <div style="display: inline-block; margin-right: 4px; line-height: 1.1;">
                                         <span class="info-label" style="font-weight: 800; font-size: 7.5px;">Effectif</span><br>
@@ -286,24 +307,14 @@
                                     </div>
                                     <span class="info-value" style="font-weight: 800; font-size: 9px;">: {{ $isRepeating ? 'Oui' : 'Non' }}</span>
                                 </div>
+                                <div style="display: inline-flex; align-items: center;">
+                                    <div style="display: inline-block; margin-right: 4px; line-height: 1.1;">
+                                        <span class="info-label" style="font-weight: 800; font-size: 7.5px;">Prof. Titulaire</span><br>
+                                        <span class="info-sublabel" style="font-size: 5.5px; font-style: italic; color: #6B7280;">Class Master/Mistress</span>
+                                    </div>
+                                    <span class="info-value" style="font-weight: 800; font-size: 9px;">: {{ $classGroup->titularStaff?->full_name ?? '—' }}</span>
+                                </div>
                             </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        {{-- Ligne 4 : Prof. Titulaire | Chef d'établissement --}}
-                        <td style="border: none; padding: 2px 0; vertical-align: middle; width: 62%;">
-                            <div style="display: inline-block; vertical-align: middle; margin-right: 4px; line-height: 1.1;">
-                                <span class="info-label" style="font-weight: 800; font-size: 7.5px;">Prof. Titulaire</span><br>
-                                <span class="info-sublabel" style="font-size: 5.5px; font-style: italic; color: #6B7280;">Class Master/Mistress</span>
-                            </div>
-                            <span class="info-value" style="font-weight: 800; font-size: 9px; vertical-align: middle;">: {{ $classGroup->titularStaff?->full_name ?? '—' }}</span>
-                        </td>
-                        <td style="border: none; padding: 2px 0; vertical-align: middle;">
-                            <div style="display: inline-block; vertical-align: middle; margin-right: 4px; line-height: 1.1;">
-                                <span class="info-label" style="font-weight: 800; font-size: 7.5px;">Chef d'Établissement</span><br>
-                                <span class="info-sublabel" style="font-size: 5.5px; font-style: italic; color: #6B7280;">Principal</span>
-                            </div>
-                            <span class="info-value" style="font-weight: 800; font-size: 9px; vertical-align: middle;">: {{ $principalName }}</span>
                         </td>
                     </tr>
                     {{-- <tr> --}}
@@ -345,7 +356,7 @@
 
             @foreach($groupedDetails as $categoryName => $catDetails)
                 @php
-                    $letter = $categoryLetters[$catIndex++] ?? 'X';
+                    $letter = $categoryCodes[$catIndex++] ?? 'A';
                 @endphp
                 {{-- Ligne En-tête Catégorie --}}
                 <tr class="category-row" style="background: rgba(26,58,107,0.05); font-weight: bold;">
@@ -487,7 +498,7 @@
         </tbody>
         <tfoot>
             <tr style="background: #F1F5F9; color: #1F2937; font-weight: bold; font-size: 9px; border: 1px solid #9CA3AF;">
-                <td colspan="{{ 1 + $conditionalColsCount }}" style="text-align: center; font-weight: 900; text-transform: uppercase; padding: 2px 6px; line-height: 1.05;">TOTAL A+B+C</td>
+                <td colspan="{{ 1 + $conditionalColsCount }}" style="text-align: center; font-weight: 900; text-transform: uppercase; padding: 2px 6px; line-height: 1.05;">TOTAL {{ implode('+', $categoryCodes) }}</td>
                 <td style="text-align: center; font-weight: 900;">{{ $sumCoef }}</td>
                 <td style="text-align: center; font-weight: 900;">{{ number_format($sumPoints, 2) }}</td>
                 @if($type !== 'sequentiel')

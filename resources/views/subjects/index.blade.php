@@ -141,13 +141,13 @@
         <form method="POST" action="{{ route('subjects.categories.store') }}" class="mt-6 space-y-4">
             @csrf
             <div>
-                <label for="category-name-fr" class="mb-1.5 block text-sm font-semibold text-gray-700">Nom en français</label>
+                <label for="category-name-fr" class="mb-1.5 block text-sm font-semibold text-gray-700">Nom de la catégorie</label>
                 <input id="category-name-fr" name="name_fr" required maxlength="100" value="{{ old('name_fr') }}" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-[#1A3A6B] focus:ring-2 focus:ring-blue-100" autofocus>
             </div>
-            <div>
+            {{-- <div>
                 <label for="category-name-en" class="mb-1.5 block text-sm font-semibold text-gray-700">Nom en anglais <span class="font-normal text-gray-400">(facultatif)</span></label>
                 <input id="category-name-en" name="name_en" maxlength="100" value="{{ old('name_en') }}" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-[#1A3A6B] focus:ring-2 focus:ring-blue-100">
-            </div>
+            </div> --}}
             <div class="flex justify-end gap-3 border-t border-gray-100 pt-5">
                 <button type="button" @click="categoryModal = false" class="rounded-xl px-4 py-2.5 text-sm font-bold text-gray-600 transition hover:bg-gray-100">Annuler</button>
                 <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-[#1A3A6B] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#163450]"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Créer la catégorie</button>
@@ -778,8 +778,8 @@
             <div class="flex items-start justify-between gap-4"><div><h2 class="text-lg font-black text-gray-900">Modifier la catégorie</h2><p class="mt-1 text-sm text-gray-500">Les matières déjà associées seront conservées.</p></div><button type="button" @click="editCategory = null; categoryListModal = true" class="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700" aria-label="Fermer"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
             <form x-show="editCategory" :action="editCategory ? '{{ route('subjects.categories.update', ['category' => '__CATEGORY__']) }}'.replace('__CATEGORY__', editCategory.id) : ''" method="POST" class="mt-6 space-y-4">
                 @csrf @method('PUT')
-                <div><label class="mb-1.5 block text-sm font-semibold text-gray-700">Nom en français</label><input name="name_fr" required maxlength="100" x-model="editCategory.name_fr" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-[#1A3A6B] focus:ring-2 focus:ring-blue-100"></div>
-                <div><label class="mb-1.5 block text-sm font-semibold text-gray-700">Nom en anglais <span class="font-normal text-gray-400">(facultatif)</span></label><input name="name_en" maxlength="100" x-model="editCategory.name_en" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-[#1A3A6B] focus:ring-2 focus:ring-blue-100"></div>
+                <div><label class="mb-1.5 block text-sm font-semibold text-gray-700">Nom de la catégorie</label><input name="name_fr" required maxlength="100" x-model="editCategory.name_fr" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-[#1A3A6B] focus:ring-2 focus:ring-blue-100"></div>
+                {{-- <div><label class="mb-1.5 block text-sm font-semibold text-gray-700">Nom en anglais <span class="font-normal text-gray-400">(facultatif)</span></label><input name="name_en" maxlength="100" x-model="editCategory.name_en" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-[#1A3A6B] focus:ring-2 focus:ring-blue-100"></div> --}}
                 <div class="flex justify-end gap-3 border-t border-gray-100 pt-5"><button type="button" @click="editCategory = null; categoryListModal = true" class="rounded-xl px-4 py-2.5 text-sm font-bold text-gray-600 transition hover:bg-gray-100">Annuler</button><button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-[#1A3A6B] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#163450]"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Enregistrer</button></div>
             </form>
         </div>

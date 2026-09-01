@@ -117,6 +117,15 @@ class LivretController extends Controller
             ->with(['subject.category'])
             ->get();
 
+        $selectedSubjectIds = $enrollment->isEligibleForSubjectSelection()
+            ? $enrollment->selectedClassSubjects()->pluck('class_subjects.id')
+            : collect();
+        if ($selectedSubjectIds->isNotEmpty()) {
+            $classSubjects = $classSubjects
+                ->whereIn('id', $selectedSubjectIds)
+                ->values();
+        }
+
         // Toutes les séquences de l'année (flat)
         $allSequences = $trimesters->flatMap->sequences;
 

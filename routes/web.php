@@ -515,6 +515,13 @@ Route::middleware(['auth', 'permission:view-students'])
             Route::delete('/{student}/photo',
                 [StudentController::class, 'deletePhoto'])
                 ->name('photo.delete');
+
+            Route::get('/enrollments/{enrollment}/subjects',
+                [StudentController::class, 'subjects'])
+                ->name('enrollments.subjects');
+            Route::put('/enrollments/{enrollment}/subjects',
+                [StudentController::class, 'updateSubjects'])
+                ->name('enrollments.subjects.update');
             
             // CRUD
             Route::get('/create',

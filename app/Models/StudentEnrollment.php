@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\AuditLog;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class StudentEnrollment extends Model
 {
@@ -82,6 +83,30 @@ class StudentEnrollment extends Model
     public function disciplineIncidents()
     {
         return $this->hasMany(DisciplineIncident::class);
+    }
+
+    public function selectedClassSubjects()
+    {
+        return $this->belongsToMany(
+            ClassSubject::class,
+            'student_subjects',
+            'student_enrollment_id',
+            'class_subject_id'
+        )->withTimestamps();
+    }
+
+    public function isEligibleForSubjectSelection(): bool
+    {
+        $section = $this->classGroup?->level?->section;
+        $levelName = Str::lower((string) $this->classGroup?->level?->name);
+        $sectionName = Str::lower((string) $section?->name);
+
+        if (! $section || ! Str::contains($sectionName, 'anglophone')) {
+            return false;
+        }
+
+        return (bool) preg_match('/\bform\s*([0-9]+)/i', $levelName, $matches)
+            && (int) $matches[1] >= 4;
     }
 
     public function enrollmentAudit()

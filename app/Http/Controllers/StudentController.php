@@ -364,7 +364,8 @@ class StudentController extends Controller
             $activeEnrollment->load([
                 'classGroup.classSubjects' => fn ($query) => $query
                     ->where('is_active', true)
-                    ->with('subject'),
+                    ->with('subject.category'),
+                'selectedClassSubjects.subject.category',
                 'grades' => fn ($query) => $query
                     ->with(['classSubject.subject', 'sequence'])
                     ->orderByDesc('updated_at'),
@@ -379,6 +380,7 @@ class StudentController extends Controller
             ? $this->enrollments->previousEnrollmentForRenewal($student, $activeYear)
             : null;
         $isEditable = $this->enrollments->isEditableInActiveYear($student);
+        $canChooseSubjects = $activeEnrollment?->isEligibleForSubjectSelection() ?? false;
         $canEnroll  = $this->enrollments->canEnrollInActiveYear($student);
         $transferClasses = $activeYear
             ? ClassGroup::where('academic_year_id', $activeYear->id)
@@ -389,8 +391,55 @@ class StudentController extends Controller
 
         return view('students.show', compact(
             'student', 'activeEnrollment', 'previousEnrollment',
-            'activeYear', 'isEditable', 'canEnroll', 'transferClasses'
+            'activeYear', 'isEditable', 'canEnroll', 'transferClasses',
+            'canChooseSubjects'
         ));
+    }
+
+    public function subjects(StudentEnrollment $enrollment)
+    {
+        $enrollment->load([
+            'student',
+            'classGroup.level.section',
+            'classGroup.classSubjects' => fn ($query) => $query
+                ->where('is_active', true)
+                ->with('subject.category')
+                ->orderBy('subject_id'),
+            'selectedClassSubjects',
+        ]);
+
+        abort_unless($enrollment->isActive() && $enrollment->isEligibleForSubjectSelection(), 404);
+
+        $subjectsByCategory = $enrollment->classGroup->classSubjects
+            ->groupBy(fn ($classSubject) => $classSubject->subject?->category?->name_fr ?? 'Autres matières');
+        $selectedIds = $enrollment->selectedClassSubjects->pluck('id')->all();
+
+        return view('students.subjects', compact('enrollment', 'subjectsByCategory', 'selectedIds'));
+    }
+
+    public function updateSubjects(Request $request, StudentEnrollment $enrollment)
+    {
+        $enrollment->load(['classGroup.level.section', 'classGroup.classSubjects']);
+        abort_unless($enrollment->isActive() && $enrollment->isEligibleForSubjectSelection(), 404);
+
+        $classSubjectIds = $enrollment->classGroup->classSubjects
+            ->where('is_active', true)->pluck('id')->all();
+        $selectedIds = collect($request->input('class_subject_ids', []))
+            ->map(fn ($id) => (int) $id)
+            ->unique()->values();
+
+        if ($selectedIds->count() < 10) {
+            return back()->withInput()->with('error', 'Sélectionnez au moins 10 matières.');
+        }
+
+        if ($selectedIds->diff($classSubjectIds)->isNotEmpty()) {
+            abort(422, 'Une matière sélectionnée n’est pas assignée à la classe de cet élève.');
+        }
+
+        $enrollment->selectedClassSubjects()->sync($selectedIds->all());
+
+        return redirect()->route('students.show', $enrollment->student_id)
+            ->with('success', 'Les matières choisies ont été enregistrées.');
     }
 
     // ── FORMULAIRE MODIFICATION ───────────────────────────────────────────
@@ -689,6 +738,9 @@ class StudentController extends Controller
 
                 // Snapshot all enrollment-owned records before the cascade delete.
                 $relatedRows = $this->snapshotTransferRows($enrollment->id);
+                // A subject choice belongs to the old class context and must never
+                // be carried into the destination class.
+                $enrollment->selectedClassSubjects()->detach();
                 $enrollment->delete();
 
                 $newEnrollment = StudentEnrollment::create([

@@ -32,10 +32,14 @@ class GradeCalculationService
     public function sequenceAverage(StudentEnrollment $enrollment, Sequence $sequence): ?float
     {
         $grades = $this->sequenceGrades($enrollment, $sequence);
+        $selectedIds = $this->selectedSubjectIds($enrollment);
         $totalPoints = 0;
         $totalCoef   = 0;
 
         foreach ($grades as $g) {
+            if ($selectedIds && ! $selectedIds->contains($g->class_subject_id)) {
+                continue;
+            }
             if ($g->is_absent) {
                 $totalCoef += $g->classSubject->coefficient;
                 continue;
@@ -117,6 +121,10 @@ class GradeCalculationService
         $classGroup = $enrollment->classGroup;
         $sequences = $trimester->sequences;
         $classSubjects = $classGroup->classSubjects()->where('is_active', true)->get();
+        $selectedIds = $this->selectedSubjectIds($enrollment);
+        if ($selectedIds) {
+            $classSubjects = $classSubjects->whereIn('id', $selectedIds);
+        }
 
         $totalPoints = 0;
         $totalCoef   = 0;
@@ -142,6 +150,10 @@ class GradeCalculationService
 
         $classGroup = $enrollment->classGroup;
         $classSubjects = $classGroup->classSubjects()->where('is_active', true)->get();
+        $selectedIds = $this->selectedSubjectIds($enrollment);
+        if ($selectedIds) {
+            $classSubjects = $classSubjects->whereIn('id', $selectedIds);
+        }
 
         $totalPoints = 0;
         $totalCoef   = 0;
@@ -236,6 +248,7 @@ class GradeCalculationService
                 : null;
 
             $details->push([
+                'class_subject_id' => $cs->id,
                 'subject'      => $cs->subject,
                 'coefficient'  => $cs->coefficient,
                 'teacher'      => $teacherFormatted,
@@ -251,6 +264,18 @@ class GradeCalculationService
         }
 
         return $details;
+    }
+
+    /** Return selected subjects, or null when the student uses the full class list. */
+    private function selectedSubjectIds(StudentEnrollment $enrollment): ?Collection
+    {
+        if (! $enrollment->isEligibleForSubjectSelection()) {
+            return null;
+        }
+
+        $ids = $enrollment->selectedClassSubjects()->pluck('class_subjects.id');
+
+        return $ids->isNotEmpty() ? $ids : null;
     }
 
     /**

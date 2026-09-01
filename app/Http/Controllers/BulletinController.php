@@ -175,6 +175,9 @@ class BulletinController extends Controller
         ]);
 
         $classGroup = $enrollment->classGroup;
+        $selectedSubjectIds = $enrollment->isEligibleForSubjectSelection()
+            ? $enrollment->selectedClassSubjects()->pluck('class_subjects.id')
+            : collect();
         $school     = \App\Models\SchoolSetting::instance();
         $phones     = \App\Models\SchoolPhone::orderByDesc('is_primary')->get();
         $agreements = \App\Models\SchoolAgreement::orderBy('cycle')->get();
@@ -280,6 +283,12 @@ class BulletinController extends Controller
             $distinction = $this->getDistinction($average);
         }
 
+        if ($selectedSubjectIds->isNotEmpty()) {
+            $details = $details->filter(function ($detail) use ($selectedSubjectIds) {
+                return $selectedSubjectIds->contains($detail['class_subject_id'] ?? null);
+            })->values();
+        }
+
         $classSize = StudentEnrollment::where([
             'class_group_id'   => $classGroup->id,
             'academic_year_id' => $classGroup->academic_year_id,
@@ -370,6 +379,7 @@ class BulletinController extends Controller
             }
 
             return [
+                'class_subject_id' => $cs->id,
                 'subject'      => $cs->subject,
                 'coefficient'  => $cs->coefficient,
                 'teacher'      => $teacherMap[$cs->id] ?? null,
@@ -440,6 +450,7 @@ class BulletinController extends Controller
             }
 
             return [
+                'class_subject_id'   => $cs->id,
                 'subject'             => $cs->subject,
                 'coefficient'         => $cs->coefficient,
                 'teacher'             => $teacherMap[$cs->id] ?? null,

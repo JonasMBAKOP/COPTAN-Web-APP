@@ -288,13 +288,19 @@
 {{-- ══════════════════════════════════════════════════════════════════════ --}}
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-5">
     <div class="flex overflow-x-auto">
-        @foreach([
+        @php
+            $studentTabs = [
             ['key' => 'info',     'label' => 'Informations',     'icon' => 'user'],
             ['key' => 'notes',    'label' => 'Notes & Moyennes', 'icon' => 'chart'],
             ['key' => 'absences', 'label' => 'Absences',         'icon' => 'calendar'],
             ['key' => 'finances', 'label' => 'Finances',         'icon' => 'cash'],
             ['key' => 'history',  'label' => 'Historique',       'icon' => 'clock'],
-        ] as $t)
+            ];
+            if ($canChooseSubjects) {
+                array_splice($studentTabs, 1, 0, [['key' => 'subjects', 'label' => 'Matières', 'icon' => 'book']]);
+            }
+        @endphp
+        @foreach($studentTabs as $t)
         <button @click="tab = '{{ $t['key'] }}'"
                 :class="tab === '{{ $t['key'] }}'
                     ? 'border-b-2 font-semibold'
@@ -322,6 +328,10 @@
                          2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10
                          m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2
                          a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            @elseif($t['icon'] === 'book')
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
             </svg>
             @elseif($t['icon'] === 'calendar')
             <svg class="w-4 h-4" fill="none" stroke="currentColor"
@@ -353,6 +363,53 @@
         @endforeach
     </div>
 </div>
+
+{{-- ONGLET : MATIÈRES CHOISIES --}}
+@if($canChooseSubjects && $activeEnrollment)
+<div x-show="tab === 'subjects'" x-transition>
+    @php
+        $selectedSubjects = $activeEnrollment->selectedClassSubjects;
+        $subjectsByCategory = $activeEnrollment->classGroup->classSubjects
+            ->filter(fn ($classSubject) => $classSubject->is_active)
+            ->groupBy(fn ($classSubject) => $classSubject->subject?->category?->name_fr ?? 'Autres matières');
+    @endphp
+    <div class="space-y-5">
+        <div class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <p class="text-xs font-bold uppercase tracking-[0.2em] text-[#E87722]">Parcours personnalisé</p>
+                <h3 class="mt-2 text-lg font-black text-[#1A3A6B]">Matières suivies par {{ $student->first_name }}</h3>
+                <p class="mt-1 text-sm text-slate-500">Les bulletins et le livret scolaire utilisent cette sélection lorsqu’elle est enregistrée.</p>
+            </div>
+            <a href="{{ route('students.enrollments.subjects', $activeEnrollment) }}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#E87722] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#c96216]">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M4 20h4l10.732-10.732a2.5 2.5 0 00-3.536-3.536L4 16v4z"/></svg>
+                Modifier
+            </a>
+        </div>
+        @if($selectedSubjects->isEmpty())
+            <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">Aucune sélection enregistrée. Les documents continuent d’utiliser toutes les matières actives de la classe.</div>
+        @else
+            <div class="grid gap-4 md:grid-cols-2">
+                @foreach($subjectsByCategory as $category => $classSubjects)
+                    @php $chosen = $classSubjects->filter(fn ($classSubject) => $selectedSubjects->contains('id', $classSubject->id)); @endphp
+                    @if($chosen->isNotEmpty())
+                        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                            <h4 class="text-sm font-black uppercase tracking-wide text-[#1A3A6B]">{{ $category }}</h4>
+                            <div class="mt-3 space-y-2">
+                                @foreach($chosen as $classSubject)
+                                    <div class="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2.5">
+                                        <span class="text-sm font-semibold text-slate-800">{{ $classSubject->subject?->name_fr ?: $classSubject->subject?->name_en }}</span>
+                                        <span class="shrink-0 text-xs font-bold text-slate-400">{{ $classSubject->subject?->code }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                @endforeach
+            </div>
+        @endif
+    </div>
+</div>
+@endif
 
 {{-- ══════════════════════════════════════════════════════════════════════ --}}
 {{-- ONGLET : INFORMATIONS                                                   --}}
