@@ -40,6 +40,15 @@ class GradeController extends Controller
         return Auth::user();
     }
 
+    private function classUsesSubjectSelection(?ClassGroup $classGroup): bool
+    {
+        if (! $classGroup) return false;
+        $classGroup->loadMissing('level.section');
+        $enrollment = new StudentEnrollment();
+        $enrollment->setRelation('classGroup', $classGroup);
+        return $enrollment->isEligibleForSubjectSelection();
+    }
+
     private function isAdmin(): bool
     {
         /** @var \App\Models\User $authUser */
@@ -245,7 +254,8 @@ class GradeController extends Controller
         $sequence      = null;
 
         if ($selectedClassId && $selectedSubjectId && $selectedSequenceId) {
-            $selectedClass = ClassGroup::where('academic_year_id', $activeYear?->id)
+            $selectedClass = ClassGroup::with('level.section')
+                ->where('academic_year_id', $activeYear?->id)
                 ->find($selectedClassId);
             $sequence = Sequence::where('academic_year_id', $activeYear?->id)
                 ->find($selectedSequenceId);
@@ -264,6 +274,17 @@ class GradeController extends Controller
                 ])->with('student')
                   ->get()
                   ->sortBy('student.last_name');
+
+                if ($this->classUsesSubjectSelection($selectedClass)) {
+                    $enrollments = $enrollments->load('selectedClassSubjects');
+                    $selectedEnrollmentIds = $enrollments->filter(
+                        fn ($enrollment) => $enrollment->selectedClassSubjects
+                            ->contains('id', $classSubject->id)
+                    )->pluck('id');
+                    if ($selectedEnrollmentIds->isNotEmpty()) {
+                        $enrollments = $enrollments->whereIn('id', $selectedEnrollmentIds)->values();
+                    }
+                }
 
                 $grades = Grade::whereIn(
                     'student_enrollment_id', $enrollments->pluck('id')
@@ -352,6 +373,17 @@ class GradeController extends Controller
                   ->get()
                   ->sortBy('student.last_name');
 
+                if ($this->classUsesSubjectSelection($selectedClass)) {
+                    $enrollments = $enrollments->load('selectedClassSubjects');
+                    $selectedEnrollmentIds = $enrollments->filter(
+                        fn ($enrollment) => $enrollment->selectedClassSubjects
+                            ->contains('id', $classSubject->id)
+                    )->pluck('id');
+                    if ($selectedEnrollmentIds->isNotEmpty()) {
+                        $enrollments = $enrollments->whereIn('id', $selectedEnrollmentIds)->values();
+                    }
+                }
+
                 $grades = Grade::whereIn(
                     'student_enrollment_id', $enrollments->pluck('id')
                 )->where([
@@ -417,9 +449,24 @@ class GradeController extends Controller
         $saved       = 0;
         $errors      = 0;
 
+        $classGroup = ClassGroup::with('level.section')->findOrFail($request->class_group_id);
+        $classSubject = ClassSubject::findOrFail($request->class_subject_id);
+        $allowedEnrollmentIds = null;
+        if ($this->classUsesSubjectSelection($classGroup)) {
+            $selectedEnrollmentIds = StudentEnrollment::where('class_group_id', $classGroup->id)
+                ->where('academic_year_id', $this->activeYear()?->id)
+                ->where('status', 'active')
+                ->whereHas('selectedClassSubjects', fn ($query) => $query->whereKey($classSubject->id))
+                ->pluck('id');
+            if ($selectedEnrollmentIds->isNotEmpty()) {
+                $allowedEnrollmentIds = $selectedEnrollmentIds->flip();
+            }
+        }
+
         foreach ($gradesInput as $enrollmentId => $grade) {
             $enrollmentId = (int)$enrollmentId;
             if ($enrollmentId <= 0) continue;
+            if ($allowedEnrollmentIds !== null && ! $allowedEnrollmentIds->has($enrollmentId)) continue;
 
             $isAbsent = array_key_exists($enrollmentId, $absentInput);
             $gradeVal = null;

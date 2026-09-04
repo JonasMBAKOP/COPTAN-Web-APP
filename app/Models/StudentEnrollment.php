@@ -97,16 +97,28 @@ class StudentEnrollment extends Model
 
     public function isEligibleForSubjectSelection(): bool
     {
+        return $this->subjectSelectionMinimum() !== null;
+    }
+
+    public function subjectSelectionMinimum(): ?int
+    {
         $section = $this->classGroup?->level?->section;
         $levelName = Str::lower((string) $this->classGroup?->level?->name);
         $sectionName = Str::lower((string) $section?->name);
 
         if (! $section || ! Str::contains($sectionName, 'anglophone')) {
-            return false;
+            return null;
         }
 
-        return (bool) preg_match('/\bform\s*([0-9]+)/i', $levelName, $matches)
-            && (int) $matches[1] >= 4;
+        if (preg_match('/\bform\s*([45])\b/i', $levelName)) {
+            return 8;
+        }
+
+        if (preg_match('/\b(lower|upper)\s*(sixth|6th)\b/i', $levelName)) {
+            return 4;
+        }
+
+        return null;
     }
 
     public function enrollmentAudit()

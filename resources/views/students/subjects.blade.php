@@ -19,13 +19,9 @@
             </div>
         </div>
         <div class="rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
-            Minimum requis : 10 matières
+            Minimum requis : {{ $minimumSubjects }} matières
         </div>
     </div>
-
-    @if(session('error'))
-        <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{{ session('error') }}</div>
-    @endif
 
     <form method="POST" action="{{ route('students.enrollments.subjects.update', $enrollment) }}" x-data="{ count: {{ count($selectedIds) }} }">
         @csrf

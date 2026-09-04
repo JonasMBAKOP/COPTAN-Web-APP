@@ -25,6 +25,7 @@ body { background: #E5E7EB; }
 <body>
 @include('students.documents.partials.print-toolbar')
 
+{{--
 @can('manage-parent-communication')
 @php
     $phones = array_filter([
@@ -53,6 +54,7 @@ body { background: #E5E7EB; }
 </form>
 @endif
 @endcan
+--}}
 
 @include('bulletins.partials.pdf-page')
 

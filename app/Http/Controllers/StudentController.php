@@ -409,18 +409,20 @@ class StudentController extends Controller
         ]);
 
         abort_unless($enrollment->isActive() && $enrollment->isEligibleForSubjectSelection(), 404);
+        $minimumSubjects = $enrollment->subjectSelectionMinimum();
 
         $subjectsByCategory = $enrollment->classGroup->classSubjects
             ->groupBy(fn ($classSubject) => $classSubject->subject?->category?->name_fr ?? 'Autres matières');
         $selectedIds = $enrollment->selectedClassSubjects->pluck('id')->all();
 
-        return view('students.subjects', compact('enrollment', 'subjectsByCategory', 'selectedIds'));
+        return view('students.subjects', compact('enrollment', 'subjectsByCategory', 'selectedIds', 'minimumSubjects'));
     }
 
     public function updateSubjects(Request $request, StudentEnrollment $enrollment)
     {
         $enrollment->load(['classGroup.level.section', 'classGroup.classSubjects']);
         abort_unless($enrollment->isActive() && $enrollment->isEligibleForSubjectSelection(), 404);
+        $minimumSubjects = $enrollment->subjectSelectionMinimum();
 
         $classSubjectIds = $enrollment->classGroup->classSubjects
             ->where('is_active', true)->pluck('id')->all();
@@ -428,8 +430,8 @@ class StudentController extends Controller
             ->map(fn ($id) => (int) $id)
             ->unique()->values();
 
-        if ($selectedIds->count() < 10) {
-            return back()->withInput()->with('error', 'Sélectionnez au moins 10 matières.');
+        if ($selectedIds->count() < $minimumSubjects) {
+            return back()->withInput()->with('error', "Sélectionnez au moins {$minimumSubjects} matières.");
         }
 
         if ($selectedIds->diff($classSubjectIds)->isNotEmpty()) {
