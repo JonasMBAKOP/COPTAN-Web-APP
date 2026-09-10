@@ -193,21 +193,27 @@ class BulletinController extends Controller
         }
 
         if ($type === 'sequentiel') {
-            $sequence  = Sequence::with('trimester')->find($sequenceId);
+            $sequence  = Sequence::with('trimester.sequences')->find($sequenceId);
+            abort_if(
+                !$sequence || !$this->sequencesForClassGroup($classGroup, $sequence->trimester?->sequences ?? collect())->contains('id', $sequence->id),
+                422,
+                'Cette évaluation ne correspond pas à la section de la classe sélectionnée.'
+            );
+            $sequenceLabel = $this->sequenceDisplayLabel($classGroup, $sequence);
             $details   = $this->buildSequenceSubjectDetails($classGroup, $enrollment, $sequence);
             $average   = $this->calc->sequenceAverage($enrollment, $sequence);
             $rankInfo  = $this->calc->classRank($classGroup, $enrollment, $sequence);
             $absences  = $this->calc->absenceTotals($enrollment, $sequence);
-            $periodLabel = $sequence->label;
+            $periodLabel = $sequenceLabel;
             
-            $seqOfficialTitle = $this->getSequenceOfficialTitle($sequence->label);
+            $seqOfficialTitle = $this->getSequenceOfficialTitle($sequenceLabel);
             if (str_starts_with($seqOfficialTitle, 'SEQUENCE')) {
                 $documentTitle = 'BULLETIN DE NOTES DE LA ' . $seqOfficialTitle;
             } else {
                 $documentTitle = 'BULLETIN DE NOTES DU ' . $seqOfficialTitle;
             }
 
-            $seqOfficialTitleEn = $this->getSequenceOfficialTitleEn($sequence->label);
+            $seqOfficialTitleEn = $this->getSequenceOfficialTitleEn($sequenceLabel);
             $documentTitleEn = $seqOfficialTitleEn . ' REPORT CARD';
 
             $periodHeaders = [];
@@ -218,7 +224,8 @@ class BulletinController extends Controller
 
         } elseif ($type === 'trimestriel') {
             $trimester  = Trimester::with('sequences')->find($trimesterId);
-            $sequences  = $trimester->sequences;
+            $sequences  = $this->sequencesForClassGroup($classGroup, $trimester->sequences);
+            $sequences->each(fn ($sequence) => $sequence->setRelation('trimester', $trimester));
 
             $details = $this->buildTrimesterSubjectDetails(
                 $classGroup, $enrollment, $sequences
@@ -230,7 +237,9 @@ class BulletinController extends Controller
             $periodLabel = $trimester->label;
             $documentTitle = 'BULLETIN DE NOTES DU TRIMESTRE ' . $trimester->number;
             $documentTitleEn = 'REPORT CARD OF TRIMESTER ' . $trimester->number;
-            $periodHeaders = $sequences->pluck('label')->toArray();
+            $periodHeaders = $sequences->map(
+                fn ($sequence) => $this->sequenceDisplayLabel($classGroup, $sequence)
+            )->values()->toArray();
 
             $periodAverages = [];
             foreach ($sequences as $seq) {
@@ -257,6 +266,7 @@ class BulletinController extends Controller
 
         } else { // annuel
             $trimesters = Trimester::where('academic_year_id', $classGroup->academic_year_id)
+                ->with('sequences')
                 ->orderBy('number')->get();
 
             $details = $this->buildYearSubjectDetails($classGroup, $enrollment, $trimesters);
@@ -415,9 +425,13 @@ class BulletinController extends Controller
             $cs->id => $this->formatTeacherName($cs->teacherAssignments->first()?->staff),
         ])->toArray();
 
-        return $classSubjects->map(function($cs) use ($enrollment, $trimesters, $teacherMap, $allEnrollments) {
-            $trimesterAverages = $trimesters->map(function($tri) use ($enrollment, $cs) {
-                return $this->calc->calculateTrimesterSubjectGrade($enrollment->id, $cs->id, $tri->sequences);
+        return $classSubjects->map(function($cs) use ($classGroup, $enrollment, $trimesters, $teacherMap, $allEnrollments) {
+            $trimesterAverages = $trimesters->map(function($tri) use ($classGroup, $enrollment, $cs) {
+                return $this->calc->calculateTrimesterSubjectGrade(
+                    $enrollment->id,
+                    $cs->id,
+                    $this->sequencesForClassGroup($classGroup, $tri->sequences)
+                );
             });
 
             $validTrimesterAverages = $trimesterAverages->filter(fn($v) => $v !== null);
@@ -426,10 +440,14 @@ class BulletinController extends Controller
                 : null;
 
             // Calculer les statistiques de la classe pour l'année
-            $classGrades = $allEnrollments->map(function($enr) use ($cs, $trimesters) {
+            $classGrades = $allEnrollments->map(function($enr) use ($classGroup, $cs, $trimesters) {
                 $triAvgs = [];
                 foreach ($trimesters as $tri) {
-                    $triAvg = $this->calc->calculateTrimesterSubjectGrade($enr->id, $cs->id, $tri->sequences);
+                    $triAvg = $this->calc->calculateTrimesterSubjectGrade(
+                        $enr->id,
+                        $cs->id,
+                        $this->sequencesForClassGroup($classGroup, $tri->sequences)
+                    );
                     if ($triAvg !== null) {
                         $triAvgs[] = $triAvg;
                     }
@@ -512,6 +530,39 @@ class BulletinController extends Controller
 
         if ($average >= 16) return Distinction::positive()->first();
         return null;
+    }
+
+    /** Les sections ANG/EAT utilisent DS1 et DS2, soit deux évaluations à 50 %. */
+    private function sequencesForClassGroup($classGroup, $sequences): \Illuminate\Support\Collection
+    {
+        $sequences = collect($sequences)->sortBy('number')->values();
+        if (!$classGroup?->level?->section?->isAnglophone()) {
+            return $sequences;
+        }
+
+        $ds = $sequences->filter(
+            fn ($sequence) => preg_match('/^DS\s*[1-6]\b/i', trim((string) $sequence->label))
+        )->values();
+
+        return ($ds->count() >= 2 ? $ds->take(2) : $sequences->take(2))->values();
+    }
+
+    private function sequenceDisplayLabel($classGroup, $sequence): string
+    {
+        if (!$classGroup?->level?->section?->isAnglophone()) {
+            return (string) $sequence->label;
+        }
+
+        $siblings = collect($sequence->trimester?->sequences ?? [$sequence])
+            ->sortBy('number')
+            ->filter(fn ($item) => preg_match('/^DS\s*[1-6]\b/i', trim((string) $item->label)))
+            ->values();
+        $index = $siblings->search(fn ($item) => (int) $item->id === (int) $sequence->id);
+        $trimesterNumber = (int) ($sequence->trimester?->number ?? 1);
+
+        return $index === false
+            ? (string) $sequence->label
+            : 'DS' . (($trimesterNumber - 1) * 2 + $index + 1);
     }
 
     private function trimesterRank($classGroup, $enrollment, $trimester): array

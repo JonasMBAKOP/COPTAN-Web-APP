@@ -158,11 +158,13 @@
                 href="{{ route('staff.presences.index') }}"
                 :active="request()->routeIs('staff.presences.*')" />
 
-            <x-sidebar-item
-                icon="bank"
-                label="Salaires"
-                href="{{ route('staff.salaries') }}"
-                :active="request()->routeIs('staff.salaries', 'staff.salary.edit')" />
+            @can('manage-staff')
+                <x-sidebar-item
+                    icon="bank"
+                    label="Salaires"
+                    href="{{ route('staff.salaries') }}"
+                    :active="request()->routeIs('staff.salaries', 'staff.salary.edit')" />    
+            @endcan
         @endcan    
         
 

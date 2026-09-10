@@ -32,7 +32,7 @@
 @endif
 
 <form method="POST" action="{{ route('bulletins.bulk-pdf') }}"
-      x-data="bulletinForm()" x-init="init()" target="_blank">
+      x-data="bulletinForm({{ json_encode($sequences->map(fn($s) => ['id'=>$s->id,'label'=>$s->label,'trimester'=>$s->trimester?->number])->values()) }})" x-init="init()" target="_blank">
     @csrf
 
     {{-- ── FILTRES ─────────────────────────────────────────────────────── --}}
@@ -73,7 +73,8 @@
                     <option value="">— Choisir —</option>
                     @foreach($classes as $c)
                     <option value="{{ $c->id }}"
-                            data-section="{{ $c->level->section_id }}">
+                            data-section="{{ $c->level->section_id }}"
+                            data-anglophone="{{ $c->level->section?->isAnglophone() ? '1' : '0' }}">
                         {{ $c->full_name }} ({{ $c->enrolled }} él.)
                     </option>
                     @endforeach
@@ -105,11 +106,11 @@
                         class="w-full px-3 py-2.5 border border-gray-200
                                rounded-xl text-sm focus:outline-none bg-white">
                     <option value="">— Choisir —</option>
-                    @foreach($sequences as $seq)
-                    <option value="{{ $seq->id }}">
-                        {{ $seq->label }} (T{{ $seq->trimester?->number }})
-                    </option>
-                    @endforeach
+                    <template x-for="s in sequences" :key="s.id">
+                        <option :value="s.id"
+                                x-text="s.label + ' (T' + s.trimester + ')'"
+                                :selected="s.id == sequenceId"></option>
+                    </template>
                 </select>
             </div>
 
@@ -317,7 +318,7 @@
 
 @push('scripts')
 <script>
-function bulletinForm() {
+function bulletinForm(allSequences) {
     return {
         sectionId:       '',
         classId:         '',
@@ -328,8 +329,12 @@ function bulletinForm() {
         selected:        [],
         allSelected:     false,
         loadingStudents: false,
+        allSequences,
+        sequences: allSequences,
 
-        init() {},
+        init() {
+            this.updateSequences();
+        },
 
         // ── Validation côté client : empêche la soumission incomplète ────
         get periodSelected() {
@@ -359,6 +364,11 @@ function bulletinForm() {
                 this.classId = '';
                 this.students = [];
                 this.selected = [];
+                this.sequenceId = '';
+                this.sequences = this.allSequences;
+            } else {
+                this.sequenceId = '';
+                this.sequences = this.allSequences;
             }
         },
 
@@ -366,8 +376,34 @@ function bulletinForm() {
             this.students = [];
             this.selected = [];
             this.allSelected = false;
+            this.sequenceId = '';
+            this.updateSequences();
             if (!this.classId) return;
             await this.loadStudents();
+        },
+
+        updateSequences() {
+            const select = document.querySelector('select[name="class_group_id"]');
+            const option = select?.querySelector(`option[value="${this.classId}"]`);
+            const isAnglophone = option?.dataset.anglophone === '1';
+
+            if (!isAnglophone) {
+                this.sequences = this.allSequences;
+                return;
+            }
+
+            const grouped = {};
+            this.allSequences.forEach(sequence => {
+                const key = sequence.trimester || '0';
+                (grouped[key] ||= []).push(sequence);
+            });
+            this.sequences = Object.values(grouped).flatMap((items, trimesterIndex) => {
+                const ds = items.filter(sequence => /^DS\s*[1-6]\b/i.test(sequence.label));
+                return (ds.length >= 2 ? ds : items).slice(0, 2).map((sequence, index) => ({
+                    ...sequence,
+                    label: 'DS' + ((trimesterIndex * 2) + index + 1),
+                }));
+            });
         },
 
         async loadStudents() {

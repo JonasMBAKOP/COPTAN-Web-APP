@@ -18,7 +18,7 @@ class AttendanceController extends Controller
         $activeYear = AcademicYear::active();
         $user = Auth::user();
         $isUnrestricted = $this->canManageAllAttendance($user);
-        $isTeacher = $user?->hasRole('enseignant') && ! $isUnrestricted;
+        $isTeacher = $user?->hasAnyRole(['enseignant', 'assistant-direction']) && ! $isUnrestricted;
         $staffId = $user?->staff?->id;
         $date = $isTeacher
             ? today()
@@ -73,7 +73,7 @@ class AttendanceController extends Controller
         if (! $isUnrestricted) $rules['absence_date'][] = 'before_or_equal:today';
         $data = $request->validate($rules);
         $year = AcademicYear::active();
-        $isTeacher = $user?->hasRole('enseignant') && ! $isUnrestricted;
+        $isTeacher = $user?->hasAnyRole(['enseignant', 'assistant-direction']) && ! $isUnrestricted;
         $staffId = $user?->staff?->id;
         $class = ClassGroup::where('academic_year_id', $year?->id)->findOrFail($data['class_group_id']);
         $date = Carbon::parse($data['absence_date']);

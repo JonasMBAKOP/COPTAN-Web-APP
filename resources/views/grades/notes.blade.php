@@ -31,7 +31,7 @@
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5"
      x-data="notesFilters(
          {{ json_encode($sections->map(fn($s) => ['id'=>$s->id,'name'=>$s->name])->values()) }},
-         {{ json_encode($sequences->map(fn($s) => ['id'=>$s->id,'label'=>$s->label])->values()) }},
+         {{ json_encode($sequences->map(fn($s) => ['id'=>$s->id,'label'=>$s->label,'trimester'=>$s->trimester?->number])->values()) }},
          '{{ $selectedSectionId }}',
          '{{ $selectedSubjectId }}',
          '{{ $selectedClassId }}',
@@ -69,7 +69,7 @@
                            tracking-wider mb-1.5">Matière</label>
             <select x-model="subjectId"
                     @change="onSubjectChange()"
-                    :disabled="!sectionId || loadingSubjects"
+                    :disabled="loadingSubjects"
                     class="w-full px-3 py-2.5 border border-gray-200 rounded-xl
                            text-sm focus:outline-none bg-white font-medium
                            disabled:opacity-50">
@@ -86,6 +86,7 @@
             <label class="block text-xs font-bold text-gray-500 uppercase
                            tracking-wider mb-1.5">Classe</label>
             <select x-model="classId"
+                    @change="onClassChange()"
                     :disabled="!subjectId || loadingClasses"
                     class="w-full px-3 py-2.5 border border-gray-200 rounded-xl
                            text-sm focus:outline-none bg-white font-medium
@@ -367,6 +368,7 @@
 function notesFilters(sections, sequences, initSection, initSubject, initClass, initSeq) {
     return {
         sections, sequences,
+        allSequences: sequences,
         sectionId:       String(initSection  || ''),
         subjectId:       String(initSubject  || ''),
         classId:         String(initClass    || ''),
@@ -388,6 +390,7 @@ function notesFilters(sections, sequences, initSection, initSubject, initClass, 
                 await this.loadSubjects(false);
                 if (this.subjectId) await this.loadClasses(false);
             }
+            this.applySequenceOptions();
         },
 
         async onSectionChange() {
@@ -395,15 +398,19 @@ function notesFilters(sections, sequences, initSection, initSubject, initClass, 
             this.classId   = '';
             this.subjects  = [];
             this.classes   = [];
+            this.sequences = this.allSequences;
+            this.sequenceId = '';
             this.apiError  = '';
-            if (this.sectionId) await this.loadSubjects(true);
+            await this.loadSubjects(true);
         },
 
         async onSubjectChange() {
             this.classId  = '';
             this.classes  = [];
+            this.sequences = this.allSequences;
+            this.sequenceId = '';
             this.apiError = '';
-            if (this.subjectId && this.sectionId) await this.loadClasses(true);
+            if (this.subjectId) await this.loadClasses(true);
         },
 
         async loadSubjects(autoSelect = false) {
@@ -457,6 +464,7 @@ function notesFilters(sections, sequences, initSection, initSubject, initClass, 
 
                 if (data.error) throw new Error(data.error);
                 this.classes = data.classes || [];
+                this.applySequenceOptions();
             } catch (e) {
                 this.apiError = 'Erreur chargement classes: ' + e.message;
                 this.classes  = [];
@@ -464,6 +472,32 @@ function notesFilters(sections, sequences, initSection, initSubject, initClass, 
             } finally {
                 this.loadingClasses = false;
             }
+        },
+
+        onClassChange() {
+            this.sequenceId = '';
+            this.applySequenceOptions();
+        },
+
+        applySequenceOptions() {
+            const selectedClass = this.classes.find(c => String(c.id) === String(this.classId));
+            if (!selectedClass || !selectedClass.is_anglophone) {
+                this.sequences = this.allSequences;
+                return;
+            }
+
+            const grouped = {};
+            this.allSequences.forEach(sequence => {
+                const key = sequence.trimester || '0';
+                (grouped[key] ||= []).push(sequence);
+            });
+            this.sequences = Object.values(grouped).flatMap((items, trimesterIndex) => {
+                const ds = items.filter(sequence => /^DS\s*[1-6]\b/i.test(sequence.label));
+                return (ds.length >= 2 ? ds : items).slice(0, 2).map((sequence, index) => ({
+                    ...sequence,
+                    label: 'DS' + ((trimesterIndex * 2) + index + 1),
+                }));
+            });
         },
 
         search() {

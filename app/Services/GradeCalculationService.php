@@ -119,7 +119,7 @@ class GradeCalculationService
     public function trimesterAverage(StudentEnrollment $enrollment, Trimester $trimester): ?float
     {
         $classGroup = $enrollment->classGroup;
-        $sequences = $trimester->sequences;
+        $sequences = $this->sequencesForEnrollment($enrollment, $trimester);
         $classSubjects = $classGroup->classSubjects()->where('is_active', true)->get();
         $selectedIds = $this->selectedSubjectIds($enrollment);
         if ($selectedIds) {
@@ -146,6 +146,7 @@ class GradeCalculationService
     public function yearAverage(StudentEnrollment $enrollment): ?float
     {
         $trimesters = Trimester::where('academic_year_id', $enrollment->academic_year_id)
+            ->with('sequences')
             ->orderBy('number')->get();
 
         $classGroup = $enrollment->classGroup;
@@ -161,7 +162,11 @@ class GradeCalculationService
         foreach ($classSubjects as $cs) {
             $trimesterAverages = [];
             foreach ($trimesters as $tri) {
-                $triAvg = $this->calculateTrimesterSubjectGrade($enrollment->id, $cs->id, $tri->sequences);
+                $triAvg = $this->calculateTrimesterSubjectGrade(
+                    $enrollment->id,
+                    $cs->id,
+                    $this->sequencesForEnrollment($enrollment, $tri)
+                );
                 if ($triAvg !== null) {
                     $trimesterAverages[] = $triAvg;
                 }
@@ -174,6 +179,27 @@ class GradeCalculationService
         }
 
         return $totalCoef > 0 ? round($totalPoints / $totalCoef, 2) : null;
+    }
+
+    /**
+     * Les sections anglophones ne composent que DS1 et DS2 par trimestre.
+     * Le fallback conserve les deux premières séquences si les libellés DS ne
+     * sont pas disponibles dans une ancienne configuration.
+     */
+    private function sequencesForEnrollment(StudentEnrollment $enrollment, Trimester $trimester): Collection
+    {
+        $sequences = $trimester->sequences->sortBy('number')->values();
+        $enrollment->loadMissing('classGroup.level.section');
+
+        if (!$enrollment->classGroup?->level?->section?->isAnglophone()) {
+            return $sequences;
+        }
+
+        $ds = $sequences->filter(
+            fn ($sequence) => preg_match('/^DS\s*[1-6]\b/i', trim((string) $sequence->label))
+        )->values();
+
+        return ($ds->count() === 2 ? $ds : $sequences->take(2))->values();
     }
 
     /**

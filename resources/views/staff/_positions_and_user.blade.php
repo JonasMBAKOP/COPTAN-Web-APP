@@ -30,6 +30,7 @@
         'secretaire'             => 'Secrétaire',
         'infirmier'              => 'Infirmier(e)',
         'enseignant'             => 'Enseignant(e)',
+        'assistant-direction'    => 'Assistant(e) de Direction',
     ];
 
     $staffModel = $staff ?? null;
@@ -486,4 +487,4 @@ document.addEventListener('DOMContentLoaded', function () {
     checkCenseurVisibility();
 });
 </script>
-
+

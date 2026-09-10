@@ -32,6 +32,28 @@ class GradeController extends Controller
         return AcademicYear::active();
     }
 
+    /** Evaluations visibles: ANG/EAT utilisent DS1-DS6, deux evaluations par trimestre. */
+    private function sequencesForSection($sequences, $section): \Illuminate\Support\Collection
+    {
+        $sequences = collect($sequences)->sortBy('number')->values();
+        if (!$section?->isAnglophone()) {
+            return $sequences;
+        }
+
+        return $sequences->groupBy('trimester_id')
+            ->flatMap(function ($trimesterSequences) {
+                $ds = $trimesterSequences->filter(
+                    fn ($sequence) => preg_match('/^DS\s*[1-6]\b/i', trim((string) $sequence->label))
+                )->sortBy('number')->values();
+
+                return $ds->count() >= 2
+                    ? $ds->take(2)->values()
+                    : $trimesterSequences->sortBy('number')->take(2)->values();
+            })
+            ->sortBy('number')
+            ->values();
+    }
+
     private function currentUser()
     {
         /** @var \App\Models\User $authUser */
@@ -91,9 +113,9 @@ class GradeController extends Controller
             return ClassSubject::where('is_active', true)
                 ->whereHas('classGroup', fn($q) =>
                     $q->where('academic_year_id', $year->id)
-                    ->whereHas('level', fn($q2) =>
+                    ->when($sectionId, fn($q) => $q->whereHas('level', fn($q2) =>
                         $q2->where('section_id', $sectionId)
-                    )
+                    ))
                 )
                 ->with('subject')
                 ->get()
@@ -111,9 +133,9 @@ class GradeController extends Controller
             ->where('academic_year_id', $year->id)
             ->whereHas('classSubject.classGroup', fn($q) =>
                 $q->where('academic_year_id', $year->id)
-                ->whereHas('level', fn($q2) =>
+                ->when($sectionId, fn($q) => $q->whereHas('level', fn($q2) =>
                     $q2->where('section_id', $sectionId)
-                )
+                ))
             )
             ->with('classSubject.subject')
             ->get()
@@ -131,7 +153,9 @@ class GradeController extends Controller
         if (!$year) return collect();
 
         $query = ClassGroup::where('academic_year_id', $year->id)
-            ->whereHas('level', fn($q) => $q->where('section_id', $sectionId))
+            ->when($sectionId, fn($q) => $q->whereHas('level', fn($q2) =>
+                $q2->where('section_id', $sectionId)
+            ))
             ->whereHas('classSubjects', fn($q) =>
                 $q->where('subject_id', $subjectId)->where('is_active', true)
             )
@@ -182,6 +206,7 @@ class GradeController extends Controller
         $selectedSectionId = $request->input('section_id',
             optional($sections->first())->id);
         $selectedSection   = $sections->firstWhere('id', $selectedSectionId);
+        $sequences         = $this->sequencesForSection($sequences, $selectedSection);
 
         // Verrous
         $locks = GradeLock::where('is_locked', true)
@@ -234,6 +259,7 @@ class GradeController extends Controller
             ? Sequence::where('academic_year_id', $activeYear->id)
                 ->with('trimester')->orderBy('number')->get()
             : collect();
+        $selectedSection = $sections->firstWhere('id', $selectedSectionId);
 
         // Matières disponibles dans la section
         $subjects = $selectedSectionId
@@ -265,6 +291,14 @@ class GradeController extends Controller
                 'subject_id'     => $selectedSubjectId,
                 'is_active'      => true,
             ])->with('subject')->first();
+
+            if ($selectedClass && $sequence && $classSubject) {
+                $sequences = $this->sequencesForSection($sequences, $selectedClass->level?->section);
+                if (!$sequences->contains('id', $sequence->id)) {
+                    $sequence = null;
+                    $classSubject = null;
+                }
+            }
 
             if ($selectedClass && $sequence && $classSubject) {
                 $enrollments = StudentEnrollment::where([
@@ -324,6 +358,7 @@ class GradeController extends Controller
             ? Sequence::where('academic_year_id', $activeYear->id)
                 ->with('trimester')->orderBy('number')->get()
             : collect();
+        $selectedSection = $sections->firstWhere('id', $selectedSectionId);
 
         $subjects = $selectedSectionId
             ? $this->teacherSubjectsInSection((int)$selectedSectionId, $activeYear)
@@ -357,6 +392,14 @@ class GradeController extends Controller
                 'subject_id'     => $selectedSubjectId,
                 'is_active'      => true,
             ])->with('subject')->first();
+
+            if ($classSubject && $selectedClass && $sequence) {
+                $sequences = $this->sequencesForSection($sequences, $selectedClass->level?->section);
+                if (!$sequences->contains('id', $sequence->id)) {
+                    $sequence = null;
+                    $classSubject = null;
+                }
+            }
 
             if ($classSubject && $selectedClass && $sequence) {
                 $lock = GradeLock::where([
@@ -451,6 +494,16 @@ class GradeController extends Controller
 
         $classGroup = ClassGroup::with('level.section')->findOrFail($request->class_group_id);
         $classSubject = ClassSubject::findOrFail($request->class_subject_id);
+        $sequence = Sequence::with('trimester.sequences')->findOrFail($request->sequence_id);
+        $allowedSequences = $this->sequencesForSection(
+            $sequence->trimester?->sequences ?? collect(),
+            $classGroup->level?->section
+        );
+        abort_unless(
+            $allowedSequences->contains('id', $sequence->id),
+            422,
+            'Cette évaluation ne correspond pas à la section de la classe sélectionnée.'
+        );
         $allowedEnrollmentIds = null;
         if ($this->classUsesSubjectSelection($classGroup)) {
             $selectedEnrollmentIds = StudentEnrollment::where('class_group_id', $classGroup->id)
@@ -749,7 +802,7 @@ class GradeController extends Controller
             $sectionId  = (int)$request->input('section_id', 0);
             $activeYear = $this->activeYear();
 
-            if (!$sectionId || !$activeYear) {
+            if (!$activeYear) {
                 return response()->json(['subjects' => []]);
             }
 
@@ -775,7 +828,7 @@ class GradeController extends Controller
             $subjectId  = (int)$request->input('subject_id', 0);
             $activeYear = $this->activeYear();
 
-            if (!$sectionId || !$subjectId || !$activeYear) {
+            if (!$subjectId || !$activeYear) {
                 return response()->json(['classes' => []]);
             }
 
@@ -785,6 +838,8 @@ class GradeController extends Controller
                     'full_name' => $c->full_name,
                     'enrolled'  => $c->studentEnrollments()
                         ->where('status', 'active')->count(),
+                    'section_id' => $c->level?->section_id,
+                    'is_anglophone' => $c->level?->section?->isAnglophone() ?? false,
                 ]);
 
             return response()->json(['classes' => $classes->values()]);

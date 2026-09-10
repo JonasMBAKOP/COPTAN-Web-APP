@@ -12,6 +12,7 @@ class Staff extends Model
 
     public const POSITIONS = [
         'enseignant',
+        'assistant_direction',
         'censeur',
         'prefet_des_etudes',
         'econome',
@@ -196,7 +197,7 @@ class Staff extends Model
     public function isTeacher(): bool
     {
         return $this->positions()
-            ->whereIn('position', ['enseignant', 'prefet_des_etudes', 'censeur', 'surveillant_general'])
+            ->whereIn('position', ['enseignant', 'assistant_direction', 'prefet_des_etudes', 'censeur', 'surveillant_general'])
             ->exists();
     }
 
@@ -208,7 +209,7 @@ class Staff extends Model
     public function scopeTeachers($query)
     {
         return $query->active()->whereHas('positions', fn ($q) =>
-            $q->whereIn('position', ['enseignant', 'prefet_des_etudes', 'censeur', 'surveillant_general'])
+            $q->whereIn('position', ['enseignant', 'assistant_direction', 'prefet_des_etudes', 'censeur', 'surveillant_general'])
         );
     }
 
@@ -228,6 +229,7 @@ class Staff extends Model
     {
         return [
             'enseignant'             => 'Enseignant(e)',
+            'assistant_direction'    => 'Assistant(e) de Direction',
             'prefet_des_etudes'      => 'Préfet des études / Dean',
             'econome'                => 'Économe',
             'surveillant_general'    => 'Surveillant(e) Général(e)',
