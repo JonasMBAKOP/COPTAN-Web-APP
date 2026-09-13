@@ -112,7 +112,7 @@ class AttendanceController extends Controller
     private function canManageAllAttendance($user): bool
     {
         if (! $user) return false;
-        if ($user->hasAnyRole(['super-admin', 'directeur', 'censeur', 'surveillant-general'])) return true;
+        if ($user->hasAnyRole(['super-admin', 'directeur', 'censeur', 'surveillant-general', 'assistant-direction'])) return true;
         return $user->staff?->positions?->contains(fn ($position) => in_array($position->position, ['directeur', 'censeur', 'prefet_des_etudes', 'surveillant_general'], true)) ?? false;
     }
 }

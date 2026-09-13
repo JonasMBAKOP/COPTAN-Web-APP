@@ -14,6 +14,8 @@
         .staff-list-table th, .staff-list-table td { border: 1px solid #94A3B8; padding: 6px 5px; vertical-align: middle; }
         .staff-list-table th { background: #EFF6FF; color: #000; text-align: center; font-size: 12px; font-weight: 800; text-transform: uppercase; }
         .staff-list-table td { color: #000; font-size: 10px; font-weight: 600; text-transform: uppercase; }
+        .staff-list-table th:nth-child(2), .staff-list-table td:nth-child(2) { width: 32%; }
+        .staff-list-table th:nth-child(3), .staff-list-table td:nth-child(3) { width: 11%; }
         .staff-list-table td:first-child, .staff-list-table td:nth-child(3), .staff-list-table td:nth-child(4) { text-align: center; }
         .staff-list-table .staff-list-name { font-weight: 700; color: #172554; }
         .empty-row { padding: 12px !important; text-align: center !important; color: #64748B; font-style: italic; }
@@ -62,8 +64,8 @@
         <thead>
             <tr>
                 <th>#</th>
-                <th>Noms et Prenoms</th>
-                <th>Date de Naissance</th>
+                <th>Noms et Pr&eacute;noms</th>
+                <th>N&eacute;(e) le</th>
                 <th>Sexe</th>
                 <th>Poste</th>
                 <th>Grade</th>

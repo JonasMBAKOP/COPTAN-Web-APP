@@ -15,9 +15,7 @@ class StoreAbsenceRequest extends FormRequest
     {
         /** @var \App\Models\User|null $user */
         $user = Auth::user();
-        return $user && $user->hasAnyRole([
-            'super-admin','directeur','censeur','enseignant','surveillant-general'
-        ]);
+        return (bool) $user?->can('manage-absences');
     }
 
     /**

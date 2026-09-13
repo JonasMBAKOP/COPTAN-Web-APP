@@ -189,18 +189,19 @@
                         @if($ab->classSubject)
                         · {{ $ab->classSubject->subject->name_fr }}
                         @endif
-                        · Abs. {{ $ab->absence_date->format('d/m/Y') }}
+                        {{-- · Abs. --}}
+                        {{-- · {{ $ab->absence_date->format('d/m/Y') }} --}}
                     </p>
                 </div>
             </div>
             <div class="flex items-center gap-4 flex-shrink-0">
                 <div class="text-right">
+                    <p class="text-xs text-gray-800">
+                        {{ $ab->absence_date->format('d/m/Y') }}
+                    </p>
                     <p class="text-sm font-black"
                        style="color:{{ $ab->is_justified ? '#1A5C2A' : '#EF4444' }};">
                         {{ $ab->hours }}h
-                    </p>
-                    <p class="text-xs text-gray-400">
-                        {{ $ab->created_at->format('d/m/Y H:i') }}
                     </p>
                 </div>
                 <span class="px-2 py-0.5 rounded-full text-xs font-bold"
