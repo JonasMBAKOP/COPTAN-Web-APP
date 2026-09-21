@@ -18,7 +18,7 @@ class AttendanceController extends Controller
         $activeYear = AcademicYear::active();
         $user = Auth::user();
         $isUnrestricted = $this->canManageAllAttendance($user);
-        $isTeacher = $user?->hasAnyRole(['enseignant', 'assistant-direction']) && ! $isUnrestricted;
+        $isTeacher = $this->isTeachingAttendanceUser($user) && ! $isUnrestricted;
         $staffId = $user?->staff?->id;
         $date = $isTeacher
             ? today()
@@ -73,7 +73,8 @@ class AttendanceController extends Controller
         if (! $isUnrestricted) $rules['absence_date'][] = 'before_or_equal:today';
         $data = $request->validate($rules);
         $year = AcademicYear::active();
-        $isTeacher = $user?->hasAnyRole(['enseignant', 'assistant-direction']) && ! $isUnrestricted;
+        $isTeacher = $this->isTeachingAttendanceUser($user) && ! $isUnrestricted;
+        abort_unless($isUnrestricted || $isTeacher, 403, 'Vous n\'etes pas autorise a enregistrer cet appel.');
         $staffId = $user?->staff?->id;
         $class = ClassGroup::where('academic_year_id', $year?->id)->findOrFail($data['class_group_id']);
         $date = Carbon::parse($data['absence_date']);
@@ -112,7 +113,18 @@ class AttendanceController extends Controller
     private function canManageAllAttendance($user): bool
     {
         if (! $user) return false;
+        if ($user->can('manage-absences')) return true;
         if ($user->hasAnyRole(['super-admin', 'directeur', 'censeur', 'surveillant-general', 'assistant-direction'])) return true;
         return $user->staff?->positions?->contains(fn ($position) => in_array($position->position, ['directeur', 'censeur', 'prefet_des_etudes', 'surveillant_general'], true)) ?? false;
+    }
+
+    private function isTeachingAttendanceUser($user): bool
+    {
+        if (! $user) return false;
+        if ($user->hasRole('enseignant') || $user->can('enter-grades')) return true;
+
+        return $user->staff?->positions?->contains(
+            fn ($position) => $position->position === 'enseignant'
+        ) ?? false;
     }
 }
