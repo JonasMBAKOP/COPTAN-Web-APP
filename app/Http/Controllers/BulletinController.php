@@ -589,7 +589,7 @@ class BulletinController extends Controller
             'class_average' => $averages->avg('avg') ? round($averages->avg('avg'), 2) : null,
             'highest'       => $averages->max('avg'),
             'lowest'        => $averages->min('avg'),
-            'averages_count'=> $averages->count(),
+            'averages_count'=> $successCount,
             'success_rate'  => $successRate,
         ];
     }
@@ -618,7 +618,7 @@ class BulletinController extends Controller
             'class_average' => $averages->avg('avg') ? round($averages->avg('avg'), 2) : null,
             'highest'       => $averages->max('avg'),
             'lowest'        => $averages->min('avg'),
-            'averages_count'=> $averages->count(),
+            'averages_count'=> $successCount,
             'success_rate'  => $successRate,
         ];
     }

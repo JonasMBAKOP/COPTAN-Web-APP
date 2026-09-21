@@ -683,9 +683,7 @@ class FinanceController extends Controller
     {
         /** @var \App\Models\User $user */
         $user              = Auth::user();
-        $isAdmin           = $user->hasRole('super-admin')
-            || $user->hasRole('directeur')
-            || $user->hasRole('fondateur');
+        $isAdmin           = $user->hasAnyRole(['super-admin', 'directeur', 'principal', 'proviseur', 'fondateur']);
         $activeYear        = AcademicYear::active();
         $selectedYearId    = $request->input('year_id', $activeYear?->id);
         $selectedResponsible = $request->input('responsible', $isAdmin ? 'global' : 'me');
@@ -736,7 +734,7 @@ class FinanceController extends Controller
 
         $payments = $query->orderByDesc('payment_date')
                           ->orderByDesc('created_at')
-                          ->paginate(20)
+                          ->paginate(50)
                           ->withQueryString();
 
         $years   = AcademicYear::orderByDesc('start_date')->get();
@@ -745,7 +743,7 @@ class FinanceController extends Controller
                 ->orderBy('name')->get()
             : collect();
 
-        $totalFiltered = $query->sum('amount_paid') + $query->sum('scholarship_amount');
+        $totalFiltered = (clone $query)->sum('amount_paid') + (clone $query)->sum('scholarship_amount');
 
         $recorders = $isAdmin
             ? User::whereIn('id', StudentPayment::visible()
@@ -1148,7 +1146,8 @@ class FinanceController extends Controller
         $user      = Auth::user();
         $activeYear = AcademicYear::active();
         $years     = AcademicYear::orderByDesc('start_date')->get();
-        $isAdmin   = $user->hasAnyRole(['super-admin', 'directeur', 'fondateur']);
+        $isAdmin   = $user->hasAnyRole(['super-admin', 'directeur', 'principal', 'proviseur', 'fondateur']);
+        $responsibleUsers = $isAdmin ? $this->financialResponsibleUsers() : collect([$user]);
 
         // ── Filtres ─────────────────────────────────────────────────────────
         $allowedTypes = ['journalier', 'hebdomadaire', 'mensuel', 'annuel', 'entre-2-dates'];
@@ -1166,6 +1165,16 @@ class FinanceController extends Controller
         $whoFilter  = $isAdmin
             ? $request->input('who', 'global') // global | me | econome
             : 'me'; // économe voit seulement ses propres données
+
+        if ($isAdmin && $whoFilter === 'me') {
+            $whoFilter = (string) $user->id;
+        } elseif (! $isAdmin) {
+            $whoFilter = (string) $user->id;
+        }
+        if ($isAdmin && $whoFilter !== 'global'
+            && ! $responsibleUsers->contains('id', (int) $whoFilter)) {
+            $whoFilter = 'global';
+        }
 
         $selectedYear = $yearId ? AcademicYear::find($yearId) : $activeYear;
 
@@ -1187,6 +1196,8 @@ class FinanceController extends Controller
         // Filtrer par responsable
         if ($whoFilter === 'me') {
             $paymentsQuery->where('recorded_by', $user->id);
+        } elseif ($whoFilter !== 'global' && ctype_digit((string) $whoFilter)) {
+            $paymentsQuery->where('recorded_by', (int) $whoFilter);
         } elseif ($whoFilter === 'econome') {
             // Trouver le(s) compte(s) économe
             $economeIds = \Spatie\Permission\Models\Role::findByName('econome')
@@ -1268,16 +1279,16 @@ class FinanceController extends Controller
             : [];
 
         // ── Économes disponibles (pour directeur) ─────────────────────────
-        $economes = $isAdmin
-            ? \App\Models\User::role('econome')->orderBy('name')->get()
-            : collect();
+        $responsibleName = $whoFilter === 'global'
+            ? 'Tous'
+            : ($responsibleUsers->firstWhere('id', (int) $whoFilter)?->name ?? $user->name);
 
         return view('finances.reports', compact(
             'user', 'isAdmin', 'selectedYear', 'years',
             'type', 'month', 'date', 'week', 'startDate', 'endDate', 'whoFilter',
             'allPayments', 'totalCollected',
             'byInstallment', 'byMethod', 'bySection', 'evolution',
-            'economes'
+            'responsibleUsers', 'responsibleName'
         ));
     }
 
@@ -1402,7 +1413,8 @@ class FinanceController extends Controller
         $user       = Auth::user();
         $activeYear = AcademicYear::active();
         $years      = AcademicYear::orderByDesc('start_date')->get();
-        $isAdmin    = $user->hasAnyRole(['super-admin','directeur','fondateur']);
+        $isAdmin    = $user->hasAnyRole(['super-admin', 'directeur', 'principal', 'proviseur', 'fondateur']);
+        $responsibleUsers = $isAdmin ? $this->financialResponsibleUsers() : collect([$user]);
 
         $allowedTypes = ['journalier', 'hebdomadaire', 'mensuel', 'annuel', 'entre-2-dates'];
         $type      = $request->input('type', 'mensuel');
@@ -1417,6 +1429,16 @@ class FinanceController extends Controller
         $startDate = $request->input('start_date', now()->toDateString());
         $endDate   = $request->input('end_date', now()->toDateString());
         $whoFilter = $isAdmin ? $request->input('who', 'global') : 'me';
+
+        if ($isAdmin && $whoFilter === 'me') {
+            $whoFilter = (string) $user->id;
+        } elseif (! $isAdmin) {
+            $whoFilter = (string) $user->id;
+        }
+        if ($isAdmin && $whoFilter !== 'global'
+            && ! $responsibleUsers->contains('id', (int) $whoFilter)) {
+            $whoFilter = 'global';
+        }
 
         $selectedYear = $yearId ? AcademicYear::find($yearId) : $activeYear;
 
@@ -1464,6 +1486,8 @@ class FinanceController extends Controller
 
         if ($whoFilter === 'me') {
             $paymentsQuery->where('recorded_by', $user->id);
+        } elseif ($whoFilter !== 'global' && ctype_digit((string) $whoFilter)) {
+            $paymentsQuery->where('recorded_by', (int) $whoFilter);
         } elseif ($whoFilter === 'econome') {
             $economeIds = \Spatie\Permission\Models\Role::findByName('econome')
                 ->users->pluck('id');
@@ -1507,16 +1531,16 @@ class FinanceController extends Controller
             ? $this->buildYearlyEvolution($allPayments, $selectedYear)
             : [];
 
-        $economes = $isAdmin
-            ? \App\Models\User::role('econome')->orderBy('name')->get()
-            : collect();
+        $responsibleName = $whoFilter === 'global'
+            ? 'Tous'
+            : ($responsibleUsers->firstWhere('id', (int) $whoFilter)?->name ?? $user->name);
 
         return compact(
             'user', 'isAdmin', 'selectedYear', 'years',
             'type', 'month', 'date', 'week', 'startDate', 'endDate', 'whoFilter',
             'allPayments', 'totalCollected',
             'byInstallment', 'byMethod', 'bySection', 'evolution',
-            'economes'
+            'responsibleUsers', 'responsibleName'
         );
     }
 
@@ -1553,6 +1577,10 @@ class FinanceController extends Controller
             ->orderByDesc('payment_date')
             ->orderByDesc('created_at')
             ->get();
+        $cashiers = $this->scholarshipCashiers();
+        $cashierName = $filters['cashierId']
+            ? ($cashiers->firstWhere('id', (int) $filters['cashierId'])?->name ?? '—')
+            : 'Tous';
 
         return view('finances.scholarships-print', array_merge($filters, [
             'school' => \App\Models\SchoolSetting::instance(),
@@ -1561,6 +1589,7 @@ class FinanceController extends Controller
             'scholarships' => $scholarships,
             'totalScholarships' => $scholarships->sum('scholarship_amount'),
             'scholarshipCount' => $scholarships->count(),
+            'cashierName' => $cashierName,
             'periodLabel' => $this->scholarshipPeriodLabel($filters),
         ]));
     }
@@ -2373,5 +2402,12 @@ class FinanceController extends Controller
             'todayPaymentsAmount', 'lastPaymentTime', 'recentPayments',
             'monthlyData', 'totalScholarships', 'recentScholarships'
         ));
+    }
+
+    private function financialResponsibleUsers()
+    {
+        return User::whereHas('roles', fn ($query) =>
+            $query->whereIn('name', ['super-admin', 'directeur', 'principal', 'proviseur', 'fondateur', 'econome'])
+        )->orderBy('name')->get();
     }
 }

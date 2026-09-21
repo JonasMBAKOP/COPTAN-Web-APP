@@ -5,8 +5,8 @@
     <title>{{ $titles[$type] }} - {{ $school->short_name ?? 'Etablissement' }}</title>
     @include('students.documents.partials.base-styles')
     <style>
-        @page { size: A4 portrait; margin: 5mm; }
-        .staff-list-page { max-width: 200mm; margin: 0 auto; padding: 2mm 1mm; }
+        @page { size: A4 portrait; margin: {{ $type === 'administrative' ? '0mm 5mm 5mm' : '5mm' }}; }
+        .staff-list-page { max-width: 200mm; margin: 0 auto; padding: {{ $type === 'administrative' ? '0 1mm 2mm' : '2mm 1mm' }}; }
         /* .staff-list-title { margin: 7mm 0 4mm; text-align: center; font-size: 17px; font-weight: 800; color: #1A3A6B; letter-spacing: .04em; } */
         .staff-list-title { background: #E5E7EB; color: #000; border: 1px solid #4B5563; padding: 8px 10px; margin-bottom: 12px; text-align: center; font-family: Georgia, 'Times New Roman', serif; font-size: 21px; font-weight: 900; }
         .staff-list-subtitle { margin-bottom: 5mm; text-align: center; font-size: 14px; color: #1A3A6B; font-weight: 600; }

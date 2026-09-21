@@ -201,7 +201,10 @@ class TimetableController extends Controller
         if ($teacherConflict) {
             if ($request->boolean('confirm_same_level_overlap')) {
                 $teacherConflict = null;
-            } elseif ($this->allowsSameLevelTeacherOverlap($teacherConflict, (int) $data['class_group_id'])) {
+            } elseif (
+                $this->allowsSameLevelTeacherOverlap($teacherConflict, (int) $data['class_group_id'])
+                || $this->isSameSubjectTeacherOverlap($teacherConflict, (int) $data['class_subject_id'])
+            ) {
                 return back()->with('same_level_teacher_conflict', $this->buildSameLevelConflictPayload(
                     route('timetable.store'),
                     $data,
@@ -277,7 +280,10 @@ class TimetableController extends Controller
         if ($teacherConflict) {
             if ($request->boolean('confirm_same_level_overlap')) {
                 $teacherConflict = null;
-            } elseif ($this->allowsSameLevelTeacherOverlap($teacherConflict, (int) $data['class_group_id'])) {
+            } elseif (
+                $this->allowsSameLevelTeacherOverlap($teacherConflict, (int) $data['class_group_id'])
+                || $this->isSameSubjectTeacherOverlap($teacherConflict, (int) $data['class_subject_id'])
+            ) {
                 return back()->with('same_level_teacher_conflict', $this->buildSameLevelConflictPayload(
                     route('timetable.update', ['slot' => $slot->id]),
                     array_merge($data, ['_method' => 'PUT']),
@@ -535,24 +541,30 @@ class TimetableController extends Controller
             return null;
         }
 
+        $candidateSubjectId = ClassSubject::whereKey($classSubjectId)->value('subject_id');
+
         $teacherClassSubjectIds = TeacherAssignment::where('staff_id', $teacherAssignment->staff_id)
             ->where('academic_year_id', $activeYear->id)
             ->pluck('class_subject_id');
 
         $endPeriod = $periodIndex + $periodsCount - 1;
 
-        $conflict = TimetableSlot::whereIn('class_subject_id', $teacherClassSubjectIds)
+        $conflicts = TimetableSlot::whereIn('class_subject_id', $teacherClassSubjectIds)
             ->where('academic_year_id', $activeYear->id)
             ->where('day_of_week', $dayOfWeek)
             ->when($excludeSlotId, fn ($query) => $query->where('id', '!=', $excludeSlotId))
             ->where('period_index', '<=', $endPeriod)
             ->whereRaw('(period_index + periods_count - 1) >= ?', [$periodIndex])
             ->with([
-                'classGroup.level',
+                'classGroup.level.section',
                 'classSubject.subject',
                 'classSubject.teacherAssignments.staff',
             ])
-            ->first();
+            ->get();
+
+        $conflict = $conflicts->first(
+            fn (TimetableSlot $slot) => (int) $slot->classSubject?->subject_id === (int) $candidateSubjectId
+        ) ?? $conflicts->first();
 
         if (! $conflict) {
             return null;
@@ -604,6 +616,15 @@ class TimetableController extends Controller
         return true;
     }
 
+    private function isSameSubjectTeacherOverlap(TimetableSlot $existingSlot, int $candidateClassSubjectId): bool
+    {
+        $candidateClassSubject = ClassSubject::find($candidateClassSubjectId);
+
+        return $candidateClassSubject
+            && $existingSlot->classSubject
+            && (int) $candidateClassSubject->subject_id === (int) $existingSlot->classSubject->subject_id;
+    }
+
     private function buildSameLevelConflictPayload(
         string $action,
         array $data,
@@ -612,11 +633,22 @@ class TimetableController extends Controller
         string $cancelUrl
     ): array {
         $teacher = $conflictSlot->classSubject?->teacherAssignments?->first()?->staff?->full_name ?? 'Cet enseignant';
-        $class = $conflictSlot->classGroup?->full_name ?? 'une autre classe';
-        $subject = $conflictSlot->classSubject?->subject?->name_fr ?? 'une matière';
-        $start = $periodWindow['start'] ?? '—';
-        $end = $periodWindow['end'] ?? '—';
-        $message = "L'enseignant {$teacher} est déjà programmé dans la classe {$class} ({$subject}) de {$start} à {$end}. Confirmez-vous ce même niveau de programmation ?";
+        $existingClass = $conflictSlot->classGroup?->full_name ?? 'une autre classe';
+        $existingSection = $conflictSlot->classGroup?->level?->section?->name ?? 'section inconnue';
+        $existingSubject = $conflictSlot->classSubject?->subject?->name_fr ?? 'une matière';
+        $candidateClass = ClassGroup::with('level.section')->find($data['class_group_id'] ?? null);
+        $candidateSubject = ClassSubject::with('subject')->find($data['class_subject_id'] ?? null);
+        $candidateClassName = $candidateClass?->full_name ?? 'la classe sélectionnée';
+        $candidateSection = $candidateClass?->level?->section?->name ?? 'section inconnue';
+        $candidateSubjectName = $candidateSubject?->subject?->name_fr ?? 'la matière sélectionnée';
+        $day = self::DAYS[(int) ($data['day_of_week'] ?? $conflictSlot->day_of_week)] ?? 'ce jour';
+        $existingStart = $conflictSlot->start_time ?: 'heure inconnue';
+        $existingEnd = $conflictSlot->end_time ?: 'heure inconnue';
+        $candidateStart = $periodWindow['start'] ?? 'heure inconnue';
+        $candidateEnd = $periodWindow['end'] ?? 'heure inconnue';
+        $existingRoom = $conflictSlot->room ?: 'sans salle';
+        $candidateRoom = filled($data['room'] ?? null) ? $data['room'] : 'sans salle';
+        $message = "Conflit d'emploi du temps : {$teacher} est déjà programmé le {$day}, de {$existingStart} à {$existingEnd}, dans {$existingClass} (section {$existingSection}), matière {$existingSubject}, salle {$existingRoom}. Vous souhaitez aussi le programmer de {$candidateStart} à {$candidateEnd}, dans {$candidateClassName} (section {$candidateSection}), matière {$candidateSubjectName}, salle {$candidateRoom}. Confirmez-vous cette programmation simultanée ?";
 
         $fields = [
             'class_group_id' => (string) ($data['class_group_id'] ?? ''),
@@ -644,16 +676,25 @@ class TimetableController extends Controller
         }
 
         return $slots
-            ->filter(fn (TimetableSlot $slot) => (bool) $this->findTeacherConflict(
-                $slot->class_subject_id,
-                $slot->day_of_week,
-                (int) $slot->period_index,
-                (int) $slot->periods_count,
-                $activeYear,
-                $slot->id,
-                $slot->class_group_id,
-                true
-            ))
+            ->filter(function (TimetableSlot $slot) use ($activeYear): bool {
+                $conflict = $this->findTeacherConflict(
+                    $slot->class_subject_id,
+                    $slot->day_of_week,
+                    (int) $slot->period_index,
+                    (int) $slot->periods_count,
+                    $activeYear,
+                    $slot->id,
+                    $slot->class_group_id,
+                    false
+                );
+
+                if (! $conflict) {
+                    return false;
+                }
+
+                return ! $this->allowsSameLevelTeacherOverlap($conflict, (int) $slot->class_group_id)
+                    && ! $this->isSameSubjectTeacherOverlap($conflict, (int) $slot->class_subject_id);
+            })
             ->pluck('id')
             ->values();
     }

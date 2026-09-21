@@ -193,10 +193,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (proceed) {
         const form = document.createElement('form');
-        form.method = payload.method || 'POST';
+        // HTML ne supporte que GET et POST ; Laravel convertit POST en PUT via _method.
+        const httpMethod = (payload.method || 'POST').toUpperCase();
+        form.method = 'POST';
         form.action = payload.action;
 
-        if ((payload.method || 'POST').toUpperCase() === 'PUT') {
+        if (httpMethod === 'PUT') {
             const methodInput = document.createElement('input');
             methodInput.type = 'hidden';
             methodInput.name = '_method';

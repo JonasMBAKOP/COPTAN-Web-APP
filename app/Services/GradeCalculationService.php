@@ -335,7 +335,7 @@ class GradeCalculationService
                 ? round($averages->avg('average'), 2) : null,
             'highest'        => $averages->max('average'),
             'lowest'         => $averages->min('average'),
-            'averages_count' => $averages->count(),
+            'averages_count' => $successCount,
             'success_rate'   => $successRate,
         ];
     }
@@ -368,7 +368,7 @@ class GradeCalculationService
                 ? round($averages->avg('average'), 2) : null,
             'highest'        => $averages->max('average'),
             'lowest'         => $averages->min('average'),
-            'averages_count' => $averages->count(),
+            'averages_count' => $successCount,
             'success_rate'   => $successRate,
             'average'        => $averages->avg('average') !== null ? round($averages->avg('average'), 2) : null,
         ];
