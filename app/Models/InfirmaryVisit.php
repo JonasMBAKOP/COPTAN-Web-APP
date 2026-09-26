@@ -50,7 +50,7 @@ class InfirmaryVisit extends Model
 
     public function recordedBy()
     {
-        return $this->belongsTo(Staff::class, 'recorded_by_staff_id');
+        return $this->belongsTo(Staff::class, 'recorded_by_staff_id')->withTrashed();
     }
 
     public function getRecorderNameAttribute(): string

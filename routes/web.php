@@ -139,6 +139,8 @@ Route::middleware(['auth', 'permission:manage-users'])
     ->group(function () {
         Route::get('/',              [UserController::class, 'index'])
              ->name('index');
+        Route::get('/archived', [UserController::class, 'archived'])->name('archived');
+        Route::post('/archived/{user}/restore', [UserController::class, 'restoreArchived'])->name('restore');
         Route::get('/create',        [UserController::class, 'create'])
              ->name('create');
         Route::post('/',             [UserController::class, 'store'])
@@ -401,6 +403,8 @@ Route::middleware(['auth', 'permission:view-staff'])
 
         Route::middleware('permission:manage-staff')->group(function () {
             // Routes spécifiques AVANT les wildcards
+            Route::get('/archived', [StaffController::class, 'archived'])->name('archived');
+            Route::post('/archived/{staff}/restore', [StaffController::class, 'restoreArchived'])->name('restore');
             Route::get('/create', [StaffController::class, 'create'])->name('create');
             Route::post('/', [StaffController::class, 'store'])->name('store');
             Route::get('/{staff}/edit', [StaffController::class, 'edit'])->name('edit');

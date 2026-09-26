@@ -199,12 +199,7 @@ class TimetableController extends Controller
         );
 
         if ($teacherConflict) {
-            if ($request->boolean('confirm_same_level_overlap')) {
-                $teacherConflict = null;
-            } elseif (
-                $this->allowsSameLevelTeacherOverlap($teacherConflict, (int) $data['class_group_id'])
-                || $this->isSameSubjectTeacherOverlap($teacherConflict, (int) $data['class_subject_id'])
-            ) {
+            if (! $request->boolean('confirm_same_level_overlap')) {
                 return back()->with('same_level_teacher_conflict', $this->buildSameLevelConflictPayload(
                     route('timetable.store'),
                     $data,
@@ -212,8 +207,6 @@ class TimetableController extends Controller
                     $periodWindow,
                     route('timetable.index', ['class_id' => $data['class_group_id']])
                 ));
-            } else {
-                return back()->with('error', $this->teacherConflictMessage($teacherConflict));
             }
         }
 
@@ -278,12 +271,7 @@ class TimetableController extends Controller
         );
 
         if ($teacherConflict) {
-            if ($request->boolean('confirm_same_level_overlap')) {
-                $teacherConflict = null;
-            } elseif (
-                $this->allowsSameLevelTeacherOverlap($teacherConflict, (int) $data['class_group_id'])
-                || $this->isSameSubjectTeacherOverlap($teacherConflict, (int) $data['class_subject_id'])
-            ) {
+            if (! $request->boolean('confirm_same_level_overlap')) {
                 return back()->with('same_level_teacher_conflict', $this->buildSameLevelConflictPayload(
                     route('timetable.update', ['slot' => $slot->id]),
                     array_merge($data, ['_method' => 'PUT']),
@@ -291,8 +279,6 @@ class TimetableController extends Controller
                     $periodWindow,
                     route('timetable.index', ['class_id' => $slot->class_group_id])
                 ));
-            } else {
-                return back()->with('error', $this->teacherConflictMessage($teacherConflict));
             }
         }
 
@@ -493,7 +479,15 @@ class TimetableController extends Controller
 
     private function hoursFromSlots(Collection $slots, TimetableSetting $setting): float
     {
-        return round($slots->sum('periods_count'), 1);
+        $occupied = [];
+
+        foreach ($slots as $slot) {
+            for ($offset = 0; $offset < max(1, (int) $slot->periods_count); $offset++) {
+                $occupied[$slot->day_of_week . ':' . ((int) $slot->period_index + $offset)] = true;
+            }
+        }
+
+        return count($occupied);
     }
 
     private function resolveClassSubject(array $data, AcademicYear $activeYear): ?ClassSubject
@@ -671,32 +665,8 @@ class TimetableController extends Controller
 
     private function detectTeacherConflicts(Collection $slots, ?AcademicYear $activeYear): Collection
     {
-        if (! $activeYear) {
-            return collect();
-        }
-
-        return $slots
-            ->filter(function (TimetableSlot $slot) use ($activeYear): bool {
-                $conflict = $this->findTeacherConflict(
-                    $slot->class_subject_id,
-                    $slot->day_of_week,
-                    (int) $slot->period_index,
-                    (int) $slot->periods_count,
-                    $activeYear,
-                    $slot->id,
-                    $slot->class_group_id,
-                    false
-                );
-
-                if (! $conflict) {
-                    return false;
-                }
-
-                return ! $this->allowsSameLevelTeacherOverlap($conflict, (int) $slot->class_group_id)
-                    && ! $this->isSameSubjectTeacherOverlap($conflict, (int) $slot->class_subject_id);
-            })
-            ->pluck('id')
-            ->values();
+        // Les chevauchements inter-classes sont autorisés après confirmation lors de l'enregistrement.
+        return collect();
     }
 
     private function buildClassSummary(ClassGroup $classGroup, Collection $slots, TimetableSetting $setting): array
