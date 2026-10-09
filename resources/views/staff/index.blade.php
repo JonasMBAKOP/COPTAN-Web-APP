@@ -457,7 +457,7 @@
     {{-- Pagination --}}
     @if($staff->hasPages())
         <div class="mt-8 border-t border-gray-100 pt-5">
-            {{ $staff->onEachSide(1)->links() }}
+            {{ $staff->onEachSide(1)->links('vendor.pagination.custom') }}
         </div>
     @endif
 

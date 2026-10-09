@@ -5,6 +5,9 @@
 @section('page-subtitle', 'Registre des consultations scolaires')
 
 @section('content')
+<style>
+    table td:nth-child(5), table td:nth-child(5) p { white-space: pre-line !important; }
+</style>
 <div class="space-y-6 px-0 pb-24">
     @if(session('success'))<div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{{ session('success') }}</div>@endif
     @if(session('error'))<div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">{{ session('error') }}</div>@endif
